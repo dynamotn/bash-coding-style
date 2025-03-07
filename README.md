@@ -32,13 +32,15 @@ The following symbols are used:
 
 ### Which Shell to Use
 
-> ![NOTE]
+> [!NOTE]
 > Custom rule
 
-- ✔️ SHOULD: Use Bash for all scripts
-- ✔️ SHOULD: Write `#!/usr/bin/env bash` at the top of the script. (custom)
-- ✔️ SHOULD: Use `set -euo pipefail` for shell option settings. (custom)
-- ⚠️ CONSIDER: If using other shells, explain the reason in comments. (custom)
+> [!TIP]
+>
+> - ✔️ SHOULD: Use Bash for all scripts
+> - ✔️ SHOULD: Write `#!/usr/bin/env bash` at the top of the script. (custom)
+> - ✔️ SHOULD: Use `set -euo pipefail` for shell option settings. (custom)
+> - ⚠️ CONSIDER: If using other shells, explain the reason in comments. (custom)
 
 Use Bash. Restricting all executable shell scripts to `bash` ensures a consistent shell installed on all machines.
 

@@ -34,13 +34,15 @@ Các ký hiệu sau được sử dụng trong hướng dẫn này:
 
 ### Nên sử dụng shell nào
 
-> ![NOTE]
+> [!NOTE]
 > Quy tắc tùy chỉnh
 
-- ✔️ NÊN: Sử dụng Bash cho tất cả các script
-- ✔️ NÊN: Viết `#!/usr/bin/env bash` ở đầu script. (tùy chỉnh)
-- ✔️ NÊN: Sử dụng `set -euo pipefail` cho các cài đặt tùy chọn shell. (tùy chỉnh)
-- ⚠️ CÂN NHẮC: Nếu sử dụng các shell khác, hãy giải thích lý do trong phần nhận xét. (tùy chỉnh)
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng Bash cho tất cả các script
+> - ✔️ NÊN: Viết `#!/usr/bin/env bash` ở đầu script. (tùy chỉnh)
+> - ✔️ NÊN: Sử dụng `set -euo pipefail` cho các cài đặt tùy chọn shell. (tùy chỉnh)
+> - ⚠️ CÂN NHẮC: Nếu sử dụng các shell khác, hãy giải thích lý do trong phần nhận xét. (tùy chỉnh)
 
 Sử dụng Bash. Hạn chế tất cả các script shell có thể thực thi đối với `bash` đảm bảo một shell nhất quán được cài đặt trên tất cả các máy.
 
