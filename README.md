@@ -11,6 +11,8 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 <!-- toc -->
 
 - [Introduction](#introduction)
+- [Background](#background)
+  - [Which Shell to Use](#which-shell-to-use)
 
 <!-- tocstop -->
 
@@ -25,3 +27,40 @@ The following symbols are used:
 | ✔️ SHOULD | Recommended. |
 | ❌ AVOID | Not recommended. Make an effort to avoid it. |
 | ⚠️ CONSIDER | Consider if possible. It may be applied depending on the situation. |
+
+## Background
+
+### Which Shell to Use
+
+> ![NOTE]
+> Custom rule
+
+- ✔️ SHOULD: Use Bash for all scripts
+- ✔️ SHOULD: Write `#!/usr/bin/env bash` at the top of the script. (custom)
+- ✔️ SHOULD: Use `set -euo pipefail` for shell option settings. (custom)
+- ⚠️ CONSIDER: If using other shells, explain the reason in comments. (custom)
+
+Use Bash. Restricting all executable shell scripts to `bash` ensures a consistent shell installed on all machines.
+
+Executable files should start with `#!/usr/bin/env bash` and minimal flags. Using `#!/usr/bin/env bash` provides several notable advantages: works across environments (like Fedora or Termux), although slight performance hit from invoking env to search PATH.
+
+Using `set` for shell option settings ensures that even if the script is called with `bash script_name`, its functionality is not impaired. `set -euo pipefail` automatically detects errors early and terminates the script if an error occurs. `set -e` terminates the script if an error occurs. `set -u` triggers an error when referencing undefined variables. `set -o pipefail` terminates the script if an error occurs in the middle of a pipeline.
+
+**Recommended**
+
+```shell
+#!/usr/bin/env bash
+set -euo pipefail
+```
+
+**Discouraged**
+
+```shell
+#!/bin/bash
+# Missing set
+# Wrong shebang
+
+#!/bin/bash -euo pipefail
+# Use -euo after shebang, it is disabled when using `bash ./script.sh`.
+# Wrong shebang
+```

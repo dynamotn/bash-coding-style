@@ -12,12 +12,14 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 <!-- toc -->
 
 - [Giới thiệu](#gi%E1%BB%9Bi-thi%E1%BB%87u)
+- [Bối cảnh](#b%E1%BB%91i-c%E1%BA%A3nh)
+  - [Nên sử dụng shell nào](#nen-s%E1%BB%AD-d%E1%BB%A5ng-shell-nao)
 
 <!-- tocstop -->
 
 ## Giới thiệu
 
-Phong cách này cung cấp các hướng dẫn để viết đoạn mã Bash. Nó được lập nên dựa trên [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) và [icy/bash-coding-style](https://github.com/icy/bash-coding-style) với một vài luật tùy chỉnh.
+Phong cách này cung cấp các hướng dẫn để viết đoạn mã Bash. Nó được lập nên dựa trên [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) và [icy/bash-coding-style](https://github.com/icy/bash-coding-style) với một vài quy tắc được điều chỉnh.
 Các mục được thực hiện có chủ ý tùy chỉnh được đánh dấu rõ ràng là `(tùy chỉnh)`.
 
 Các ký hiệu sau được sử dụng trong hướng dẫn này:
@@ -27,3 +29,40 @@ Các ký hiệu sau được sử dụng trong hướng dẫn này:
 | ✔️ NÊN | Nên thực hiện theo kiến nghị. |
 | ❌ TRÁNH | Không đề nghị làm theo. Nên dành thời gian chỉnh sửa để tránh điều đó . |
 | ⚠️ CÂN NHẮC | Cân nhắc nếu có thể. Nó có thể áp dụng tùy theo tình huống cụ thể. |
+
+## Bối cảnh
+
+### Nên sử dụng shell nào
+
+> ![NOTE]
+> Quy tắc tùy chỉnh
+
+- ✔️ NÊN: Sử dụng Bash cho tất cả các script
+- ✔️ NÊN: Viết `#!/usr/bin/env bash` ở đầu script. (tùy chỉnh)
+- ✔️ NÊN: Sử dụng `set -euo pipefail` cho các cài đặt tùy chọn shell. (tùy chỉnh)
+- ⚠️ CÂN NHẮC: Nếu sử dụng các shell khác, hãy giải thích lý do trong phần nhận xét. (tùy chỉnh)
+
+Sử dụng Bash. Hạn chế tất cả các script shell có thể thực thi đối với `bash` đảm bảo một shell nhất quán được cài đặt trên tất cả các máy.
+
+Các tệp thực thi phải bắt đầu bằng `#!/usr/bin/env bash` và các cờ tối thiểu. Sử dụng `#!/usr/bin/env bash` cung cấp một số lợi thế đáng chú ý: hoạt động trên các môi trường (như Fedora hoặc Termux), mặc dù có một chút ảnh hưởng đến hiệu suất từ việc gọi env để tìm kiếm PATH.
+
+Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay cả khi script được gọi bằng `bash script_name`, chức năng của nó không bị suy giảm. `set -euo pipefail` tự động phát hiện lỗi sớm và kết thúc script nếu xảy ra lỗi. `set -e` kết thúc script nếu xảy ra lỗi. `set -u` kích hoạt lỗi khi tham chiếu đến các biến không xác định. `set -o pipefail` kết thúc script nếu xảy ra lỗi ở giữa pipeline.
+
+**Kiến nghị**
+
+```shell
+#!/usr/bin/env bash
+set -euo pipefail
+```
+
+**Không khuyến khích**
+
+```shell
+#!/bin/bash
+# Thiếu set
+# Sai shebang
+
+#!/bin/bash -euo pipefail
+# Để tùy chọn -euo ngay sau shebang, nó sẽ bị vô hiệu hóa khi gọi `bash ./script.sh`
+# Sai shebang
+```
