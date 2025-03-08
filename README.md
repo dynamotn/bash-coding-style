@@ -11,6 +11,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 <!-- toc -->
 
 - [Introduction](#introduction)
+  - [Supported library](#supported-library)
 - [Background](#background)
   - [Which Shell to Use](#which-shell-to-use)
   - [When to Use Shell](#when-to-use-shell)
@@ -29,6 +30,15 @@ The following symbols are used:
 | ❌ AVOID | Not recommended. Make an effort to avoid it. |
 | ⚠️ CONSIDER | Consider if possible. It may be applied depending on the situation. |
 
+### Supported library
+
+To help adhere to the style guide, I wrote a Bash library [dybatpho](https://github.com/dynamotn/dybatpho). By using this library, some rules in this style guide have been guaranteed. Items that are supported are explicitly marked as `(dybatpho)`
+
+```sh
+DYBATPHO_DIR=<path to dybatpho>
+. "$DYBATPHO_DIR/init.sh"
+```
+
 ## Background
 
 ### Which Shell to Use
@@ -41,6 +51,7 @@ The following symbols are used:
 > - ✔️ SHOULD: Use Bash for all scripts
 > - ✔️ SHOULD: Write `#!/usr/bin/env bash` at the top of the script. (custom)
 > - ✔️ SHOULD: Use `set -euo pipefail` for shell option settings. (custom)
+> - ✔️ SHOULD: After source [dybatpho](https://github.com/dynamotn/dybatpho), can ignore to `set -euo pipefail`. (dybatpho)
 > - ⚠️ CONSIDER: If using other shells, explain the reason in comments. (custom)
 
 Use Bash. Restricting all executable shell scripts to `bash` ensures a consistent shell installed on all machines.
@@ -54,6 +65,12 @@ Using `set` for shell option settings ensures that even if the script is called 
 ```shell
 #!/usr/bin/env bash
 set -euo pipefail
+# If not used dybatpho
+
+#!/usr/bin/env bash
+DYBATPHO_DIR=<path to dybatpho>
+. "$DYBATPHO_DIR/init.sh"
+# If used dybatpho
 ```
 
 **Discouraged**

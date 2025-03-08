@@ -12,6 +12,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 <!-- toc -->
 
 - [Giới thiệu](#gi%E1%BB%9Bi-thi%E1%BB%87u)
+  - [Thư viện hỗ trợ](#th%C6%B0-vi%E1%BB%87n-h%E1%BB%97-tr%E1%BB%A3)
 - [Bối cảnh](#b%E1%BB%91i-c%E1%BA%A3nh)
   - [Nên sử dụng shell nào](#nen-s%E1%BB%AD-d%E1%BB%A5ng-shell-nao)
   - [Khi nào nên sử dụng shell](#khi-nao-nen-s%E1%BB%AD-d%E1%BB%A5ng-shell)
@@ -31,6 +32,15 @@ Các ký hiệu sau được sử dụng trong hướng dẫn này:
 | ❌ TRÁNH | Không đề nghị làm theo. Nên dành thời gian chỉnh sửa để tránh điều đó . |
 | ⚠️ CÂN NHẮC | Cân nhắc nếu có thể. Nó có thể áp dụng tùy theo tình huống cụ thể. |
 
+### Thư viện hỗ trợ
+
+Để giúp tuân thủ hướng dẫn phong cách, tôi đã viết một thư viện Bash [dybatpho](https://github.com/dynamotn/dybatpho). Bằng cách sử dụng thư viện, một số quy tắc trong hướng dẫn phong cách này đã được đảm bảo. Các mục được hỗ trợ sẵn được đánh dấu rõ ràng là `(dybatpho)`.
+
+```sh
+DYBATPHO_DIR=<path to dybatpho>
+. "$DYBATPHO_DIR/init.sh"
+```
+
 ## Bối cảnh
 
 ### Nên sử dụng shell nào
@@ -43,6 +53,7 @@ Các ký hiệu sau được sử dụng trong hướng dẫn này:
 > - ✔️ NÊN: Sử dụng Bash cho tất cả các script
 > - ✔️ NÊN: Viết `#!/usr/bin/env bash` ở đầu script. (tùy chỉnh)
 > - ✔️ NÊN: Sử dụng `set -euo pipefail` cho các cài đặt tùy chọn shell. (tùy chỉnh)
+> - ✔️ NÊN: Sau khi source [dybatpho](https://github.com/dynamotn/dybatpho), bạn có thể bỏ qua `set -euo pipefail`. (dybatpho)
 > - ⚠️ CÂN NHẮC: Nếu sử dụng các shell khác, hãy giải thích lý do trong phần nhận xét. (tùy chỉnh)
 
 Sử dụng Bash. Hạn chế tất cả các script shell có thể thực thi đối với `bash` đảm bảo một shell nhất quán được cài đặt trên tất cả các máy.
@@ -56,6 +67,12 @@ Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay c�
 ```shell
 #!/usr/bin/env bash
 set -euo pipefail
+# Nếu không dùng dybatpho
+
+#!/usr/bin/env bash
+DYBATPHO_DIR=<path to dybatpho>
+. "$DYBATPHO_DIR/init.sh"
+# Nếu dùng dybatpho
 ```
 
 **Không khuyến khích**
@@ -87,7 +104,3 @@ Quy tắc tùy chỉnh
 Shell là một lựa chọn phù hợp cho các tác vụ chủ yếu liên quan đến việc gọi các tiện ích khác và thực hiện tương đối ít thao tác dữ liệu. Mặc dù shell script không phải là một ngôn ngữ phát triển, chúng được sử dụng để tạo ra các script tiện ích khác nhau trong CI hoặc triển khai tới máy người dùng. Hướng dẫn về phong cách này không khuyến nghị triển khai rộng rãi các shell script, nhưng thừa nhận việc sử dụng chúng.
 
 Sử dụng shell script cho các tiện ích nhỏ hoặc các script wrapper đơn giản. Đặc biệt, sử dụng shell script cho "xử lý đa dòng" hoặc "xử lý có thể tái sử dụng trong nhiều workflow" trong GitHub Actions hay Gitlab CI. Mặc dù Bash giúp dễ dàng xử lý văn bản, nhưng nó không phù hợp cho việc xử lý quá phức tạp hoặc xử lý dành riêng cho ngôn ngữ/ứng dụng. Hãy cân nhắc sử dụng một ngôn ngữ có cấu trúc trong những trường hợp như vậy.
-
-```
-
-Bạn có muốn tôi dịch một đoạn văn bản khác không?
