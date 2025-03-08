@@ -13,6 +13,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Introduction](#introduction)
 - [Background](#background)
   - [Which Shell to Use](#which-shell-to-use)
+  - [When to Use Shell](#when-to-use-shell)
 
 <!-- tocstop -->
 
@@ -66,3 +67,21 @@ set -euo pipefail
 # Use -euo after shebang, it is disabled when using `bash ./script.sh`.
 # Wrong shebang
 ```
+
+### When to Use Shell
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use only for small utilities or simple wrapper scripts
+> - ✔️ SHOULD: If you want to write a few lines of script in CI like GitHub Actions, Gitlab CI, create a shell script instead of embedding it in a yaml file. (custom)
+> - ✔️ SHOULD: If calling the same process with different parameters in multiple workflows, create a shell script. (custom)
+> - ⚠️ CONSIDER: If performance is critical, consider other languages besides shell
+> - ⚠️ CONSIDER: If writing a script over 100 lines or using complex control flow logic, rewrite it in a more structured language as soon as possible. Anticipate that the script will grow. Rewriting early can avoid a time-consuming rewrite later
+> - ⚠️ CONSIDER: When evaluating code complexity (e.g., deciding whether to switch languages), consider whether the code can be easily maintained by someone other than the original author
+
+Shell is a suitable choice for tasks that mainly involve calling other utilities and performing relatively few data manipulations. Although shell scripts are not a development language, they are used to create various utility scripts in CI or run on end-user's machines. This style guide does not suggest extensive deployment of shell scripts but acknowledges their use.
+
+Use shell scripts for small utilities or simple wrapper scripts. In particular, use shell scripts for "multi-line processing" or "reusable processing in multiple workflows" in GitHub Actions or Gitlab CI. While Bash makes it easy to handle text, it is not suitable for overly complex processing or language/app-specific processing. Consider using a structured language in such cases.
