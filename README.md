@@ -34,6 +34,8 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Case statement](#case-statement)
   - [Variable Expansion](#variable-expansion)
   - [Quoting](#quoting)
+- [Features and Bugs](#features-and-bugs)
+  - [Use ShellCheck](#use-shellcheck)
 
 <!-- tocstop -->
 
@@ -615,4 +617,44 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
+```
+
+## Features and Bugs
+
+### Use ShellCheck
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use ShellCheck to identify bugs in shell scripts
+> - ✔️ SHOULD: Resolve all ShellCheck warnings with a severity level of warning or higher. (custom)
+> - ✔️ SHOULD: Put `enable=require-variable-braces` into `.shellcheckrc` file. (custom)
+> - ⚠️ CONSIDER: Consider resolving all ShellCheck warnings with a severity level of info or higher. (custom)
+> - ⚠️ CONSIDER: If you cannot resolve ShellCheck warnings with a severity level of info, consider adding `# shellcheck disable=SCXXXX` comments to ignore them. (custom)
+
+The [ShellCheck](https://www.shellcheck.net/) project detects common bugs and warnings in shell scripts. Apply it to all shell scripts, regardless of their size.
+
+ShellCheck can be [installed](https://github.com/koalaman/shellcheck) on Windows, Ubuntu, and macOS.
+
+```sh
+# Debian/Ubuntu
+sudo apt install shellcheck
+# macOS
+brew install shellcheck
+# Windows
+winget install --id koalaman.shellcheck
+scoop install shellcheck
+```
+
+**Recommended**
+
+```sh
+# Enclose variables with potential spaces in quotes.
+ls "/foo/bar/${file}"
+
+# Ignoring SC1091 warning for unresolved source path is acceptable.
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```

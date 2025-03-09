@@ -35,6 +35,8 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Câu lệnh case](#cau-l%E1%BB%87nh-case)
   - [Khai triển biến](#khai-tri%E1%BB%83n-bi%E1%BA%BFn)
   - [Dấu nháy](#d%E1%BA%A5u-nhay)
+- [Tính năng và lỗi](#tinh-nang-va-l%E1%BB%97i)
+  - [Sử dụng ShellCheck](#s%E1%BB%AD-d%E1%BB%A5ng-shellcheck)
 
 <!-- tocstop -->
 
@@ -611,4 +613,44 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
+```
+
+## Tính năng và lỗi
+
+### Sử dụng ShellCheck
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng ShellCheck để xác định lỗi trong các tập lệnh shell
+> - ✔️ NÊN: Giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "warning" trở lên. (tùy chỉnh)
+> - ✔️ NÊN: Thêm `enable=require-variable-braces` vào tệp `.shellcheckrc`. (tùy chỉnh)
+> - ⚠️ CÂN NHẮC: Cân nhắc giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "info" trở lên. (tùy chỉnh)
+> - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng. (tùy chỉnh)
+
+Dự án [ShellCheck](https://www.shellcheck.net/) phát hiện các lỗi và cảnh báo phổ biến trong các tập lệnh shell. Hãy áp dụng nó cho tất cả các tập lệnh shell, bất kể kích thước của chúng.
+
+ShellCheck có thể được [cài đặt](https://github.com/koalaman/shellcheck) trên Windows, Ubuntu và macOS.
+
+```sh
+# Debian/Ubuntu
+sudo apt install shellcheck
+# macOS
+brew install shellcheck
+# Windows
+winget install --id koalaman.shellcheck
+scoop install shellcheck
+```
+
+**Nên dùng**
+
+```sh
+# Đặt các biến có khả năng chứa khoảng trắng vào trong dấu ngoặc kép.
+ls "/foo/bar/${file}"
+
+# Việc bỏ qua cảnh báo SC1091 cho đường dẫn nguồn chưa được giải quyết là chấp nhận được.
+# shellcheck disable=SC1091
+. "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
