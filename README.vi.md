@@ -16,6 +16,9 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Bối cảnh](#b%E1%BB%91i-c%E1%BA%A3nh)
   - [Nên sử dụng shell nào](#nen-s%E1%BB%AD-d%E1%BB%A5ng-shell-nao)
   - [Khi nào nên sử dụng shell](#khi-nao-nen-s%E1%BB%AD-d%E1%BB%A5ng-shell)
+- [Tệp shell và cách thực thi trình thông dịch](#t%E1%BB%87p-shell-va-cach-th%E1%BB%B1c-thi-trinh-thong-d%E1%BB%8Bch)
+  - [Phần mở rộng tệp](#ph%E1%BA%A7n-m%E1%BB%9F-r%E1%BB%99ng-t%E1%BB%87p)
+  - [SUID/SGID](#suidsgid)
 
 <!-- tocstop -->
 
@@ -104,3 +107,47 @@ Quy tắc tùy chỉnh
 Shell là một lựa chọn phù hợp cho các tác vụ chủ yếu liên quan đến việc gọi các tiện ích khác và thực hiện tương đối ít thao tác dữ liệu. Mặc dù shell script không phải là một ngôn ngữ phát triển, chúng được sử dụng để tạo ra các script tiện ích khác nhau trong CI hoặc triển khai tới máy người dùng. Hướng dẫn về phong cách này không khuyến nghị triển khai rộng rãi các shell script, nhưng thừa nhận việc sử dụng chúng.
 
 Sử dụng shell script cho các tiện ích nhỏ hoặc các script wrapper đơn giản. Đặc biệt, sử dụng shell script cho "xử lý đa dòng" hoặc "xử lý có thể tái sử dụng trong nhiều workflow" trong GitHub Actions hay Gitlab CI. Mặc dù Bash giúp dễ dàng xử lý văn bản, nhưng nó không phù hợp cho việc xử lý quá phức tạp hoặc xử lý dành riêng cho ngôn ngữ/ứng dụng. Hãy cân nhắc sử dụng một ngôn ngữ có cấu trúc trong những trường hợp như vậy.
+
+## Tệp shell và cách thực thi trình thông dịch
+
+### Phần mở rộng tệp
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script là thư viện và  `chmod -x` cho chúng.
+> - ✔️ NÊN: Không sử dụng phần mở rộng cho các script trong PATH và `chmod -x` cho chúng.
+> - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script không ở trong PATH và có thể gọi từ CLI. `chmod +x` cho chúng. (tùy chỉnh)
+> - ✔️ NÊN: Không sử dụng phần mở rộng cho các script chỉ dùng source nội bộ (tùy chỉnh).
+
+Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) hoặc không có phần mở rộng. Các script được gọi từ bên ngoài phải có phần mở rộng `.sh` và không nên được đánh dấu là có thể thực thi.
+
+### SUID/SGID
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng `sudo` nếu bạn cần nâng quyền
+> - ❌ TRÁNH: SUID và SGID bị cấm
+> - ❌ TRÁNH: `sudo` cũng bị cấm trong các script CI (tùy chỉnh).
+
+SUID và SGID bị cấm trong shell script. Shell có nhiều vấn đề bảo mật, khiến cho việc đảm bảo an toàn đầy đủ để cho phép SUID/SGID là gần như không thể. Mặc dù bash gây khó khăn cho việc thực thi SUID, nhưng nó vẫn có thể xảy ra trên một số nền tảng, vì vậy nó bị cấm. Nếu cần nâng quyền, hãy sử dụng `sudo`.
+
+Miễn là các script được thực thi trong CI, `sudo`, SUID và SGID là không cần thiết và do đó bị cấm.
+
+**Được khuyến nghị**
+
+```shell
+# Sử dụng sudo khi gọi (Trừ trong CI)
+sudo ./foo.sh
+```
+
+**Không khuyến nghị**
+
+```shell
+# Chuyển sang người dùng su hoặc root bên trong script
+```

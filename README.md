@@ -15,6 +15,9 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Background](#background)
   - [Which Shell to Use](#which-shell-to-use)
   - [When to Use Shell](#when-to-use-shell)
+- [Shell Files and Interpreter Invocation](#shell-files-and-interpreter-invocation)
+  - [File Extensions](#file-extensions)
+  - [SUID/SGID](#suidsgid)
 
 <!-- tocstop -->
 
@@ -102,3 +105,47 @@ Custom rule
 Shell is a suitable choice for tasks that mainly involve calling other utilities and performing relatively few data manipulations. Although shell scripts are not a development language, they are used to create various utility scripts in CI or run on end-user's machines. This style guide does not suggest extensive deployment of shell scripts but acknowledges their use.
 
 Use shell scripts for small utilities or simple wrapper scripts. In particular, use shell scripts for "multi-line processing" or "reusable processing in multiple workflows" in GitHub Actions or Gitlab CI. While Bash makes it easy to handle text, it is not suitable for overly complex processing or language/app-specific processing. Consider using a structured language in such cases.
+
+## Shell Files and Interpreter Invocation
+
+### File Extensions
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use the `.sh` extension for scripts that are library scripts. `chmod -x` for them
+> - ✔️ SHOULD: Do not use extensions for scripts that are in PATH. `chmod +x` for them
+> - ✔️ SHOULD: Use the `.sh` extension for scripts that aren't in PATH and are able to called from CLI.  `chmod +x` for them (custom)
+> - ✔️ SHOULD: Do not use extensions for scripts that are source internal only.  `chmod -x` for them (custom)
+
+Executable files should either have a `.sh` extension (strongly recommended) or no extension. Scripts called from outside must have a `.sh` extension and should not be made executable.
+
+### SUID/SGID
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `sudo` if you need to elevate privileges
+> - ❌ AVOID: SUID and SGID are prohibited
+> - ❌ AVOID: `sudo` is also prohibited in CI scripts. (custom)
+
+SUID and SGID are prohibited in shell scripts. Shell has many security issues, making it nearly impossible to ensure sufficient safety to allow SUID/SGID. Although bash makes SUID execution difficult, it is possible on some platforms, so it is explicitly prohibited. If privilege escalation is needed, use `sudo`.
+
+As long as scripts are executed in CI, `sudo`, SUID, and SGID are unnecessary and therefore prohibited.
+
+**Recommended**
+
+```shell
+# Use sudo when calling (Except in CI)
+sudo ./foo.sh
+```
+
+**Discouraged**
+
+```shell
+# Switching to su or root user inside the script
+```
