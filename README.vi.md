@@ -27,6 +27,14 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Chú thích hàm](#chu-thich-ham)
   - [Chú thích triển khai](#chu-thich-tri%E1%BB%83n-khai)
   - [TODO Comments](#todo-comments)
+- [Định dạng](#d%E1%BB%8Bnh-d%E1%BA%A1ng)
+  - [Dấu tab và dấu cách](#d%E1%BA%A5u-tab-va-d%E1%BA%A5u-cach)
+  - [Độ dài dòng code và chuỗi dài](#d%E1%BB%99-dai-dong-code-va-chu%E1%BB%97i-dai)
+  - [Pipelines (Đường ống)](#pipelines-d%C6%B0%E1%BB%9Dng-%E1%BB%91ng)
+  - [Luồng điều khiển](#lu%E1%BB%93ng-di%E1%BB%81u-khi%E1%BB%83n)
+  - [Câu lệnh case](#cau-l%E1%BB%87nh-case)
+  - [Khai triển biến](#khai-tri%E1%BB%83n-bi%E1%BA%BFn)
+  - [Dấu nháy](#d%E1%BA%A5u-nhay)
 
 <!-- tocstop -->
 
@@ -73,9 +81,9 @@ Các tệp thực thi phải bắt đầu bằng `#!/usr/bin/env bash` và các 
 
 Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay cả khi script được gọi bằng `bash script_name`, chức năng của nó không bị suy giảm. `set -euo pipefail` tự động phát hiện lỗi sớm và kết thúc script nếu xảy ra lỗi. `set -e` kết thúc script nếu xảy ra lỗi. `set -u` kích hoạt lỗi khi tham chiếu đến các biến không xác định. `set -o pipefail` kết thúc script nếu xảy ra lỗi ở giữa pipeline.
 
-**Kiến nghị**
+**Nên dùng**
 
-```shell
+```sh
 #!/usr/bin/env bash
 set -euo pipefail
 # Nếu không dùng dybatpho
@@ -86,9 +94,9 @@ DYBATPHO_DIR=<path to dybatpho>
 # Nếu dùng dybatpho
 ```
 
-**Không khuyến khích**
+**Không nên dùng**
 
-```shell
+```sh
 #!/bin/bash
 # Thiếu set
 # Sai shebang
@@ -146,16 +154,16 @@ SUID và SGID bị cấm trong shell script. Shell có nhiều vấn đề bảo
 
 Miễn là các script được thực thi trong CI, `sudo`, SUID và SGID là không cần thiết và do đó bị cấm.
 
-**Được khuyến nghị**
+**Nên dùng**
 
-```shell
+```sh
 # Sử dụng sudo khi gọi (Trừ trong CI)
 sudo ./foo.sh
 ```
 
-**Không khuyến nghị**
+**Không nên dùng**
 
-```shell
+```sh
 # Chuyển sang người dùng su hoặc root bên trong script
 ```
 
@@ -173,9 +181,9 @@ sudo ./foo.sh
 > - ✔️ NÊN: Triệt tiêu tất cả các thông báo không cần thiết vào `/dev/null`. (tùy chỉnh)
 > - ✔️ NÊN: Sử dụng thư viện ghi log từ [dybatpho](https://github.com/dynamotn/dybatpho) để xuất các thông báo để ghi log tốt hơn. (dybatpho)
 
-**Được khuyến nghị**
+**Nên dùng**
 
-```shell
+```sh
 # thông báo lỗi đến stderr
 echo "Error: Không thể thực hiện do_something" >&2
 
@@ -192,9 +200,9 @@ dybatpho::start_trace
 do_something
 ```
 
-**Không nên**
+**Không nên dùng**
 
-```shell
+```sh
 # thông báo lỗi đến stdout
 echo "LỖI: Không thể thực hiện do_something"
 
@@ -214,15 +222,15 @@ Quy tắc mới
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
-**Được khuyến nghị**
+**Nên dùng**
 
-```shell
+```sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
 
 **Không nên**
 
-```shell
+```sh
 # Sử dụng source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
@@ -241,9 +249,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 
 Tất cả các file nên có một comment cấp cao nhất mô tả ngắn gọn nội dung của chúng.
 
-**Đề xuất**
+**Nên dùng**
 
-```shell
+```sh
 #!/usr/bin/env bash
 # @file backup.sh
 # @brief Thực hiện backup nóng cho các database Oracle
@@ -270,7 +278,7 @@ Tất cả các comment header của hàm nên mô tả hành vi API dự kiến
 - `@stdout` và `@stderr`: Output ra STDOUT hoặc STDERR.
 - `@exitcode`: Giá trị trả về của lệnh cuối cùng được chạy.
 
-**Đề xuất**
+**Nên dùng**
 
 ```sh
 #######################################
@@ -313,8 +321,294 @@ Comment về các phần code phức tạp, không rõ ràng, thú vị hoặc q
 
 Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc code đủ tốt nhưng chưa hoàn hảo. Comment TODO nên bao gồm chuỗi viết hoa `TODO`. Không cần thiết phải bao gồm tên của cá nhân, vì có thể xác định bằng `git blame`. Mục đích của comment TODO là cung cấp một marker `TODO` nhất quán và dễ tìm kiếm, có thể được tra cứu để biết thêm chi tiết khi cần. Vì người được tham chiếu trong TODO không nhất thiết phải cam kết sửa lỗi, nên việc bao gồm giải pháp dự kiến là hữu ích.
 
-**Đề xuất**
+**Nên dùng**
 
-```shell
+```sh
 # TODO: Code này cần được sửa do xử lý lỗi không đầy đủ. Thêm kiểm tra lỗi và thoát với mã 1.
+```
+
+## Định dạng
+
+### Dấu tab và dấu cách
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thụt lề bằng hai dấu cách. Không sử dụng dấu tab.
+> - ✔️ NÊN: Chèn dòng trống giữa các khối mã để tăng tính dễ đọc.
+> - ✔️ NÊN: Không bao gồm khoảng trắng ở cuối dòng. (tùy chỉnh)
+
+Thụt lề nên dùng hai dấu cách. Tuyệt đối không được sử dụng dấu tab.
+
+Nhiều trình soạn thảo không thể chuyển đổi giữa thụt lề thực tế và hiển thị dấu cách/tab theo tùy chọn của người dùng. Cài đặt trình soạn thảo của người khác có thể không giống với của bạn. Sử dụng dấu cách đảm bảo rằng mã trông giống nhau trong mọi trình soạn thảo.
+
+### Độ dài dòng code và chuỗi dài
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Độ dài dòng tối đa là 120 ký tự. (tùy chỉnh)
+> - ✔️ NÊN: Cân nhắc sử dụng here document hoặc ký tự xuống dòng trong chuỗi quá dài. (tùy chỉnh)
+> - ⚠️ CÂN NHẮC: Tìm cách rút ngắn các chuỗi ký tự.
+
+Không có độ dài dòng tối đa hoặc quy tắc ngắt dòng tại N ký tự. Tuy nhiên, nếu bạn cần viết các chuỗi quá dài, hãy cân nhắc sử dụng here document hoặc ký tự xuống dòng nếu có thể. Mặc dù cho phép sự hiện diện của các chuỗi ký tự không thể chia nhỏ một cách thích hợp, nhưng bạn nên tìm cách rút ngắn chúng.
+
+**Nên dùng**
+
+```sh
+# Sử dụng here document
+cat <<END
+Tôi là một chuỗi
+đặc biệt dài.
+END
+
+# Ký tự xuống dòng
+long_string="Tôi là một chuỗi
+đặc biệt dài."
+```
+
+**Không nên dùng**
+
+```sh
+# Gộp vào một dòng sử dụng \n (có thể chấp nhận được cho các trường hợp cụ thể như Slack API)
+str="Tôi là một chuỗi đặc biệt dài\n."
+```
+
+### Pipelines (Đường ống)
+
+> [!TIP]
+>
+> - ✔️ NÊN: Viết toàn bộ pipeline trên một dòng nếu nó vừa vặn và dễ đọc
+> - ✔️ NÊN: Chia pipeline thành nhiều dòng nếu nó dài và khó đọc
+> - ✔️ NÊN: Áp dụng quy tắc tương tự cho các chuỗi lệnh với `|`, và các toán tử logic `||` và `&&`
+
+Nếu một pipeline dài và khó đọc, hãy chia nó thành nhiều dòng riêng biệt. Nếu toàn bộ pipeline vừa vặn trên một dòng, hãy viết nó trên một dòng. Khi ngắt dòng, hãy chỉ ra sự tiếp tục cho các phần pipe tiếp theo bằng cách thêm dấu `\` ở cuối dòng, thụt vào hai khoảng trắng và đặt dấu pipe ở đầu dòng tiếp theo.
+
+Điều này áp dụng cho các chuỗi lệnh sử dụng `|`, và các toán tử logic `||` và `&&`.
+
+**Nên dùng**
+
+```sh
+# Nếu nó vừa trên một dòng
+command1 | command2
+
+# Lệnh dài
+command1 \
+  | command2 \
+  | command3 \
+  | command4
+```
+
+**Không nên dùng**
+
+```sh
+# Ngắt dòng không cần thiết khi nó vừa trên một dòng
+command1 \
+  | command2
+
+# Khó đọc nếu không ngắt dòng
+command1 | command2 | command3 | command4
+```
+
+### Luồng điều khiển
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đặt `; do` và `; then` trên cùng dòng với `while`, `for` và `if`
+> - ✔️ NÊN: Đặt `elif` và `else` trên dòng riêng của chúng
+
+Vòng lặp shell hơi khác một chút, nhưng tuân theo nguyên tắc dấu ngoặc nhọn khi khai báo hàm, hãy đặt `; then` và `; do` trên cùng dòng với `if/for/while`. `else` nên được đặt trên dòng riêng của nó, và các cấu trúc đóng cũng nên ở trên dòng riêng của chúng. Chúng nên được căn chỉnh theo chiều dọc với các cấu trúc mở của chúng.
+
+**Nên dùng**
+
+```sh
+if [[ nantoka ]]; then
+  ;;
+else
+  ;;
+fi
+
+for i in $(seq 1 10); do
+  echo $i
+done
+```
+
+**Không nên dùng**
+
+```sh
+if [[ nantoka ]];
+then
+  ;;
+fi
+
+for i in $(seq 1 10)
+do
+  echo $i
+done
+```
+
+### Câu lệnh case
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thụt các case vào hai khoảng trắng
+> - ✔️ NÊN: Đối với các case một dòng, đặt một khoảng trắng sau dấu ngoặc đơn đóng của pattern và trước `;;`
+> - ✔️ NÊN: Đối với các case dài hoặc nhiều lệnh, chia pattern, action và `;;` thành nhiều dòng
+> - ⚠️ CÂN NHẮC: Đối với các case lệnh ngắn, hãy cân nhắc đặt pattern, action và `;;` trên một dòng nếu duy trì được tính dễ đọc
+
+Thụt các điều kiện vào một cấp so với `case` và `esac`. Đối với các action nhiều dòng, thụt thêm một cấp nữa. Không nên có dấu ngoặc đơn mở trước biểu thức pattern. Tránh sử dụng `;&` hoặc `;;&`.
+
+**Nên dùng**
+
+```sh
+case "${expression}" in
+  "--a")
+    _VARIABLE_="..."
+    ;;
+  "--absolute")
+    _ACTIONS="relative"
+    ;;
+  *) shift ;;
+esac
+```
+
+Đối với các lệnh đơn giản, hãy đặt pattern và `;;` trên cùng một dòng nếu duy trì được tính dễ đọc. Nếu action không vừa trên một dòng, hãy đặt pattern trên dòng riêng của nó, sau đó là action trên dòng tiếp theo và sau đó là `;;` trên dòng riêng của nó. Khi đặt pattern trên cùng dòng với action, hãy thêm một khoảng trắng sau dấu ngoặc đơn đóng của pattern và trước `;;`.
+
+### Khai triển biến
+
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng kiểu khai triển biến nhất quán
+> - ✔️ NÊN: Đặt các khai triển biến trong dấu nháy kép. Dấu nháy đơn không khai triển biến
+> - ❌ TRÁNH: Tránh đặt các biến đặc biệt/tham số vị trí của shell trong dấu ngoặc nhọn trừ khi thực sự cần thiết hoặc để tránh nhầm lẫn nghiêm trọng
+
+Các biến nên được đặt trong dấu nháy kép. Sử dụng `${var}` thay vì `$var`, trừ khi biến là toàn bộ chuỗi trong dấu nháy kép.
+Đây là một hướng dẫn được khuyến nghị mạnh mẽ nhưng không phải là một quy định tuyệt đối. Tuy nhiên, mặc dù nó không bắt buộc, đừng bỏ qua nó.
+
+Tất cả các biến khác nên được đặt trong dấu ngoặc nhọn.
+
+**Nên dùng**
+
+```sh
+# Kiểu ưu tiên cho các biến 'đặc biệt':
+echo "Positional: $1" "$5" "$3"
+echo "Specials: !=$!, -=$-, _=$_. ?=$?, #=$# *=$* @=$@ \$=$$ …"
+
+# Dấu ngoặc nhọn là cần thiết:
+echo "many parameters: ${10}"
+
+# Dấu ngoặc nhọn tránh nhầm lẫn:
+# Đầu ra là "a0b0c0"
+set -- a b c
+echo "${1}0${2}0${3}0"
+
+# Kiểu ưu tiên cho các biến khác:
+echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
+echo "$PATH"
+while read -r f; do
+  echo "file=${f}"
+done < <(find /tmp)
+```
+
+**Không nên dùng**
+
+```sh
+# Các biến không được đặt trong nháy kép, các biến không có ngoặc nhọn,
+# các biến đặc biệt của shell một chữ cái được phân tách bằng dấu ngoặc nhọn.
+echo a=$avar "b=$bvar" "PID=${$}" "${1}"
+
+# Sử dụng gây nhầm lẫn: cái này được mở rộng thành "${1}0${2}0${3}0",
+# không phải "${10}${20}${30}
+set -- a b c
+echo "$10$20$30"
+```
+
+### Dấu nháy
+
+> [!TIP]
+>
+> - ✔️ NÊN: Luôn luôn đặt các biến, command substitution, các chuỗi chứa dấu cách hoặc các ký tự meta của shell trong dấu nháy kép, trừ khi cần một khai triển không được đặt trong nháy kép hoặc shell internal là một số nguyên
+> - ✔️ NÊN: Sử dụng mảng để trích dẫn an toàn nhiều phần tử, đặc biệt là cho các flag dòng lệnh
+> - ✔️ NÊN: Dùng dấu nháy các biến đặc biệt nội bộ chỉ đọc của shell được định nghĩa là số nguyên là tùy chọn: `$?`, `$#`, `$$`, `$!` (xem `man bash`). Ưu tiên dùng dấu nháy cho biến nội bộ là số nguyên được định danh, ví dụ PPID
+> - ✔️ NÊN: Đóng nháy các từ ngữ dạng chuỗi mà không phải là tùy chọn câu lệnh hoặc tên đường dẫn
+> - ✔️ NÊN: Đóng nháy toàn bộ chuỗi có chứa biến, thay vì chỉ đóng nháy riêng lẻ từng biến (tùy chỉnh)
+> - ❌ TRÁNH: Không dùng dấu nháy cho các số nguyên. Không dùng dấu nháy cho các biểu thức số học như `$((2 + 2))`
+> - ⚠️ CÂN NHẮC: Chú ý đến các quy tắc dấu nháy cho xử lý mẫu (pattern) trong `[[...]]`
+> - ⚠️ CÂN NHẮC: Sử dụng `"$@"` thay vì `$*` trừ khi bạn có lý do cụ thể để nối các đối số thành một chuỗi hoặc thông báo log
+
+**Nên dùng**
+
+```sh
+# Dấu nháy 'đơn' cho biết rằng không có substitution nào được mong muốn.
+# Dấu nháy "kép" cho biết rằng substitution là bắt buộc/được chấp nhận.
+
+# Các ví dụ đơn giản
+
+# "dấu nháy kép cho lệnh gán"
+# Lưu ý rằng các dấu nháy được lồng bên trong "$()" không cần thoát.
+flag="$(some_command and its args "$@" 'quoted separately')"
+
+# "dấu nháy cho biến"
+echo "${flag}"
+
+# Sử dụng mảng với khai triển được dùng dấu nháy cho các list.
+declare -a FLAGS
+FLAGS=( --foo --bar='baz' )
+readonly FLAGS
+mybinary "${FLAGS[@]}"
+
+# Được chấp nhận nếu không dùng dấu nháy các biến số nguyên nội bộ.
+if (( $# > 3 )); then
+  echo "ppid=${PPID}"
+fi
+
+# "không bao giờ dùng dấu nháy các số nguyên"
+value=32
+# "dùng dấu nháy các lệnh gán", ngay cả khi bạn mong đợi số nguyên
+number="$(generate_number)"
+
+# "ưu tiên dùng dấu nháy từ", không bắt buộc
+readonly USE_INTEGER='true'
+
+# "dùng dấu nháy các ký tự meta của shell"
+echo 'Hello stranger, and well met. Earn lots of $$$'
+echo "Process $$: Done making \$\$\$."
+
+# "các tùy chọn lệnh hoặc tên đường dẫn"
+# ($1 được giả định là chứa một giá trị ở đây)
+grep -li Hugo /dev/null "$1"
+
+# Các ví dụ ít đơn giản hơn
+# "dùng dấu nháy biến, trừ khi được chứng minh là sai": ccs có thể trống
+git send-email --to "${reviewers}" ${ccs:+"--cc" "${ccs}"}
+
+# Các biện pháp phòng ngừa tham số vị trí: $1 có thể không được set
+# Dấu ngoặc đơn để regex như cũ.
+grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
+
+# Để chuyển các đối số,
+# "$@" là đúng hầu hết mọi lúc, và
+# $* là sai hầu hết mọi lúc:
+#
+# - $* và $@ sẽ split trên dấu cách, làm hỏng các đối số
+#   chứa dấu cách và loại bỏ các chuỗi trống;
+# - "$@" sẽ giữ lại các đối số như cũ, vì vậy không có đối số
+#   nào được cung cấp sẽ dẫn đến không có đối số nào được chuyển;
+#   Đây là trong hầu hết các trường hợp những gì bạn muốn sử dụng để chuyển
+#   các đối số.
+# - "$*" mở rộng thành một đối số, với tất cả các đối số được nối
+#   bởi (thường là) dấu cách,
+#   vì vậy không có đối số nào được cung cấp sẽ dẫn đến một chuỗi trống
+#   được chuyển.
+#
+# Tham khảo
+# https://www.gnu.org/software/bash/manual/html_node/Special-Parameters.html và
+# https://mywiki.wooledge.org/BashGuide/Arrays để biết thêm
+
+(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
+(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
 ```

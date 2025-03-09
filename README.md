@@ -26,6 +26,14 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Function Comments](#function-comments)
   - [Implementation Comments](#implementation-comments)
   - [TODO Comments](#todo-comments)
+- [Formatting](#formatting)
+  - [Tabs and Spaces](#tabs-and-spaces)
+  - [Line Length and Long Strings](#line-length-and-long-strings)
+  - [Pipelines](#pipelines)
+  - [Control Flow](#control-flow)
+  - [Case statement](#case-statement)
+  - [Variable Expansion](#variable-expansion)
+  - [Quoting](#quoting)
 
 <!-- tocstop -->
 
@@ -73,7 +81,7 @@ Using `set` for shell option settings ensures that even if the script is called 
 
 **Recommended**
 
-```shell
+```sh
 #!/usr/bin/env bash
 set -euo pipefail
 # If not used dybatpho
@@ -86,7 +94,7 @@ DYBATPHO_DIR=<path to dybatpho>
 
 **Discouraged**
 
-```shell
+```sh
 #!/bin/bash
 # Missing set
 # Wrong shebang
@@ -146,14 +154,14 @@ As long as scripts are executed in CI, `sudo`, SUID, and SGID are unnecessary an
 
 **Recommended**
 
-```shell
+```sh
 # Use sudo when calling (Except in CI)
 sudo ./foo.sh
 ```
 
 **Discouraged**
 
-```shell
+```sh
 # Switching to su or root user inside the script
 ```
 
@@ -173,7 +181,7 @@ Custom rule
 
 **Recommended**
 
-```shell
+```sh
 # error messages to stderr
 echo "Error: Unable to do_something" >&2
 
@@ -192,7 +200,7 @@ do_something
 
 **Discouraged**
 
-```shell
+```sh
 # error messages to stdout
 echo "Error: Unable to do_something"
 
@@ -214,13 +222,13 @@ When calling common functions, use `.` instead of `source`. This is because `.` 
 
 **Recommended**
 
-```shell
+```sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
 
 **Discouraged**
 
-```shell
+```sh
 # Use source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
@@ -241,7 +249,7 @@ All files should include a top-level comment that briefly describes their conten
 
 **Recommended**
 
-```shell
+```sh
 #!/usr/bin/env bash
 # @file backup.sh
 # @brief Perform hot backups of Oracle databases
@@ -313,6 +321,298 @@ Use TODO comments for temporary, short-term solutions, or code that is good enou
 
 **Recommend**
 
-```shell
+```sh
 # TODO: This code needs to be fixed due to insufficient error handling. Add error checks and exit with 1.
+```
+
+## Formatting
+
+### Tabs and Spaces
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Indent with two spaces. Do not use tabs
+> - ✔️ SHOULD: Include blank lines between blocks for readability
+> - ✔️ SHOULD: Do not include trailing spaces. (custom)
+
+Indentation should be two spaces. Under no circumstances should tabs be used.
+
+Many editors cannot switch between actual indentation and displayed spaces/tabs according to user preference. Another person's editor may not have the same settings as yours. Using spaces ensures that code looks the same in any editor.
+
+### Line Length and Long Strings
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Maximum line length is 120 characters. (custom)
+> - ✔️ SHOULD: Consider using here documents or embedded newlines for excessively long strings. (custom)
+> - ⚠️ CONSIDER: Look for ways to shorten string literals
+
+There is no maximum line length, nor a rule to break lines at N characters. However, if you need to write excessively long strings, consider using here documents or embedded newlines if possible. While the presence of string literals that cannot be appropriately divided is allowed, it is strongly recommended to look for ways to shorten them.
+
+**Recommended**
+
+```sh
+# Use of here document
+cat <<END
+I am an exceptionally long
+string.
+END
+
+# Embedded newline
+long_string="I am an exceptionally
+long string."
+```
+
+**Discouraged**
+
+```sh
+# Fitting into one line using \n (acceptable for specific cases like Slack API)
+str="I am an exceptionally long\nstring."
+```
+
+### Pipelines
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Write the entire pipeline on one line if it fits neatly
+> - ✔️ SHOULD: Break the pipeline into separate lines if it is long and hard to read
+> - ✔️ SHOULD: Apply the same rule to chains of commands with `|`, and logical operators `||` and `&&`
+
+If a pipeline is long and hard to read, break it into separate lines. If the entire pipeline fits neatly on one line, write it on one line. When breaking lines, indicate continuation for the following pipe sections by adding a `\` at the end of the line, indent by two spaces, and place the pipe at the beginning of the next line.
+
+This applies to chains of commands using `|`, and logical operators `||` and `&&`.
+
+**Recommended**
+
+```sh
+# If it fits on one line
+command1 | command2
+
+# Long command
+command1 \
+  | command2 \
+  | command3 \
+  | command4
+```
+
+**Discouraged**
+
+```sh
+# Unnecessary line break when it fits on one line
+command1 \
+  | command2
+
+# Difficult to read without line breaks
+command1 | command2 | command3 | command4
+```
+
+### Control Flow
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Place `; do` and `; then` on the same line as `while`, `for`, and `if`
+> - ✔️ SHOULD: Place `elif` and `else` on their own lines
+
+Shell loops are a bit different, but following the principle of braces when declaring functions, place `; then` and `; do` on the same line as `if/for/while`. `else` should be placed on its own line, and closing constructs should also be on their own lines. They should be vertically aligned with their opening constructs.
+
+**Recommended**
+
+```sh
+if [[ nantoka ]]; then
+  ;;
+else
+  ;;
+fi
+
+for i in $(seq 1 10); do
+  echo $i
+done
+```
+
+**Discouraged**
+
+```sh
+if [[ nantoka ]];
+then
+  ;;
+fi
+
+for i in $(seq 1 10)
+do
+  echo $i
+done
+```
+
+### Case statement
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Indent cases by two spaces
+> - ✔️ SHOULD: For single-line cases, place one space after the closing parenthesis of the pattern and before `;;`
+> - ✔️ SHOULD: For long or multiple command cases, split the pattern, action, and `;;` into multiple lines
+> - ⚠️ CONSIDER: For short command cases, consider placing the pattern, action, and `;;` on one line if readability is maintained
+
+Indent the conditions one level from `case` and `esac`. For multi-line actions, indent an additional level. There should be no opening parentheses before the pattern expression. Avoid using `;&` or `;;&`.
+
+**Recommended**
+
+```sh
+case "${expression}" in
+  "--a")
+    _VARIABLE_="..."
+    ;;
+  "--absolute")
+    _ACTIONS="relative"
+    ;;
+  *) shift ;;
+esac
+```
+
+For simple commands, place the pattern and `;;` on the same line if readability is maintained. If the action does not fit on a single line, place the pattern on its own line, followed by the action on the next line, and then `;;` on its own line. When placing the pattern on the same line as the action, include one space after the closing parenthesis of the pattern and before `;;`.
+
+### Variable Expansion
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use consistent variable expansion
+> - ✔️ SHOULD: Enclose variable expansions in double quotes. Single quotes do not expand variables
+> - ❌ AVOID: Avoid bracing shell special variables/positional parameters unless explicitly necessary or to avoid serious confusion
+
+Variables should be quoted. Use `${var}` instead of `$var`, except variable is entire string in quotes.
+This is a strongly recommended guideline but not an absolute regulation. However, even though it is not mandatory, do not disregard it.
+
+All other variables should preferably be enclosed in braces.
+
+**Recommended**
+
+```sh
+# Preferred style for 'special' variables:
+echo "Positional: $1" "$5" "$3"
+echo "Specials: !=$!, -=$-, _=$_. ?=$?, #=$# *=$* @=$@ \$=$$ …"
+
+# Braces necessary:
+echo "many parameters: ${10}"
+
+# Braces avoiding confusion:
+# Output is "a0b0c0"
+set -- a b c
+echo "${1}0${2}0${3}0"
+
+# Preferred style for other variables:
+echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
+echo "$PATH"
+while read -r f; do
+  echo "file=${f}"
+done < <(find /tmp)
+```
+
+**Discouraged**
+
+```sh
+# Unquoted vars, unbraced vars, brace-delimited single letter
+# shell specials.
+echo a=$avar "b=$bvar" "PID=${$}" "${1}"
+
+# Confusing use: this is expanded as "${1}0${2}0${3}0",
+# not "${10}${20}${30}
+set -- a b c
+echo "$10$20$30"
+```
+
+### Quoting
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Always quote strings containing variables, command substitutions, spaces or shell meta characters, unless careful unquoted expansion is required or it’s a shell-internal integer
+> - ✔️ SHOULD:Use arrays to safely quoting multiple elements, especially for command line flags
+> - ✔️ SHOULD: Quoting shell internal read-only special variables defined as integers is optional: `$?`, `$#`, `$$`, `$!` (see `man bash`). Prefer quoting of "named" internal integer variables, e.g. PPID etc for consistency.
+> - ✔️ SHOULD: Prefer quoting strings that are “words” (as opposed to command options or path names)
+> - ✔️ SHOULD: Use canonical quoting. (custom)
+> - ❌ AVOID: Do not quote integer literals. Do not quote arithmetic expressions like `$((2 + 2))`
+> - ⚠️ CONSIDER: Be aware of the quoting rules for pattern matches in `[[...]]`
+> - ⚠️ CONSIDER: Use `"$@"` instead of `$*` unless you have a specific reason to concatenate arguments into a string or log message
+
+**Recommended**
+
+```sh
+# 'Single' quotes indicate that no substitution is desired.
+# "Double" quotes indicate that substitution is required/tolerated.
+
+# Simple examples
+
+# "quote command substitutions"
+# Note that quotes nested inside "$()" don't need escaping.
+flag="$(some_command and its args "$@" 'quoted separately')"
+
+# "quote variables"
+echo "${flag}"
+
+# Use arrays with quoted expansion for lists.
+declare -a FLAGS
+FLAGS=( --foo --bar='baz' )
+readonly FLAGS
+mybinary "${FLAGS[@]}"
+
+# It's ok to not quote internal integer variables.
+if (( $# > 3 )); then
+  echo "ppid=${PPID}"
+fi
+
+# "never quote literal integers"
+value=32
+# "quote command substitutions", even when you expect integers
+number="$(generate_number)"
+
+# "prefer quoting words", not compulsory
+readonly USE_INTEGER='true'
+
+# "quote shell meta characters"
+echo 'Hello stranger, and well met. Earn lots of $$$'
+echo "Process $$: Done making \$\$\$."
+
+# "command options or path names"
+# ($1 is assumed to contain a value here)
+grep -li Hugo /dev/null "$1"
+
+# Less simple examples
+# "quote variables, unless proven false": ccs might be empty
+git send-email --to "${reviewers}" ${ccs:+"--cc" "${ccs}"}
+
+# Positional parameter precautions: $1 might be unset
+# Single quotes leave regex as-is.
+grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
+
+# For passing on arguments,
+# "$@" is right almost every time, and
+# $* is wrong almost every time:
+#
+# - $* and $@ will split on spaces, clobbering up arguments
+#   that contain spaces and dropping empty strings;
+# - "$@" will retain arguments as-is, so no args
+#   provided will result in no args being passed on;
+#   This is in most cases what you want to use for passing
+#   on arguments.
+# - "$*" expands to one argument, with all args joined
+#   by (usually) spaces,
+#   so no args provided will result in one empty string
+#   being passed on.
+#
+# Consult
+# https://www.gnu.org/software/bash/manual/html_node/Special-Parameters.html and
+# https://mywiki.wooledge.org/BashGuide/Arrays for more
+
+(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
+(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
 ```
