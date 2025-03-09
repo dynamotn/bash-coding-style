@@ -22,6 +22,11 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Môi trường](#moi-tr%C6%B0%E1%BB%9Dng)
   - [STDOUT và STDERR](#stdout-va-stderr)
   - [Hàm sử dụng chung](#ham-s%E1%BB%AD-d%E1%BB%A5ng-chung)
+- [Chú thích](#chu-thich)
+  - [Phần đầu file](#ph%E1%BA%A7n-d%E1%BA%A7u-file)
+  - [Chú thích hàm](#chu-thich-ham)
+  - [Chú thích triển khai](#chu-thich-tri%E1%BB%83n-khai)
+  - [TODO Comments](#todo-comments)
 
 <!-- tocstop -->
 
@@ -220,4 +225,96 @@ Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này 
 ```shell
 # Sử dụng source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+## Chú thích
+
+### Phần đầu file
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thêm một comment ở đầu file để giải thích ngắn gọn mục đích hoặc nội dung của file. Tuy nhiên, không thêm comment trước dòng shebang.
+> - ✔️ NÊN: Sử dụng định dạng [shdoc](https://github.com/reconquest/shdoc) bao gồm: `@file`, `@brief`, `@description` để giải thích file. (tùy chỉnh)
+
+Tất cả các file nên có một comment cấp cao nhất mô tả ngắn gọn nội dung của chúng.
+
+**Đề xuất**
+
+```shell
+#!/usr/bin/env bash
+# @file backup.sh
+# @brief Thực hiện backup nóng cho các database Oracle
+# @description Thực hiện backup nóng cho các database Oracle
+```
+
+### Chú thích hàm
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng định dạng [shdoc](https://github.com/reconquest/shdoc) để giải thích hàm. (tùy chỉnh)
+
+Người khác có thể học cách sử dụng chương trình của bạn hoặc sử dụng một hàm trong thư viện của bạn bằng cách đọc các comment (và tự tìm hiểu, nếu có) mà không cần đọc code.
+
+Tất cả các comment header của hàm nên mô tả hành vi API dự kiến bằng cách sử dụng:
+
+- `@description`: Mô tả về hàm.
+- `@set`: Danh sách các biến toàn cục bị sửa đổi.
+- `@arg`: Các tham số đầu vào. Nếu không có tham số, sử dụng `@noargs`.
+- `@option`: Các option được sử dụng.
+- `@stdout` và `@stderr`: Output ra STDOUT hoặc STDERR.
+- `@exitcode`: Giá trị trả về của lệnh cuối cùng được chạy.
+
+**Đề xuất**
+
+```sh
+#######################################
+# @description Lấy đường dẫn thư mục cấu hình.
+# @arg $1 string Đường dẫn của thư mục cấu hình
+# @stdout Vị trí của thư mục cấu hình
+# @stderr In ra 'Không có thư mục cấu hình' nếu lỗi
+# @exitcode 0 Nếu thành công
+# @exitcode 1 Nếu thư mục cấu hình không tồn tại
+#######################################
+function get_dir() {
+  local config_dir=${1:-"$HOME/.config/abc"}
+  if [ -e "$config_dir" ]; then
+    echo "${config_dir}"
+  else
+    echo "Không có thư mục cấu hình" >&2 && return 1
+  fi
+}
+```
+
+### Chú thích triển khai
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thêm comment vào code khó hiểu, có ý nghĩa quan trọng hoặc cần được chú ý.
+> - ✔️ NÊN: Giữ cho comment ngắn gọn và dễ hiểu nhất có thể.
+> - ⚠️ CÂN NHẮC: Nếu một giải thích ngắn gọn là không đủ, hãy xem xét cung cấp thông tin chi tiết về background.
+
+Comment về các phần code phức tạp, không rõ ràng, thú vị hoặc quan trọng. Tuy nhiên, không comment về mọi thứ. Thêm comment khi có các thuật toán phức tạp hoặc khi làm điều gì đó bất thường. Nếu một comment ngắn không thể cung cấp một giải thích rõ ràng, hãy bao gồm thông tin background chi tiết.
+
+### TODO Comments
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Cân nhắc sử dụng comment TODO.
+> - ❌ TRÁNH: Không bao gồm tên của người viết comment TODO. (tùy chỉnh)
+
+Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc code đủ tốt nhưng chưa hoàn hảo. Comment TODO nên bao gồm chuỗi viết hoa `TODO`. Không cần thiết phải bao gồm tên của cá nhân, vì có thể xác định bằng `git blame`. Mục đích của comment TODO là cung cấp một marker `TODO` nhất quán và dễ tìm kiếm, có thể được tra cứu để biết thêm chi tiết khi cần. Vì người được tham chiếu trong TODO không nhất thiết phải cam kết sửa lỗi, nên việc bao gồm giải pháp dự kiến là hữu ích.
+
+**Đề xuất**
+
+```shell
+# TODO: Code này cần được sửa do xử lý lỗi không đầy đủ. Thêm kiểm tra lỗi và thoát với mã 1.
 ```

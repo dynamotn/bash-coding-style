@@ -21,6 +21,11 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Environment](#environment)
   - [STDOUT and STDERR](#stdout-and-stderr)
   - [Common Function Scripts](#common-function-scripts)
+- [Comments](#comments)
+  - [File Header](#file-header)
+  - [Function Comments](#function-comments)
+  - [Implementation Comments](#implementation-comments)
+  - [TODO Comments](#todo-comments)
 
 <!-- tocstop -->
 
@@ -218,4 +223,96 @@ When calling common functions, use `.` instead of `source`. This is because `.` 
 ```shell
 # Use source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+## Comments
+
+### File Header
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Include a comment at the beginning of the file that concisely explains the purpose or content of the file. However, do not include comments before the shebang line
+> - ✔️ SHOULD: Use [shdoc](https://github.com/reconquest/shdoc) format includes: `@file`, `@brief`, `@description` to explain the file. (custom)
+
+All files should include a top-level comment that briefly describes their content.
+
+**Recommended**
+
+```shell
+#!/usr/bin/env bash
+# @file backup.sh
+# @brief Perform hot backups of Oracle databases
+# @description Perform hot backups of Oracle databases
+```
+
+### Function Comments
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use [shdoc](https://github.com/reconquest/shdoc) format to explain the function. (custom)
+
+It should be possible for someone else to learn how to use your program or to use a function in your library by reading the comments (and self-help, if provided) without reading the code.
+
+All function header comments should describe the intended API behaviour using:
+
+- `@description`: Description of the function.
+- `@set`: List of global variables modified.
+- `@arg`: Arguments taken. If not take any arguments, use `@noargs`
+- `@option`: Options taken.
+- `@stdout` and `@stderr`: Output to STDOUT or STDERR.
+- `@exitcode`: Returned values of the last command run.
+
+**Recommended**
+
+```sh
+#######################################
+# @description Get exist configuration directory.
+# @arg $1 string Path of configuration directory
+# @stdout Location of configuration directory
+# @stderr Output 'Not have configuration directory' on error
+# @exitcode 0 If successful
+# @exitcode 1 If configuration directory is not exist
+#######################################
+function get_dir() {
+  local config_dir=${1:-"$HOME/.config/abc"}
+  if [ -e "$config_dir" ]; then
+    echo "${config_dir}"
+  else
+    echo "Not have configuration directory" >&2 && return 1
+  fi
+}
+```
+
+### Implementation Comments
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Add comments to code that is tricky, has significant meaning, or requires attention
+> - ✔️ SHOULD: Keep comments short and easy to understand whenever possible
+> - ⚠️ CONSIDER: If a brief explanation is not sufficient, consider providing detailed background information
+
+Comment on parts of the code that are tricky, not immediately obvious, interesting, or important. However, do not comment on everything. Add comments when there are complex algorithms or when doing something unusual. If a short comment cannot provide a clear explanation, include detailed background information.
+
+### TODO Comments
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Consider using TODO comments
+> - ❌ AVOID: Do not include the name of the person who wrote the TODO comment. (custom)
+
+Use TODO comments for temporary, short-term solutions, or code that is good enough but not perfect. TODO comments should include the uppercase string `TODO`. There is no need to include the individual's name, as it can be identified using `git blame`. The purpose of TODO comments is to provide a searchable and consistent `TODO` marker that can be looked up for more details as needed. Since the person referenced in the TODO is not necessarily committed to fixing the issue, it is helpful to include the expected resolution.
+
+**Recommend**
+
+```shell
+# TODO: This code needs to be fixed due to insufficient error handling. Add error checks and exit with 1.
 ```
