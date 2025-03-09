@@ -19,6 +19,8 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Tệp shell và cách thực thi trình thông dịch](#t%E1%BB%87p-shell-va-cach-th%E1%BB%B1c-thi-trinh-thong-d%E1%BB%8Bch)
   - [Phần mở rộng tệp](#ph%E1%BA%A7n-m%E1%BB%9F-r%E1%BB%99ng-t%E1%BB%87p)
   - [SUID/SGID](#suidsgid)
+- [Môi trường](#moi-tr%C6%B0%E1%BB%9Dng)
+  - [STDOUT và STDERR](#stdout-va-stderr)
 
 <!-- tocstop -->
 
@@ -150,4 +152,47 @@ sudo ./foo.sh
 
 ```shell
 # Chuyển sang người dùng su hoặc root bên trong script
+```
+
+## Môi trường
+
+### STDOUT và STDERR
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Tất cả các thông báo lỗi và nghiêm trọng nên được chuyển đến `STDERR`
+> - ✔️ NÊN: Sử dụng biến `LOG_LEVEL` để kiểm soát mức độ ghi log với 6 cấp độ: trace, debug, info, warn, error, fatal. (tùy chỉnh)
+> - ✔️ NÊN: Triệt tiêu tất cả các thông báo không cần thiết vào `/dev/null`. (tùy chỉnh)
+> - ✔️ NÊN: Sử dụng thư viện ghi log từ `dybatpho` để xuất các thông báo để ghi log tốt hơn. (dybatpho)
+
+**Được khuyến nghị**
+
+```shell
+# thông báo lỗi đến stderr
+echo "Error: Không thể thực hiện do_something" >&2
+
+# mức log mặc định là info
+LOG_LEVEL=info
+
+# triệt tiêu các thông báo không cần thiết
+curl -fsSL "$url" 2> /dev/null
+
+# sử dụng dybatpho
+dybatpho::error "Không thể thực hiện do_something"
+dybatpho::debug "var_1 là ${var_1}"
+dybatpho::start_trace
+do_something
+```
+
+**Không nên**
+
+```shell
+# thông báo lỗi đến stdout
+echo "LỖI: Không thể thực hiện do_something"
+
+# hiển thị các thông báo không cần thiết
+grep -rn "abc" README.md || echo "LỖI: README.md không có từ `abc`"
 ```

@@ -18,6 +18,8 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Shell Files and Interpreter Invocation](#shell-files-and-interpreter-invocation)
   - [File Extensions](#file-extensions)
   - [SUID/SGID](#suidsgid)
+- [Environment](#environment)
+  - [STDOUT and STDERR](#stdout-and-stderr)
 
 <!-- tocstop -->
 
@@ -148,4 +150,47 @@ sudo ./foo.sh
 
 ```shell
 # Switching to su or root user inside the script
+```
+
+## Environment
+
+### STDOUT and STDERR
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: All error and fatal messages should go to `STDERR`
+> - ✔️ SHOULD: Use `LOG_LEVEL` variable to control logging level with 6 levels: trace, debug, info, warn, error, fatal. (custom)
+> - ✔️ SHOULD: Suppress all unnecessary messages to `/dev/null`. (custom)
+> - ✔️ SHOULD: Use logging library from [dybatpho](https://github.com/dynamotn/dybatpho) to output messages for better logging. (dybatpho)
+
+**Recommended**
+
+```shell
+# error messages to stderr
+echo "Error: Unable to do_something" >&2
+
+# log level default is info
+LOG_LEVEL=info
+
+# suppress unnecessary messages
+curl -fsSL "$url" 2> /dev/null
+
+# use dybatpho
+dybatpho::error "Unable to do_something"
+dybatpho::debug "var_1 is ${var_1}"
+dybatpho::start_trace
+do_something
+```
+
+**Discouraged**
+
+```shell
+# error messages to stdout
+echo "Error: Unable to do_something"
+
+# show unnecessary messages
+grep -rn "abc" README.md || echo "Error: README.md not has `abc` word"
 ```
