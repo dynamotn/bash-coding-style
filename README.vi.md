@@ -21,6 +21,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [SUID/SGID](#suidsgid)
 - [Môi trường](#moi-tr%C6%B0%E1%BB%9Dng)
   - [STDOUT và STDERR](#stdout-va-stderr)
+  - [Hàm sử dụng chung](#ham-s%E1%BB%AD-d%E1%BB%A5ng-chung)
 
 <!-- tocstop -->
 
@@ -119,12 +120,11 @@ Sử dụng shell script cho các tiện ích nhỏ hoặc các script wrapper �
 
 > [!TIP]
 >
-> - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script là thư viện và  `chmod -x` cho chúng.
+> - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script là thư viện và `chmod -x` cho chúng.
 > - ✔️ NÊN: Không sử dụng phần mở rộng cho các script trong PATH và `chmod -x` cho chúng.
 > - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script không ở trong PATH và có thể gọi từ CLI. `chmod +x` cho chúng. (tùy chỉnh)
-> - ✔️ NÊN: Không sử dụng phần mở rộng cho các script chỉ dùng source nội bộ (tùy chỉnh).
 
-Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) hoặc không có phần mở rộng. Các script được gọi từ bên ngoài phải có phần mở rộng `.sh` và không nên được đánh dấu là có thể thực thi.
+Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) hoặc không có phần mở rộng. Các script được source từ bên ngoài phải có phần mở rộng `.sh` và không nên được đánh dấu là có thể thực thi.
 
 ### SUID/SGID
 
@@ -166,7 +166,7 @@ sudo ./foo.sh
 > - ✔️ NÊN: Tất cả các thông báo lỗi và nghiêm trọng nên được chuyển đến `STDERR`
 > - ✔️ NÊN: Sử dụng biến `LOG_LEVEL` để kiểm soát mức độ ghi log với 6 cấp độ: trace, debug, info, warn, error, fatal. (tùy chỉnh)
 > - ✔️ NÊN: Triệt tiêu tất cả các thông báo không cần thiết vào `/dev/null`. (tùy chỉnh)
-> - ✔️ NÊN: Sử dụng thư viện ghi log từ `dybatpho` để xuất các thông báo để ghi log tốt hơn. (dybatpho)
+> - ✔️ NÊN: Sử dụng thư viện ghi log từ [dybatpho](https://github.com/dynamotn/dybatpho) để xuất các thông báo để ghi log tốt hơn. (dybatpho)
 
 **Được khuyến nghị**
 
@@ -195,4 +195,29 @@ echo "LỖI: Không thể thực hiện do_something"
 
 # hiển thị các thông báo không cần thiết
 grep -rn "abc" README.md || echo "LỖI: README.md không có từ `abc`"
+```
+
+### Hàm sử dụng chung
+
+> [!NOTE]
+Quy tắc mới
+
+> [!TIP]
+>
+> - ✔️ NÊN: Sử dụng `.` để gọi các hàm chung
+> - ✔️ NÊN: Các hàm chung nên được để chung dưới dạng library trong thư mục con `lib`
+
+Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
+
+**Được khuyến nghị**
+
+```shell
+. "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+**Không nên**
+
+```shell
+# Sử dụng source
+source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```

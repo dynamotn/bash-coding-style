@@ -20,6 +20,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [SUID/SGID](#suidsgid)
 - [Environment](#environment)
   - [STDOUT and STDERR](#stdout-and-stderr)
+  - [Common Function Scripts](#common-function-scripts)
 
 <!-- tocstop -->
 
@@ -120,9 +121,8 @@ Custom rule
 > - ✔️ SHOULD: Use the `.sh` extension for scripts that are library scripts. `chmod -x` for them
 > - ✔️ SHOULD: Do not use extensions for scripts that are in PATH. `chmod +x` for them
 > - ✔️ SHOULD: Use the `.sh` extension for scripts that aren't in PATH and are able to called from CLI.  `chmod +x` for them (custom)
-> - ✔️ SHOULD: Do not use extensions for scripts that are source internal only.  `chmod -x` for them (custom)
 
-Executable files should either have a `.sh` extension (strongly recommended) or no extension. Scripts called from outside must have a `.sh` extension and should not be made executable.
+Executable files should either have a `.sh` extension (strongly recommended) or no extension. Scripts sourced from outside must have a `.sh` extension and should not be made executable.
 
 ### SUID/SGID
 
@@ -193,4 +193,29 @@ echo "Error: Unable to do_something"
 
 # show unnecessary messages
 grep -rn "abc" README.md || echo "Error: README.md not has `abc` word"
+```
+
+### Common Function Scripts
+
+> [!NOTE]
+New rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `.` to invoke common functions
+> - ✔️ SHOULD: Put common functions as libraries in `lib` sub-folder
+
+When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
+
+**Recommended**
+
+```shell
+. "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+**Discouraged**
+
+```shell
+# Use source
+source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
