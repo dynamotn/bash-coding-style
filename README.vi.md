@@ -41,6 +41,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Câu lệnh case](#cau-l%E1%BB%87nh-case)
   - [Khai triển biến](#khai-tri%E1%BB%83n-bi%E1%BA%BFn)
   - [Dấu nháy](#d%E1%BA%A5u-nhay)
+  - [Khai báo hàm](#khai-bao-ham)
 - [Tính năng và lỗi](#tinh-nang-va-l%E1%BB%97i)
   - [Sử dụng ShellCheck](#s%E1%BB%AD-d%E1%BB%A5ng-shellcheck)
 
@@ -871,6 +872,53 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
+```
+
+### Khai báo hàm
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đặt shebang và chú thích đầu tệp trước, rồi tới hằng số, rồi tới các khai báo hàm, và cuối cùng là dòng duy nhất khởi động script
+> - ✔️ NÊN: Giữ lời gọi hàm vào (entrypoint) ở dòng cuối cùng của tệp
+> - ❌ TRÁNH: Không đặt mã thực thi xen giữa các khai báo hàm
+
+Một tệp chỉ gồm các khai báo và kết thúc bằng một lời gọi thì có thể đọc theo thứ tự bất kỳ, và việc `source` nó để kiểm thử không gây tác dụng phụ nào. Mã nằm rải rác giữa các hàm sẽ chạy ngay lúc nạp tệp, khiến script không thể `source` được và rất khó lần ra khi nó hỏng giữa chừng.
+
+**Nên dùng**
+
+```sh
+#!/usr/bin/env bash
+# @file test.sh
+# @brief Run tests for the dotfiles setup
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+# shellcheck source=lib/dybatpho/init.sh
+. "$SCRIPT_DIR/lib/dybatpho/init.sh" --modules cli
+dybatpho::register_common_handlers
+
+function _spec_main {
+  ...
+}
+
+function _main {
+  ...
+}
+
+dybatpho::generate_from_spec _spec_main "$@"
+```
+
+**Không nên dùng**
+
+```sh
+function _spec_main {
+  ...
+}
+
+# Chạy ngay khi tệp được nạp, trước cả khi _main được định nghĩa
+rm -rf "${cache_dir}"
+
+function _main {
+  ...
+}
 ```
 
 ## Tính năng và lỗi

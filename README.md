@@ -40,6 +40,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Case statement](#case-statement)
   - [Variable Expansion](#variable-expansion)
   - [Quoting](#quoting)
+  - [Function Declaration](#function-declaration)
 - [Features and Bugs](#features-and-bugs)
   - [Use ShellCheck](#use-shellcheck)
 
@@ -875,6 +876,53 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
 (set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
+```
+
+### Function Declaration
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Put the shebang and the file header comment first, then constants, then function declarations, then the single line that starts the script
+> - ✔️ SHOULD: Keep the call to the entrypoint as the last line of the file
+> - ❌ AVOID: Do not place executable code between function declarations
+
+A file that is a list of declarations followed by one call can be read in any order, and sourcing it for a test has no side effects. Code scattered between functions runs at load time, which makes the script impossible to source and hard to reason about when it fails halfway.
+
+**Recommended**
+
+```sh
+#!/usr/bin/env bash
+# @file test.sh
+# @brief Run tests for the dotfiles setup
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+# shellcheck source=lib/dybatpho/init.sh
+. "$SCRIPT_DIR/lib/dybatpho/init.sh" --modules cli
+dybatpho::register_common_handlers
+
+function _spec_main {
+  ...
+}
+
+function _main {
+  ...
+}
+
+dybatpho::generate_from_spec _spec_main "$@"
+```
+
+**Discouraged**
+
+```sh
+function _spec_main {
+  ...
+}
+
+# Runs the moment the file is sourced, before _main is even defined
+rm -rf "${cache_dir}"
+
+function _main {
+  ...
+}
 ```
 
 ## Features and Bugs
