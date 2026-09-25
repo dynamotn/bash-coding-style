@@ -57,6 +57,10 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gia-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
   - [Xử lý lỗi](#x%E1%BB%AD-ly-l%E1%BB%97i)
   - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-va-l%E1%BB%87nh-ben-ngoai)
+- [Ổn định hóa script](#%E1%BB%95n-d%E1%BB%8Bnh-hoa-script)
+  - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-d%C6%B0%E1%BB%A3c)
+  - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
+  - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-toan)
 
 <!-- tocstop -->
 
@@ -1379,4 +1383,117 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 
 # Không đọc nổi, mà cũng chỉ làm đúng việc của hai dòng sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
+```
+## Ổn định hóa script
+
+### Viết script chạy lại được
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Làm cho script lũy đẳng: chạy hai lần với cùng tham số thì cho cùng kết quả
+> - ✔️ NÊN: Kiểm tra xem việc đó đã làm xong chưa trước khi làm
+> - ✔️ NÊN: Ưu tiên lệnh vốn đã lũy đẳng, như `chezmoi apply`, `pacman -S --needed` hay `kubectl apply`, hơn là lệnh thất bại ở lần chạy thứ hai
+> - ❌ TRÁNH: Không giả định rằng lần chạy trước đã hoàn tất
+
+Script cài đặt luôn bị ngắt giữa chừng: mạng rớt, máy chủ gương của kho gói hỏng, người dùng bấm Ctrl-C. Nếu lần chạy thứ hai đòi hỏi một cái máy sạch, thì không ai khôi phục được cái máy đang cài dở, và script sẽ bị thay bằng các bước làm tay.
+
+**Nên dùng**
+
+```sh
+# Chỉ cài khi chưa có
+dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+
+# Chỉ tải submodule khi nó còn thiếu
+if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
+  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Thất bại ở lần chạy thứ hai vì công cụ đã được cài rồi
+dytoy -t "$name"
+
+# Thất bại ở lần chạy thứ hai vì thư mục đã tồn tại
+mkdir "${config_dir}"
+```
+
+### Kiểm tra trạng thái trước khi thay đổi
+
+> [!TIP]
+>
+> - ✔️ NÊN: Kiểm tra rằng đầu vào của một lệnh làm thay đổi trạng thái đúng như bạn mong đợi trước khi chạy nó
+> - ✔️ NÊN: Kiểm tra công cụ cần thiết đã có mặt bằng `dybatpho::require` trước khi dùng nó. (dybatpho)
+> - ✔️ NÊN: Xác minh thứ vừa tải về trước khi cài đặt nó
+> - ❌ TRÁNH: Không đẩy một giá trị vào lệnh có tính phá hủy mà chưa kiểm tra nó khác rỗng
+
+Dưới `set -u`, biến chưa được đặt thì bị bắt lỗi, nhưng biến rỗng thì không. `rm -rf "${prefix}/${name}"` với `name` rỗng sẽ xóa cả thư mục cha, và lệnh vẫn báo là thành công.
+
+**Nên dùng**
+
+```sh
+dybatpho::require "rbw"
+
+if dybatpho::string_is_blank "${profile_dir}"; then
+  dybatpho::die "Profile directory is empty, refusing to remove"
+fi
+dybatpho::dry_run rm -rf "${profile_dir}"
+
+# Kiểm tra tệp tải về trước khi đặt nó vào chỗ
+binary::verify_sha256 "${name}" "${temp_file}" "${url}" "${sha256_asset}"
+dybatpho::dry_run mv "$temp_file" "$output_path"
+```
+
+**Không nên dùng**
+
+```sh
+# profile_dir rỗng thì lệnh này xóa cả thư mục cha
+rm -rf "${profile_dir}"
+
+# Cài bất cứ thứ gì nhận về, kể cả trang báo lỗi của một proxy
+curl -fsSL "$url" -o "$output_path"
+chmod +x "$output_path"
+```
+
+### Tạo tệp tạm an toàn
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Tạo tệp tạm bằng `dybatpho::create_temp <var> <suffix>` và thư mục tạm bằng `dybatpho::create_temp_dir <var>`, chúng tự đăng ký việc dọn dẹp. (dybatpho)
+> - ✔️ NÊN: Dùng `mktemp` khi không có thư viện, và xóa tệp bằng `trap 'rm -f "${temp_file}"' EXIT`
+> - ✔️ NÊN: Đặt cho tệp tạm đúng phần mở rộng mà nội dung cần, để các công cụ phân loại theo đuôi tệp vẫn hoạt động
+> - ❌ TRÁNH: Không tự dựng đường dẫn tạm từ `$$`, từ dấu thời gian hay từ một tên cố định
+> - ❌ TRÁNH: Không để việc dọn dẹp ở dòng cuối script, nơi mà một lỗi sẽ không bao giờ chạy tới
+
+Một cái tên đoán trước được trong thư mục ai cũng ghi được vừa dễ đụng nhau vừa mở đường cho tấn công liên kết tượng trưng. Đăng ký việc dọn dẹp ngay lúc tạo là cách duy nhất để nó chạy trên những nhánh quan trọng: nhánh lỗi và nhánh bị ngắt.
+
+**Nên dùng**
+
+```sh
+dybatpho::create_temp sha256_file ".txt"
+dybatpho::curl_download "${sha256_url}" "${sha256_file}"
+
+dybatpho::create_temp_dir temp_dir
+tar -xf "${archive}" -C "${temp_dir}"
+
+# Khi không có thư viện
+temp_file="$(mktemp --suffix=.json)"
+trap 'rm -f "${temp_file}"' EXIT INT TERM
+```
+
+**Không nên dùng**
+
+```sh
+# Đoán trước được, đụng nhau giữa hai lần chạy, và không bao giờ được dọn khi lỗi
+temp_file="/tmp/download-$$.tar.gz"
+curl -fsSL "$url" -o "$temp_file"
+...
+rm -f "$temp_file"
 ```

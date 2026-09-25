@@ -56,6 +56,10 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Checking Return Values](#checking-return-values)
   - [Error Handling](#error-handling)
   - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
+- [Script Stabilization](#script-stabilization)
+  - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
+  - [Check State Before Changing](#check-state-before-changing)
+  - [Safely Creating Temporary Files](#safely-creating-temporary-files)
 
 <!-- tocstop -->
 
@@ -1383,4 +1387,117 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 
 # Unreadable, and it does the same as a two-line sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
+```
+## Script Stabilization
+
+### Writing Rerunnable Scripts
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Make a script idempotent: running it twice with the same arguments leaves the same result
+> - ✔️ SHOULD: Check whether the work is already done before doing it
+> - ✔️ SHOULD: Prefer a command that is idempotent by nature, such as `chezmoi apply`, `pacman -S --needed` or `kubectl apply`, over one that fails on the second run
+> - ❌ AVOID: Do not assume the previous run finished
+
+Setup scripts are interrupted: a network drops, a package mirror fails, the user hits Ctrl-C. If the second run has to start from a clean machine, nobody can recover a half-installed one, and the script gets replaced by manual steps.
+
+**Recommended**
+
+```sh
+# Installs only if it is not already there
+dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+
+# Fetches the submodule only when it is missing
+if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
+  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+fi
+```
+
+**Discouraged**
+
+```sh
+# Fails on the second run because the tool is already installed
+dytoy -t "$name"
+
+# Fails on the second run because the directory already exists
+mkdir "${config_dir}"
+```
+
+### Check State Before Changing
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Check that the inputs of a state-changing command are what you expect before running it
+> - ✔️ SHOULD: Check that a required tool is present with `dybatpho::require` before using it. (dybatpho)
+> - ✔️ SHOULD: Verify what you downloaded before installing it
+> - ❌ AVOID: Do not pipe a value into a destructive command without checking that it is not empty
+
+Under `set -u` an unset variable is caught, but an empty one is not. `rm -rf "${prefix}/${name}"` with an empty `name` deletes the prefix, and the command reports success.
+
+**Recommended**
+
+```sh
+dybatpho::require "rbw"
+
+if dybatpho::string_is_blank "${profile_dir}"; then
+  dybatpho::die "Profile directory is empty, refusing to remove"
+fi
+dybatpho::dry_run rm -rf "${profile_dir}"
+
+# Check the download before it is put in place
+binary::verify_sha256 "${name}" "${temp_file}" "${url}" "${sha256_asset}"
+dybatpho::dry_run mv "$temp_file" "$output_path"
+```
+
+**Discouraged**
+
+```sh
+# An empty profile_dir makes this delete the parent
+rm -rf "${profile_dir}"
+
+# Installs whatever came back, including an error page from a proxy
+curl -fsSL "$url" -o "$output_path"
+chmod +x "$output_path"
+```
+
+### Safely Creating Temporary Files
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Create temporary files with `dybatpho::create_temp <var> <suffix>` and directories with `dybatpho::create_temp_dir <var>`, which register their own cleanup. (dybatpho)
+> - ✔️ SHOULD: Use `mktemp` when the library is not available, and remove the file with `trap 'rm -f "${temp_file}"' EXIT`
+> - ✔️ SHOULD: Give the temporary file the suffix the content needs, so tools that dispatch on extension still work
+> - ❌ AVOID: Do not build a temporary path yourself from `$$`, a timestamp or a fixed name
+> - ❌ AVOID: Do not leave cleanup to the last line of the script, which an error never reaches
+
+A predictable name in a world-writable directory is both a collision and a symlink attack. Registering the cleanup at creation time is the only way to have it run on the paths that matter: the error path and the interrupt.
+
+**Recommended**
+
+```sh
+dybatpho::create_temp sha256_file ".txt"
+dybatpho::curl_download "${sha256_url}" "${sha256_file}"
+
+dybatpho::create_temp_dir temp_dir
+tar -xf "${archive}" -C "${temp_dir}"
+
+# Without the library
+temp_file="$(mktemp --suffix=.json)"
+trap 'rm -f "${temp_file}"' EXIT INT TERM
+```
+
+**Discouraged**
+
+```sh
+# Predictable, collides between two runs, and is never cleaned up on error
+temp_file="/tmp/download-$$.tar.gz"
+curl -fsSL "$url" -o "$temp_file"
+...
+rm -f "$temp_file"
 ```
