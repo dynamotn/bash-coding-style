@@ -12,6 +12,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 
 - [Introduction](#introduction)
   - [Supported library](#supported-library)
+  - [Linter](#linter)
 - [Background](#background)
   - [Which Shell to Use](#which-shell-to-use)
   - [When to Use Shell](#when-to-use-shell)
@@ -84,6 +85,28 @@ To help adhere to the style guide, I wrote a Bash library [dybatpho](https://git
 DYBATPHO_DIR=<path to dybatpho>
 . "$DYBATPHO_DIR/init.sh"
 ```
+
+### Linter
+
+[dyshellint](https://gitlab.com/dynamo-tools/dyshellint) checks a script against this guide. It orchestrates the whole check: the rules that are specific to this guide — namespaces, shdoc headers, file layout, the dybatpho conventions — plus [ShellCheck](https://www.shellcheck.net/) with a `.shellcheckrc` and [shfmt](https://github.com/mvdan/sh) with the options of the Formatting chapter. ✔️ SHOULD and ❌ AVOID rules are reported as errors, ⚠️ CONSIDER rules as warnings.
+
+```sh
+go install gitlab.com/dynamo-tools/dyshellint/tools/dyshellint@latest
+
+# A repository, or one file
+dyshellint ./scripts
+dyshellint --format json ./scripts/deploy.sh
+
+# Every rule, with the heading of this guide it comes from
+dyshellint --list-rules
+
+# A buffer that has not been saved, which is what an editor lints
+cat script.sh | dyshellint --stdin-filename script.sh -
+```
+
+Every rule carries a code: `BSG###` for a rule of this guide, `SC####` for a ShellCheck finding, and `FMT001` for a formatting difference. Any of them can be turned off for a run with `--exclude-rules`, and a ShellCheck finding can be silenced in place with a `# shellcheck disable=SCXXXX` comment that says why.
+
+The [`.shellcheckrc`](.shellcheckrc) and [`.editorconfig`](.editorconfig) of this repository are the configuration this guide asks for, and are meant to be copied into a project. `dyshellint` reads the `.shellcheckrc` of the project it checks, and also ships a [nvim-lint](https://github.com/mfussenegger/nvim-lint) definition for Neovim.
 
 ## Background
 

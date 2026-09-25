@@ -13,6 +13,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 
 - [Giới thiệu](#gi%E1%BB%9Bi-thi%E1%BB%87u)
   - [Thư viện hỗ trợ](#th%C6%B0-vi%E1%BB%87n-h%E1%BB%97-tr%E1%BB%A3)
+  - [Trình kiểm tra](#tr%C3%ACnh-ki%E1%BB%83m-tra)
 - [Bối cảnh](#b%E1%BB%91i-c%E1%BA%A3nh)
   - [Nên sử dụng shell nào](#nen-s%E1%BB%AD-d%E1%BB%A5ng-shell-nao)
   - [Khi nào nên sử dụng shell](#khi-nao-nen-s%E1%BB%AD-d%E1%BB%A5ng-shell)
@@ -86,6 +87,28 @@ Các ký hiệu sau được sử dụng trong hướng dẫn này:
 DYBATPHO_DIR=<path to dybatpho>
 . "$DYBATPHO_DIR/init.sh"
 ```
+
+### Trình kiểm tra
+
+[dyshellint](https://gitlab.com/dynamo-tools/dyshellint) kiểm tra một script theo hướng dẫn này. Nó điều phối toàn bộ việc kiểm tra: các quy tắc riêng của hướng dẫn này — namespace, chú thích shdoc, bố cục tệp, quy ước dybatpho — cùng với [ShellCheck](https://www.shellcheck.net/) dùng `.shellcheckrc` và [shfmt](https://github.com/mvdan/sh) dùng các tùy chọn của chương Định dạng. Quy tắc ✔️ NÊN và ❌ TRÁNH được báo là lỗi, quy tắc ⚠️ CÂN NHẮC được báo là cảnh báo.
+
+```sh
+go install gitlab.com/dynamo-tools/dyshellint/tools/dyshellint@latest
+
+# Một kho, hoặc một tệp
+dyshellint ./scripts
+dyshellint --format json ./scripts/deploy.sh
+
+# Toàn bộ quy tắc, kèm mục trong hướng dẫn này mà nó thuộc về
+dyshellint --list-rules
+
+# Buffer chưa được lưu, thứ mà trình soạn thảo cần kiểm tra
+cat script.sh | dyshellint --stdin-filename script.sh -
+```
+
+Mỗi quy tắc có một mã: `BSG###` cho quy tắc của hướng dẫn này, `SC####` cho phát hiện của ShellCheck, và `FMT001` cho khác biệt định dạng. Có thể tắt bất kỳ mã nào cho một lần chạy bằng `--exclude-rules`, và có thể tắt tại chỗ một phát hiện của ShellCheck bằng chú thích `# shellcheck disable=SCXXXX` kèm lý do.
+
+[`.shellcheckrc`](.shellcheckrc) và [`.editorconfig`](.editorconfig) trong kho này là cấu hình mà hướng dẫn yêu cầu, và được dùng để sao chép vào dự án của bạn. `dyshellint` đọc `.shellcheckrc` của dự án mà nó kiểm tra, và cũng kèm sẵn một định nghĩa [nvim-lint](https://github.com/mfussenegger/nvim-lint) cho Neovim.
 
 ## Bối cảnh
 
