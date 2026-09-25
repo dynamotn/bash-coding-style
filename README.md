@@ -60,6 +60,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
   - [Safely Creating Temporary Files](#safely-creating-temporary-files)
+- [Testing](#testing)
 
 <!-- tocstop -->
 
@@ -1500,4 +1501,49 @@ temp_file="/tmp/download-$$.tar.gz"
 curl -fsSL "$url" -o "$temp_file"
 ...
 rm -f "$temp_file"
+```
+## Testing
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Give every library a matching test file, `scripts/test/<area>.bats` next to `scripts/lib/<area>.sh`, written with [bats](https://github.com/bats-core/bats-core). (custom)
+> - ✔️ SHOULD: Add the test for a new function in the same commit as the function. (custom)
+> - ✔️ SHOULD: Put the shared setup of the suite in one helper, loaded by every file
+> - ✔️ SHOULD: Expose the whole suite behind one entrypoint, so that running the tests takes no arguments to remember
+> - ✔️ SHOULD: Run the linter and the formatter, `shellcheck` and `shfmt`, from the same place as the tests
+> - ❌ AVOID: Do not test a function by running the script that calls it
+
+A library function is only testable if it has no side effects of its own: it takes its arguments through `dybatpho::expect_args`, writes its result to `STDOUT` and its diagnostics to `STDERR`, and performs state changes through `dybatpho::dry_run`. Writing the test at the same time as the function is what keeps that shape honest.
+
+**Recommended**
+
+```sh
+# scripts/test/chezmoi_attrs.bats
+setup() {
+  load test_helper
+  setup_dotfiles_test_env
+  . "${DOTFILES_DIR}/scripts/lib/chezmoi_attrs.sh"
+}
+
+@test "chezmoi_attrs::source_path maps a home path to the home source tree" {
+  run run_source_path "${HOME}/.config/foo/bar.txt" ""
+  assert_success
+  assert_output "home/private_dot_config/foo/bar.txt"
+}
+```
+
+```sh
+bash ./scripts/test.sh --all
+```
+
+**Discouraged**
+
+```sh
+# Tests the entrypoint, the option parsing and the filesystem all at once,
+# and cannot say which of them broke
+run bash ./scripts/setup.sh --all
+assert_success
 ```

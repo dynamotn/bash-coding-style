@@ -61,6 +61,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-d%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
   - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-toan)
+- [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
 
 <!-- tocstop -->
 
@@ -1496,4 +1497,49 @@ temp_file="/tmp/download-$$.tar.gz"
 curl -fsSL "$url" -o "$temp_file"
 ...
 rm -f "$temp_file"
+```
+## Kiểm thử
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Mỗi thư viện có một tệp kiểm thử tương ứng, `scripts/test/<area>.bats` đặt cạnh `scripts/lib/<area>.sh`, viết bằng [bats](https://github.com/bats-core/bats-core). (tùy chỉnh)
+> - ✔️ NÊN: Thêm bài kiểm thử cho hàm mới trong cùng commit với chính hàm đó. (tùy chỉnh)
+> - ✔️ NÊN: Đặt phần chuẩn bị dùng chung của cả bộ kiểm thử vào một tệp trợ giúp, được mọi tệp kiểm thử nạp vào
+> - ✔️ NÊN: Đưa cả bộ kiểm thử ra sau một điểm vào duy nhất, để chạy kiểm thử không phải nhớ tham số nào
+> - ✔️ NÊN: Chạy trình kiểm lỗi và trình định dạng, `shellcheck` và `shfmt`, từ cùng chỗ với bộ kiểm thử
+> - ❌ TRÁNH: Không kiểm thử một hàm bằng cách chạy cả script gọi nó
+
+Một hàm thư viện chỉ kiểm thử được nếu bản thân nó không có tác dụng phụ: nhận tham số qua `dybatpho::expect_args`, ghi kết quả ra `STDOUT` và thông báo ra `STDERR`, và thực hiện thay đổi trạng thái qua `dybatpho::dry_run`. Viết bài kiểm thử cùng lúc với hàm chính là điều giữ cho hình dạng đó không bị phá vỡ.
+
+**Nên dùng**
+
+```sh
+# scripts/test/chezmoi_attrs.bats
+setup() {
+  load test_helper
+  setup_dotfiles_test_env
+  . "${DOTFILES_DIR}/scripts/lib/chezmoi_attrs.sh"
+}
+
+@test "chezmoi_attrs::source_path maps a home path to the home source tree" {
+  run run_source_path "${HOME}/.config/foo/bar.txt" ""
+  assert_success
+  assert_output "home/private_dot_config/foo/bar.txt"
+}
+```
+
+```sh
+bash ./scripts/test.sh --all
+```
+
+**Không nên dùng**
+
+```sh
+# Kiểm thử cùng lúc điểm vào, phần phân tích tham số và hệ thống tệp,
+# nên không biết được cái nào hỏng
+run bash ./scripts/setup.sh --all
+assert_success
 ```
