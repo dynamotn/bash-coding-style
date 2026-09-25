@@ -24,6 +24,9 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Debug and Dry-run Mode](#debug-and-dry-run-mode)
   - [STDOUT and STDERR](#stdout-and-stderr)
   - [Common Function Scripts](#common-function-scripts)
+- [Naming Conventions](#naming-conventions)
+  - [Function Names](#function-names)
+  - [Variable Names](#variable-names)
 - [Comments](#comments)
   - [File Header](#file-header)
   - [Function Comments](#function-comments)
@@ -379,6 +382,115 @@ When calling common functions, use `.` instead of `source`. This is because `.` 
 ```sh
 # Use source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+## Naming Conventions
+
+### Function Names
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use the `function` keyword to declare a function
+> - ✔️ SHOULD: Write function names in lowercase, with underscores between words
+> - ✔️ SHOULD: Separate the namespace from the function name with `::`, and name the namespace after the library file: `scripts/lib/package_manager.sh` defines `package_manager::install`
+> - ✔️ SHOULD: Prefix a function that is private to its library with `__<namespace>_`, and a function that is private to an entrypoint script with `_`. (custom)
+> - ❌ AVOID: Do not write `()` after the function name when using the `function` keyword. (custom)
+> - ❌ AVOID: Do not use PascalCase or camelCase
+
+The `function` keyword makes a declaration greppable, which matters in a language with no other way to list what a file defines. The `::` separator gives libraries a namespace that Bash itself does not have: two libraries can both have a `download` step without colliding, and a reader can tell where a function comes from without looking it up.
+
+The prefix conventions mark what is safe to call. `package_manager::install` is part of the library's API; `__package_manager_resolve_args` is an implementation detail that may change without notice; `_main` belongs to one script and nothing else.
+
+**Recommended**
+
+```sh
+# Public API of the `binary` library
+function binary::verify_sha256 {
+  ...
+}
+
+# Private to the same library
+function __binary_download_temp_suffix {
+  ...
+}
+
+# Private to one entrypoint script
+function _spec_main {
+  ...
+}
+```
+
+**Discouraged**
+
+```sh
+# Redundant parentheses next to the keyword
+function binary::verify_sha256() {
+  ...
+}
+
+# No namespace, so the reader cannot tell where it lives
+function verifySha256 {
+  ...
+}
+```
+
+### Variable Names
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Write local and ordinary variable names in lowercase, with underscores between words
+> - ✔️ SHOULD: Declare every variable used inside a function with `local`, and declare array locals with `local -a name=()`
+> - ✔️ SHOULD: Use `UPPERCASE` for variables the caller sets: script options, exported environment variables and constants
+> - ✔️ SHOULD: Make constants read-only with `readonly` or `declare -r`, and declare them at the top of the file
+> - ✔️ SHOULD: Name a loop variable after the collection it walks: `for tool in "${tools[@]}"`
+> - ❌ AVOID: Do not declare and assign from a command substitution on the same line
+
+`local name="$(some_command)"` throws away the exit status of `some_command`, because the status of the line is the status of `local`, which always succeeds. Under `set -e` that turns a failing command into a silent empty variable. Splitting the two lines keeps the failure visible.
+
+**Recommended**
+
+```sh
+# Constants first, read-only
+readonly SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+
+function dytoy::install {
+  local name
+  dybatpho::expect_args name -- "$@"
+
+  # Declare, then assign, so a failure is not swallowed
+  local version
+  version="$(dytoy::get_yaml "$name" "version")"
+
+  local -a dependencies=()
+  readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+  for dependency in "${dependencies[@]}"; do
+    dytoy::install "$dependency"
+  done
+}
+```
+
+**Discouraged**
+
+```sh
+# The exit status of the command substitution is lost
+local version="$(dytoy::get_yaml "$name" "version")"
+
+# Global by accident, leaks into every function called afterwards
+version="1.2.3"
+
+# Uppercase for something the caller never sets
+NAME="$1"
+
+# A loop variable that says nothing
+for i in "${tools[@]}"; do
+  install "$i"
+done
 ```
 
 ## Comments

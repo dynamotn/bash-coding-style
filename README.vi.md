@@ -25,6 +25,9 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Chế độ gỡ lỗi và chạy thử](#ch%E1%BA%BF-d%E1%BB%99-g%E1%BB%A1-l%E1%BB%97i-va-ch%E1%BA%A1y-th%E1%BB%AD)
   - [STDOUT và STDERR](#stdout-va-stderr)
   - [Hàm sử dụng chung](#ham-s%E1%BB%AD-d%E1%BB%A5ng-chung)
+- [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-d%E1%BA%B7t-ten)
+  - [Tên hàm](#ten-ham)
+  - [Tên biến](#ten-bi%E1%BA%BFn)
 - [Chú thích](#chu-thich)
   - [Phần đầu file](#ph%E1%BA%A7n-d%E1%BA%A7u-file)
   - [Chú thích hàm](#chu-thich-ham)
@@ -381,6 +384,115 @@ Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này 
 ```sh
 # Sử dụng source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+## Quy ước đặt tên
+
+### Tên hàm
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng từ khóa `function` để khai báo hàm
+> - ✔️ NÊN: Viết tên hàm bằng chữ thường, các từ ngăn cách bằng dấu gạch dưới
+> - ✔️ NÊN: Ngăn cách không gian tên với tên hàm bằng `::`, và đặt tên không gian tên theo tên tệp thư viện: `scripts/lib/package_manager.sh` định nghĩa `package_manager::install`
+> - ✔️ NÊN: Thêm tiền tố `__<namespace>_` cho hàm riêng tư của thư viện, và tiền tố `_` cho hàm riêng tư của một script thực thi. (tùy chỉnh)
+> - ❌ TRÁNH: Không viết `()` sau tên hàm khi đã dùng từ khóa `function`. (tùy chỉnh)
+> - ❌ TRÁNH: Không dùng PascalCase hay camelCase
+
+Từ khóa `function` khiến phần khai báo dễ tìm bằng `grep`, điều này quan trọng trong một ngôn ngữ không có cách nào khác để liệt kê những gì một tệp định nghĩa. Dấu `::` cho thư viện một không gian tên mà bản thân Bash không có: hai thư viện đều có thể có bước `download` mà không đụng nhau, và người đọc biết ngay hàm đến từ đâu mà không cần tra cứu.
+
+Quy ước tiền tố cho biết cái gì an toàn để gọi. `package_manager::install` là một phần API của thư viện; `__package_manager_resolve_args` là chi tiết cài đặt có thể đổi bất cứ lúc nào; `_main` chỉ thuộc về một script duy nhất.
+
+**Nên dùng**
+
+```sh
+# API công khai của thư viện `binary`
+function binary::verify_sha256 {
+  ...
+}
+
+# Riêng tư trong cùng thư viện
+function __binary_download_temp_suffix {
+  ...
+}
+
+# Riêng tư cho một script thực thi
+function _spec_main {
+  ...
+}
+```
+
+**Không nên dùng**
+
+```sh
+# Dấu ngoặc thừa khi đã có từ khóa
+function binary::verify_sha256() {
+  ...
+}
+
+# Không có không gian tên, người đọc không biết nó nằm ở đâu
+function verifySha256 {
+  ...
+}
+```
+
+### Tên biến
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Viết tên biến cục bộ và biến thường bằng chữ thường, các từ ngăn cách bằng dấu gạch dưới
+> - ✔️ NÊN: Khai báo mọi biến dùng trong hàm bằng `local`, và khai báo mảng cục bộ bằng `local -a name=()`
+> - ✔️ NÊN: Dùng `CHỮ HOA` cho biến do bên gọi đặt: tùy chọn của script, biến môi trường được xuất ra và hằng số
+> - ✔️ NÊN: Đặt hằng số ở đầu tệp và cho nó thuộc tính chỉ đọc bằng `readonly` hoặc `declare -r`
+> - ✔️ NÊN: Đặt tên biến lặp theo tập hợp mà nó duyệt: `for tool in "${tools[@]}"`
+> - ❌ TRÁNH: Không khai báo và gán từ một lệnh thay thế trên cùng một dòng
+
+`local name="$(some_command)"` làm mất mã thoát của `some_command`, vì mã thoát của cả dòng là mã thoát của `local`, mà `local` thì luôn thành công. Dưới `set -e`, điều đó biến một lệnh thất bại thành một biến rỗng trong im lặng. Tách làm hai dòng giữ cho lỗi vẫn hiện ra.
+
+**Nên dùng**
+
+```sh
+# Hằng số đặt trước, chỉ đọc
+readonly SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+
+function dytoy::install {
+  local name
+  dybatpho::expect_args name -- "$@"
+
+  # Khai báo trước, gán sau, để lỗi không bị nuốt mất
+  local version
+  version="$(dytoy::get_yaml "$name" "version")"
+
+  local -a dependencies=()
+  readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+  for dependency in "${dependencies[@]}"; do
+    dytoy::install "$dependency"
+  done
+}
+```
+
+**Không nên dùng**
+
+```sh
+# Mã thoát của lệnh thay thế bị mất
+local version="$(dytoy::get_yaml "$name" "version")"
+
+# Vô tình thành biến toàn cục, rò rỉ sang mọi hàm được gọi sau đó
+version="1.2.3"
+
+# Chữ hoa cho thứ mà bên gọi không bao giờ đặt
+NAME="$1"
+
+# Biến lặp không nói lên điều gì
+for i in "${tools[@]}"; do
+  install "$i"
+done
 ```
 
 ## Chú thích
