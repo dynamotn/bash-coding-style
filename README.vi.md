@@ -20,6 +20,9 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Phần mở rộng tệp](#ph%E1%BA%A7n-m%E1%BB%9F-r%E1%BB%99ng-t%E1%BB%87p)
   - [SUID/SGID](#suidsgid)
 - [Môi trường](#moi-tr%C6%B0%E1%BB%9Dng)
+  - [Cách gọi script](#cach-g%E1%BB%8Di-script)
+  - [Kiểm soát tham số của script](#ki%E1%BB%83m-soat-tham-s%E1%BB%91-c%E1%BB%A7a-script)
+  - [Chế độ gỡ lỗi và chạy thử](#ch%E1%BA%BF-d%E1%BB%99-g%E1%BB%A1-l%E1%BB%97i-va-ch%E1%BA%A1y-th%E1%BB%AD)
   - [STDOUT và STDERR](#stdout-va-stderr)
   - [Hàm sử dụng chung](#ham-s%E1%BB%AD-d%E1%BB%A5ng-chung)
 - [Chú thích](#chu-thich)
@@ -170,6 +173,149 @@ sudo ./foo.sh
 ```
 
 ## Môi trường
+
+### Cách gọi script
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Gọi script bằng `bash ./script.sh`, hoặc bằng tên của nó nếu script nằm trong PATH
+> - ✔️ NÊN: Đặt dấu nháy cho mọi tham số có thể chứa dấu cách
+> - ❌ TRÁNH: Không gọi một script thực thi bằng `.` hay `source`. Chỉ dùng chúng cho script thư viện. (tùy chỉnh)
+
+Gọi bằng `bash ./script.sh` đảm bảo đúng trình thông dịch dù tệp có quyền thực thi hay không, và giữ cho các tùy chọn `set` bên trong script không rò rỉ ra shell đang gọi. Khi `source` một script thực thi, nó chạy ngay trong shell hiện tại, nên một lệnh `exit` thất bại sẽ đóng luôn phiên làm việc thay vì chỉ dừng script.
+
+**Nên dùng**
+
+```sh
+bash ./scripts/test.sh --all
+bash ./scripts/docker.sh --log-level debug "${identity}"
+```
+
+**Không nên dùng**
+
+```sh
+# Phụ thuộc vào quyền thực thi và vào việc shebang có được tôn trọng hay không
+./scripts/test.sh --all
+
+# Chạy ngay trong shell đang gọi, một lệnh exit bên trong sẽ đóng phiên làm việc
+. ./scripts/test.sh --all
+```
+
+### Kiểm soát tham số của script
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Nhận mọi tham số dưới dạng tùy chọn có tên `--option value`
+> - ✔️ NÊN: Khai báo giao diện của script trong hàm `_spec_<entrypoint>` bằng `dybatpho::opts::*`, rồi chạy nó với `dybatpho::generate_from_spec "_spec_<entrypoint>" "$@"`. (dybatpho)
+> - ✔️ NÊN: Đặt tên biến nhận giá trị tùy chọn bằng `CHỮ HOA`, và cho mọi tùy chọn không bắt buộc một giá trị mặc định qua `init:=`. (tùy chỉnh)
+> - ✔️ NÊN: Gom các tham số vị trí còn lại vào một mảng duy nhất, khai báo ở `dybatpho::opts::setup`
+> - ✔️ NÊN: Khai báo tham số của hàm bằng `dybatpho::expect_args name... -- "$@"` thay vì tự đọc `$1`, `$2`. (dybatpho)
+> - ✔️ NÊN: Luôn cung cấp `--help` thông qua `dybatpho::opts::disp` và `dybatpho::generate_help`. (dybatpho)
+> - ❌ TRÁNH: Không nhận tham số vị trí trần như `script.sh value1 value2`, trừ khi đó là danh sách các phần tử cùng loại
+> - ❌ TRÁNH: Không định nghĩa tùy chọn chỉ có tên viết tắt một chữ cái
+
+Tùy chọn có tên tự giải thích ngay tại chỗ gọi: `--dry-run false` nói rõ nó làm gì, còn `false` đứng một mình thì không. Khai báo giao diện dưới dạng spec giúp gom việc phân tích tham số, giá trị mặc định, kiểm tra hợp lệ và văn bản trợ giúp vào một chỗ, và khiến mọi script trong kho mã có cùng một cách hành xử trên dòng lệnh.
+
+Bên trong hàm cũng áp dụng quy tắc tương tự ở mức thấp hơn. `dybatpho::expect_args` đặt tên cho các tham số, báo lỗi rõ ràng khi bên gọi truyền thiếu, và đồng thời đóng vai trò tài liệu cho hàm.
+
+**Nên dùng**
+
+```sh
+#######################################
+# @description Spec of test.sh
+#######################################
+function _spec_main {
+  dybatpho::opts::setup "Test the dotfiles setup" MAIN_ARGS action:"_main"
+  dybatpho::opts::flag "Run all tests" ALL --all -a on:true off:false init:="false"
+  dybatpho::opts::param "Log level" LOG_LEVEL --log-level -l init:="info" \
+    validate:"dybatpho::validate_log_level \$OPTARG"
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_main"
+}
+
+dybatpho::generate_from_spec _spec_main "$@"
+```
+
+```sh
+#######################################
+# @description Install tool using dytoy
+# @arg $1 string Name of tool
+#######################################
+function misc::install_tool {
+  local name
+  dybatpho::expect_args name -- "$@"
+  dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+}
+```
+
+**Không nên dùng**
+
+```sh
+# Tham số vị trí, không có giá trị mặc định, không có trợ giúp, không kiểm tra hợp lệ
+name=$1
+dry_run=$2
+
+# Tự viết lại phần phân tích tham số, mỗi script một kiểu hơi khác nhau
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -a) ALL=true ;;
+  esac
+  shift
+done
+```
+
+### Chế độ gỡ lỗi và chạy thử
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Để người gọi chọn mức chi tiết của log bằng tùy chọn `--log-level` gắn với `LOG_LEVEL`, kiểm tra bằng `dybatpho::validate_log_level`. (dybatpho)
+> - ✔️ NÊN: Bật theo vết lệnh bằng `dybatpho::start_trace` thay vì viết `set -x` trực tiếp, và tắt bằng `dybatpho::end_trace`. (dybatpho)
+> - ✔️ NÊN: Chạy mọi lệnh làm thay đổi trạng thái qua `dybatpho::dry_run`, để chế độ chạy thử chỉ in ra lệnh thay vì thực thi nó. (dybatpho)
+> - ✔️ NÊN: Ưu tiên chế độ chạy thử do chính công cụ cung cấp, như `chezmoi diff` hay `kubectl --dry-run=server`, hơn là tự in lệnh ra
+> - ⚠️ CÂN NHẮC: Đặt chạy thử làm mặc định cho script mà lần chạy thật có tính phá hủy. (tùy chỉnh)
+
+Một script có thể được hỏi rằng nó *sẽ* làm gì là một script mà người ta dám chạy trên máy họ quan tâm. Bọc lệnh thay đổi trạng thái, thay vì rẽ nhánh quanh nó, giúp đường chạy thử và đường chạy thật giống hệt nhau cho tới bước cuối, nên lần chạy thử đi qua đúng những điều kiện và đúng những tham số đó.
+
+**Nên dùng**
+
+```sh
+# Hàm bọc tự quyết định là chạy hay chỉ báo cáo
+dybatpho::dry_run mv "$temp_file" "$output_path"
+dybatpho::dry_run chmod +x "$output_path"
+
+# Đọc thẳng DRY_RUN cũng được khi cần bỏ qua cả một khối lệnh
+if dybatpho::is true "${DRY_RUN}"; then
+  dybatpho::info "Would download ${url}"
+  return 0
+fi
+
+# Theo vết lệnh, có giới hạn phạm vi
+dybatpho::start_trace
+do_something
+dybatpho::end_trace
+```
+
+**Không nên dùng**
+
+```sh
+# Theo vết không bao giờ được tắt, và người gọi không điều khiển được
+set -x
+
+# Logic bị lặp: nhánh chạy thử dần dần lệch khỏi nhánh chạy thật
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "mv $temp_file $output_path"
+else
+  mv "$temp_file" "$output_path"
+fi
+```
 
 ### STDOUT và STDERR
 

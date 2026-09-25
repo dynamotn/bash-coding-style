@@ -19,6 +19,9 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [File Extensions](#file-extensions)
   - [SUID/SGID](#suidsgid)
 - [Environment](#environment)
+  - [Script Invocation](#script-invocation)
+  - [Script Argument Control](#script-argument-control)
+  - [Debug and Dry-run Mode](#debug-and-dry-run-mode)
   - [STDOUT and STDERR](#stdout-and-stderr)
   - [Common Function Scripts](#common-function-scripts)
 - [Comments](#comments)
@@ -168,6 +171,149 @@ sudo ./foo.sh
 ```
 
 ## Environment
+
+### Script Invocation
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Invoke scripts as `bash ./script.sh`, or through their entrypoint name when they are in PATH
+> - ✔️ SHOULD: Quote every argument that may contain spaces
+> - ❌ AVOID: Do not invoke a runnable script with `.` or `source`. Reserve those for library scripts. (custom)
+
+Calling a script with `bash ./script.sh` guarantees the interpreter regardless of the file mode, and keeps the options set inside the script from leaking into the caller. `source`-ing a runnable script runs it in the current shell, so a failing `exit` kills the interactive session instead of the script.
+
+**Recommended**
+
+```sh
+bash ./scripts/test.sh --all
+bash ./scripts/docker.sh --log-level debug "${identity}"
+```
+
+**Discouraged**
+
+```sh
+# Depends on the executable bit and on the shebang being honoured
+./scripts/test.sh --all
+
+# Runs in the caller's shell, an exit inside kills the session
+. ./scripts/test.sh --all
+```
+
+### Script Argument Control
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Take every argument as a named option in `--option value` form
+> - ✔️ SHOULD: Declare the interface of a script in a `_spec_<entrypoint>` function using `dybatpho::opts::*`, and run it with `dybatpho::generate_from_spec "_spec_<entrypoint>" "$@"`. (dybatpho)
+> - ✔️ SHOULD: Name the variable that receives an option in `UPPERCASE`, and give every optional one a default with `init:=`. (custom)
+> - ✔️ SHOULD: Collect leftover positional arguments into one array, declared as the argument sink of `dybatpho::opts::setup`
+> - ✔️ SHOULD: Declare the arguments of a function with `dybatpho::expect_args name... -- "$@"` instead of reading `$1`, `$2` by hand. (dybatpho)
+> - ✔️ SHOULD: Always offer `--help`, through `dybatpho::opts::disp` and `dybatpho::generate_help`. (dybatpho)
+> - ❌ AVOID: Do not take bare positional values such as `script.sh value1 value2` for anything but a list of the same kind of item
+> - ❌ AVOID: Do not define an option that only has a single-letter name
+
+A named option documents itself at the call site: `--dry-run false` says what it does, `false` on its own does not. Declaring the interface as a spec keeps parsing, defaulting, validation and the help text in one place, and gives every script in the repository the same command line behaviour.
+
+Inside a function the same rule applies one level down. `dybatpho::expect_args` names the parameters, fails loudly when the caller passes too few, and doubles as the function's documentation.
+
+**Recommended**
+
+```sh
+#######################################
+# @description Spec of test.sh
+#######################################
+function _spec_main {
+  dybatpho::opts::setup "Test the dotfiles setup" MAIN_ARGS action:"_main"
+  dybatpho::opts::flag "Run all tests" ALL --all -a on:true off:false init:="false"
+  dybatpho::opts::param "Log level" LOG_LEVEL --log-level -l init:="info" \
+    validate:"dybatpho::validate_log_level \$OPTARG"
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_main"
+}
+
+dybatpho::generate_from_spec _spec_main "$@"
+```
+
+```sh
+#######################################
+# @description Install tool using dytoy
+# @arg $1 string Name of tool
+#######################################
+function misc::install_tool {
+  local name
+  dybatpho::expect_args name -- "$@"
+  dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+}
+```
+
+**Discouraged**
+
+```sh
+# Positional arguments, no defaults, no help, no validation
+name=$1
+dry_run=$2
+
+# Hand-rolled parsing that every script reimplements slightly differently
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -a) ALL=true ;;
+  esac
+  shift
+done
+```
+
+### Debug and Dry-run Mode
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Let the caller pick the verbosity with a `--log-level` option bound to `LOG_LEVEL`, validated by `dybatpho::validate_log_level`. (dybatpho)
+> - ✔️ SHOULD: Turn command tracing on with `dybatpho::start_trace` rather than writing `set -x` inline, and close it with `dybatpho::end_trace`. (dybatpho)
+> - ✔️ SHOULD: Run every command that changes state through `dybatpho::dry_run`, so a dry run reports the command instead of running it. (dybatpho)
+> - ✔️ SHOULD: Prefer the dry-run mode a tool provides itself, such as `chezmoi diff` or `kubectl --dry-run=server`, over echoing the command
+> - ⚠️ CONSIDER: Make dry run the default for a script whose real run is destructive. (custom)
+
+A script that can be asked what it *would* do is a script people are willing to run on a machine they care about. Wrapping the state-changing command, rather than branching around it, keeps the dry-run path and the real path identical up to the last step, so the dry run exercises the same conditions and the same arguments.
+
+**Recommended**
+
+```sh
+# The wrapper decides whether to run or to report
+dybatpho::dry_run mv "$temp_file" "$output_path"
+dybatpho::dry_run chmod +x "$output_path"
+
+# Reading DRY_RUN directly is fine when a whole block must be skipped
+if dybatpho::is true "${DRY_RUN}"; then
+  dybatpho::info "Would download ${url}"
+  return 0
+fi
+
+# Tracing, scoped
+dybatpho::start_trace
+do_something
+dybatpho::end_trace
+```
+
+**Discouraged**
+
+```sh
+# Tracing that is never turned off, and cannot be controlled by the caller
+set -x
+
+# Duplicated logic: the dry-run branch drifts away from the real one
+if [[ "$DRY_RUN" == "true" ]]; then
+  echo "mv $temp_file $output_path"
+else
+  mv "$temp_file" "$output_path"
+fi
+```
 
 ### STDOUT and STDERR
 
