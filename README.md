@@ -43,6 +43,15 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Function Declaration](#function-declaration)
 - [Features and Bugs](#features-and-bugs)
   - [Use ShellCheck](#use-shellcheck)
+  - [Command Substitution](#command-substitution)
+  - [Test Expression](#test-expression)
+  - [Testing Strings](#testing-strings)
+  - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
+  - [Eval is Evil](#eval-is-evil)
+  - [Arrays](#arrays)
+  - [Pipes to While](#pipes-to-while)
+  - [For Loops](#for-loops)
+  - [Arithmetic](#arithmetic)
 
 <!-- tocstop -->
 
@@ -963,4 +972,285 @@ ls "/foo/bar/${file}"
 # Ignoring SC1091 warning for unresolved source path is acceptable.
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+### Command Substitution
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `$(command)` for command substitution
+> - ❌ AVOID: Do not use backticks
+
+`$(...)` nests without escaping and is easier to read, because the opening and closing markers differ.
+
+**Recommended**
+
+```sh
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+```
+
+**Discouraged**
+
+```sh
+# Nesting requires escaping, and the two markers look alike
+SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
+```
+
+### Test Expression
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `[[ ... ]]` for tests
+> - ✔️ SHOULD: Use `dybatpho::is` for the checks it already covers, such as `command`, `file`, `dir`, `true` and `blank`. (dybatpho)
+> - ❌ AVOID: Do not use `[ ... ]`, `test` or `/usr/bin/[`
+
+`[[ ... ]]` is a shell keyword rather than a command, so it does not word-split or glob its operands, and it supports `=~` and `&&`. A missing quote inside `[ ... ]` is a bug; inside `[[ ... ]]` it usually is not.
+
+**Recommended**
+
+```sh
+if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
+  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+fi
+
+# A named check reads better than the flag it wraps
+dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+```
+
+**Discouraged**
+
+```sh
+# Word-splits when the variable contains a space, and cannot use =~
+if [ ! -f $SCRIPT_DIR/lib/dybatpho/init.sh ]; then
+  ...
+fi
+```
+
+### Testing Strings
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `==` to compare strings inside `[[ ... ]]`
+> - ✔️ SHOULD: Use `-z` to test for an empty string and `-n` for a non-empty one
+> - ✔️ SHOULD: Use `dybatpho::string_is_blank` when a value that is only whitespace should also count as empty. (dybatpho)
+> - ✔️ SHOULD: Compare numbers with `(( ... ))`, or with `-lt`, `-gt`, `-eq` inside `[[ ... ]]`
+> - ❌ AVOID: Do not use a single `=` for string comparison
+> - ❌ AVOID: Do not use `<` or `>` to compare numbers inside `[[ ... ]]`
+
+Inside `[[ ... ]]` the operators `<` and `>` compare lexicographically, so `[[ 10 < 9 ]]` is true. Numbers belong in `(( ... ))`.
+
+**Recommended**
+
+```sh
+if [[ "$identity" == "personal" ]]; then
+  passphrase="$(rbw get 'Age Dotfiles')"
+fi
+
+if dybatpho::string_is_blank "${expected_hash}"; then
+  dybatpho::die "No checksum found for ${asset_name}"
+fi
+
+if ((${#MAIN_ARGS[@]} > 0)); then
+  exec "${BATS_CMD}" "${MAIN_ARGS[@]}"
+fi
+```
+
+**Discouraged**
+
+```sh
+# Assignment-looking comparison
+[[ "$identity" = "personal" ]]
+
+# Lexicographic, so this is true for 10 and 9
+[[ "${count}" > "${limit}" ]]
+
+# Verbose way of writing -z
+[[ "${value}" == "" ]]
+```
+
+### Wildcard Expansion of Filenames
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Prefix a glob with `./` when it is expanded into command arguments
+> - ⚠️ CONSIDER: Use `compgen -G` when you need the matches as data and an empty result is acceptable. (custom)
+> - ❌ AVOID: Do not pass a bare `*` to a command
+
+A file named `-rf` in the directory turns `rm *` into `rm -rf`. `./*` expands to paths that begin with `./`, which no command can mistake for an option.
+
+**Recommended**
+
+```sh
+rm -f ./*.tmp
+
+# Matches as data, empty result tolerated
+local -a matches=()
+mapfile -t matches < <(compgen -G "${search_pattern}" || true)
+```
+
+**Discouraged**
+
+```sh
+# A file named '-rf' or '--force' becomes an option
+rm -f *.tmp
+```
+
+### Eval is Evil
+
+> [!TIP]
+>
+> - ❌ AVOID: Do not use `eval`
+
+`eval` makes it impossible to tell, by reading the script, what will run or which variables will be set. When a value has to be executed, use an array for the command and its arguments, or an indirect reference for the variable.
+
+**Recommended**
+
+```sh
+local -a options=() packages=()
+options+=(--noconfirm)
+packages+=("$name")
+dybatpho::dry_run pacman -S "${options[@]}" "${packages[@]}"
+```
+
+**Discouraged**
+
+```sh
+# The reader cannot tell what this expands to, and a space in $name breaks it
+eval "pacman -S ${options} ${packages}"
+```
+
+### Arrays
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use an array whenever you hold more than one value, especially command line flags
+> - ✔️ SHOULD: Declare arrays explicitly: `local -a names=()` inside a function, `declare -a NAMES=()` at file scope
+> - ✔️ SHOULD: Append with `names+=("${value}")`
+> - ✔️ SHOULD: Expand with `"${names[@]}"`, and take the length with `"${#names[@]}"`
+> - ❌ AVOID: Do not keep several values in one string separated by spaces
+
+A space-separated string is only an array as long as no element contains a space. An array stays correct whatever the elements are, and `"${names[@]}"` passes exactly as many arguments as there are elements, including none.
+
+**Recommended**
+
+```sh
+BUILD_ARGS=()
+SECRETS=()
+SECRETS+=(--secret "id=age_passphrases,env=AGE_PASSPHRASES")
+BUILD_ARGS+=(--build-arg IDENTITIES="personal")
+dybatpho::dry_run docker build "${BUILD_ARGS[@]}" "${SECRETS[@]}" .
+```
+
+**Discouraged**
+
+```sh
+# Breaks as soon as a value contains a space, and quoting cannot fix it
+BUILD_ARGS="--build-arg IDENTITIES=personal"
+docker build $BUILD_ARGS .
+```
+
+### Pipes to While
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Feed a `while read` loop with process substitution: `while read -r line; do ...; done < <(command)`
+> - ✔️ SHOULD: Use `readarray -t` or `mapfile -t` when the whole output is wanted as an array
+> - ✔️ SHOULD: Use `read -r`, and `mapfile -d ''` with `-print0` when the values may contain newlines
+> - ❌ AVOID: Do not pipe into a `while` loop
+
+The right-hand side of a pipe runs in a subshell, so every variable the loop sets is discarded when the loop ends. Process substitution keeps the loop in the current shell.
+
+**Recommended**
+
+```sh
+local -a files=()
+mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
+
+local -a tools=()
+readarray -t tools < <(dytoy::get_yaml "$name" "tools")
+
+local count=0
+while read -r line; do
+  count=$((count + 1))
+done < <(command grep -c "" "${file}")
+echo "${count}"
+```
+
+**Discouraged**
+
+```sh
+# count is always 0 here: the loop ran in a subshell
+local count=0
+command find "${root}" -type f | while read -r line; do
+  count=$((count + 1))
+done
+echo "${count}"
+```
+
+### For Loops
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Iterate over an array with `for item in "${items[@]}"`
+> - ✔️ SHOULD: Read command output into an array first, then loop over it
+> - ❌ AVOID: Do not write `for item in $(command)` when the output may contain spaces
+
+`for item in $(command)` splits on every space, tab and newline, and then globs the result. It is correct only for output you control completely.
+
+**Recommended**
+
+```sh
+local -a dependencies=()
+readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+for dependency in "${dependencies[@]}"; do
+  dybatpho::dry_run dytoy "${method}" -i -t "$dependency"
+done
+```
+
+**Discouraged**
+
+```sh
+# A dependency name containing a space becomes two iterations
+for dependency in $(dytoy::get_yaml "$name" "dependencies"); do
+  dytoy "${method}" -i -t "$dependency"
+done
+```
+
+### Arithmetic
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `(( ... ))` for arithmetic conditions and `$(( ... ))` for arithmetic values
+> - ✔️ SHOULD: Omit the `$` on variables inside `(( ... ))`
+> - ✔️ SHOULD: Declare counters with `local -i` when the variable only ever holds an integer
+> - ❌ AVOID: Do not use `let`, `expr` or the deprecated `$[ ... ]`
+> - ⚠️ CONSIDER: Be careful with a bare `(( ... ))` under `set -e`: an expression whose value is `0` has exit status `1` and stops the script
+
+`(( ... ))` is a builtin, so it is faster than `expr` and does not need a subprocess, and it treats its operands as numbers rather than strings.
+
+**Recommended**
+
+```sh
+if ((${#MAIN_ARGS[@]} > 0)); then
+  exec "${BATS_CMD}" "${MAIN_ARGS[@]}"
+fi
+
+local -i retries=0
+retries=$((retries + 1))
+
+# Safe under set -e: the increment never decides the exit status of the line
+((count++)) || true
+```
+
+**Discouraged**
+
+```sh
+# External process for something the shell can do
+retries=$(expr "$retries" + 1)
+
+# Deprecated syntax
+retries=$[retries + 1]
+
+# Under set -e this stops the script the first time count goes from 0 to 1
+((count++))
 ```

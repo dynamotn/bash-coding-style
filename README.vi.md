@@ -44,6 +44,15 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Khai báo hàm](#khai-bao-ham)
 - [Tính năng và lỗi](#tinh-nang-va-l%E1%BB%97i)
   - [Sử dụng ShellCheck](#s%E1%BB%AD-d%E1%BB%A5ng-shellcheck)
+  - [Thay thế lệnh](#thay-th%E1%BA%BF-l%E1%BB%87nh)
+  - [Biểu thức kiểm tra](#bi%E1%BB%83u-th%E1%BB%A9c-ki%E1%BB%83m-tra)
+  - [Kiểm tra chuỗi](#ki%E1%BB%83m-tra-chu%E1%BB%97i)
+  - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-ky-t%E1%BB%B1-d%E1%BA%A1i-di%E1%BB%87n-cho-ten-t%E1%BB%87p)
+  - [Eval là xấu xa](#eval-la-x%E1%BA%A5u-xa)
+  - [Mảng](#m%E1%BA%A3ng)
+  - [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while)
+  - [Vòng lặp for](#vong-l%E1%BA%B7p-for)
+  - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
 
 <!-- tocstop -->
 
@@ -959,4 +968,285 @@ ls "/foo/bar/${file}"
 # Việc bỏ qua cảnh báo SC1091 cho đường dẫn nguồn chưa được giải quyết là chấp nhận được.
 # shellcheck disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+### Thay thế lệnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng `$(command)` để thay thế lệnh
+> - ❌ TRÁNH: Không dùng dấu nháy ngược
+
+`$(...)` cho phép lồng nhau mà không cần thoát ký tự, và dễ đọc hơn vì dấu mở và dấu đóng khác nhau.
+
+**Nên dùng**
+
+```sh
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+```
+
+**Không nên dùng**
+
+```sh
+# Lồng nhau thì phải thoát ký tự, và hai dấu trông giống hệt nhau
+SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
+```
+
+### Biểu thức kiểm tra
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng `[[ ... ]]` để kiểm tra điều kiện
+> - ✔️ NÊN: Dùng `dybatpho::is` cho những phép kiểm tra nó đã bao phủ, như `command`, `file`, `dir`, `true` và `blank`. (dybatpho)
+> - ❌ TRÁNH: Không dùng `[ ... ]`, `test` hay `/usr/bin/[`
+
+`[[ ... ]]` là từ khóa của shell chứ không phải một lệnh, nên nó không tách từ và không khai triển ký tự đại diện cho các toán hạng, đồng thời hỗ trợ `=~` và `&&`. Thiếu một dấu nháy trong `[ ... ]` là một lỗi; trong `[[ ... ]]` thì thường là không.
+
+**Nên dùng**
+
+```sh
+if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
+  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+fi
+
+# Một phép kiểm tra có tên dễ đọc hơn là cờ mà nó bọc lại
+dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+```
+
+**Không nên dùng**
+
+```sh
+# Tách từ khi biến chứa dấu cách, và không dùng được =~
+if [ ! -f $SCRIPT_DIR/lib/dybatpho/init.sh ]; then
+  ...
+fi
+```
+
+### Kiểm tra chuỗi
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng `==` để so sánh chuỗi trong `[[ ... ]]`
+> - ✔️ NÊN: Dùng `-z` để kiểm tra chuỗi rỗng và `-n` để kiểm tra chuỗi không rỗng
+> - ✔️ NÊN: Dùng `dybatpho::string_is_blank` khi giá trị chỉ gồm khoảng trắng cũng phải được coi là rỗng. (dybatpho)
+> - ✔️ NÊN: So sánh số bằng `(( ... ))`, hoặc bằng `-lt`, `-gt`, `-eq` trong `[[ ... ]]`
+> - ❌ TRÁNH: Không dùng một dấu `=` để so sánh chuỗi
+> - ❌ TRÁNH: Không dùng `<` hay `>` để so sánh số trong `[[ ... ]]`
+
+Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ điển, nên `[[ 10 < 9 ]]` là đúng. Số thì phải nằm trong `(( ... ))`.
+
+**Nên dùng**
+
+```sh
+if [[ "$identity" == "personal" ]]; then
+  passphrase="$(rbw get 'Age Dotfiles')"
+fi
+
+if dybatpho::string_is_blank "${expected_hash}"; then
+  dybatpho::die "No checksum found for ${asset_name}"
+fi
+
+if ((${#MAIN_ARGS[@]} > 0)); then
+  exec "${BATS_CMD}" "${MAIN_ARGS[@]}"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# So sánh mà trông như phép gán
+[[ "$identity" = "personal" ]]
+
+# So sánh theo từ điển, nên với 10 và 9 thì điều kiện này đúng
+[[ "${count}" > "${limit}" ]]
+
+# Cách viết dài dòng của -z
+[[ "${value}" == "" ]]
+```
+
+### Khai triển ký tự đại diện cho tên tệp
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thêm tiền tố `./` cho mẫu đại diện khi nó được khai triển thành tham số của lệnh
+> - ⚠️ CÂN NHẮC: Dùng `compgen -G` khi bạn cần các kết quả khớp như dữ liệu và chấp nhận kết quả rỗng. (tùy chỉnh)
+> - ❌ TRÁNH: Không truyền `*` trần cho một lệnh
+
+Một tệp tên `-rf` trong thư mục sẽ biến `rm *` thành `rm -rf`. `./*` khai triển thành các đường dẫn bắt đầu bằng `./`, không lệnh nào nhầm chúng với tùy chọn được.
+
+**Nên dùng**
+
+```sh
+rm -f ./*.tmp
+
+# Kết quả khớp dùng như dữ liệu, chấp nhận rỗng
+local -a matches=()
+mapfile -t matches < <(compgen -G "${search_pattern}" || true)
+```
+
+**Không nên dùng**
+
+```sh
+# Một tệp tên '-rf' hay '--force' sẽ trở thành tùy chọn
+rm -f *.tmp
+```
+
+### Eval là xấu xa
+
+> [!TIP]
+>
+> - ❌ TRÁNH: Không dùng `eval`
+
+`eval` khiến ta không thể biết, chỉ bằng cách đọc script, lệnh nào sẽ chạy hay biến nào sẽ được gán. Khi cần thực thi một giá trị, hãy dùng mảng cho lệnh và tham số của nó, hoặc tham chiếu gián tiếp cho biến.
+
+**Nên dùng**
+
+```sh
+local -a options=() packages=()
+options+=(--noconfirm)
+packages+=("$name")
+dybatpho::dry_run pacman -S "${options[@]}" "${packages[@]}"
+```
+
+**Không nên dùng**
+
+```sh
+# Người đọc không biết nó khai triển thành gì, và một dấu cách trong $name sẽ làm hỏng nó
+eval "pacman -S ${options} ${packages}"
+```
+
+### Mảng
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng mảng mỗi khi bạn giữ nhiều hơn một giá trị, nhất là các cờ dòng lệnh
+> - ✔️ NÊN: Khai báo mảng một cách tường minh: `local -a names=()` trong hàm, `declare -a NAMES=()` ở phạm vi tệp
+> - ✔️ NÊN: Thêm phần tử bằng `names+=("${value}")`
+> - ✔️ NÊN: Khai triển bằng `"${names[@]}"`, và lấy số phần tử bằng `"${#names[@]}"`
+> - ❌ TRÁNH: Không giữ nhiều giá trị trong một chuỗi ngăn cách bằng dấu cách
+
+Một chuỗi ngăn cách bằng dấu cách chỉ là mảng chừng nào chưa có phần tử nào chứa dấu cách. Mảng thì luôn đúng dù các phần tử là gì, và `"${names[@]}"` truyền đi đúng bằng số phần tử đang có, kể cả khi không có phần tử nào.
+
+**Nên dùng**
+
+```sh
+BUILD_ARGS=()
+SECRETS=()
+SECRETS+=(--secret "id=age_passphrases,env=AGE_PASSPHRASES")
+BUILD_ARGS+=(--build-arg IDENTITIES="personal")
+dybatpho::dry_run docker build "${BUILD_ARGS[@]}" "${SECRETS[@]}" .
+```
+
+**Không nên dùng**
+
+```sh
+# Hỏng ngay khi một giá trị chứa dấu cách, và dấu nháy không cứu được
+BUILD_ARGS="--build-arg IDENTITIES=personal"
+docker build $BUILD_ARGS .
+```
+
+### Đường ống vào while
+
+> [!TIP]
+>
+> - ✔️ NÊN: Cấp dữ liệu cho vòng lặp `while read` bằng thay thế tiến trình: `while read -r line; do ...; done < <(command)`
+> - ✔️ NÊN: Dùng `readarray -t` hoặc `mapfile -t` khi cần lấy toàn bộ kết quả thành một mảng
+> - ✔️ NÊN: Dùng `read -r`, và dùng `mapfile -d ''` cùng `-print0` khi giá trị có thể chứa ký tự xuống dòng
+> - ❌ TRÁNH: Không đưa đường ống vào vòng lặp `while`
+
+Vế phải của đường ống chạy trong một shell con, nên mọi biến mà vòng lặp gán đều bị vứt đi khi vòng lặp kết thúc. Thay thế tiến trình giữ vòng lặp ở lại trong shell hiện tại.
+
+**Nên dùng**
+
+```sh
+local -a files=()
+mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
+
+local -a tools=()
+readarray -t tools < <(dytoy::get_yaml "$name" "tools")
+
+local count=0
+while read -r line; do
+  count=$((count + 1))
+done < <(command grep -c "" "${file}")
+echo "${count}"
+```
+
+**Không nên dùng**
+
+```sh
+# count ở đây luôn bằng 0: vòng lặp đã chạy trong một shell con
+local count=0
+command find "${root}" -type f | while read -r line; do
+  count=$((count + 1))
+done
+echo "${count}"
+```
+
+### Vòng lặp for
+
+> [!TIP]
+>
+> - ✔️ NÊN: Duyệt mảng bằng `for item in "${items[@]}"`
+> - ✔️ NÊN: Đọc kết quả của lệnh vào một mảng trước, rồi mới lặp trên mảng đó
+> - ❌ TRÁNH: Không viết `for item in $(command)` khi kết quả có thể chứa dấu cách
+
+`for item in $(command)` tách theo từng dấu cách, dấu tab và ký tự xuống dòng, rồi còn khai triển ký tự đại diện trên kết quả. Nó chỉ đúng với dữ liệu mà bạn kiểm soát hoàn toàn.
+
+**Nên dùng**
+
+```sh
+local -a dependencies=()
+readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+for dependency in "${dependencies[@]}"; do
+  dybatpho::dry_run dytoy "${method}" -i -t "$dependency"
+done
+```
+
+**Không nên dùng**
+
+```sh
+# Một tên phụ thuộc có dấu cách sẽ biến thành hai vòng lặp
+for dependency in $(dytoy::get_yaml "$name" "dependencies"); do
+  dytoy "${method}" -i -t "$dependency"
+done
+```
+
+### Số học
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng `(( ... ))` cho điều kiện số học và `$(( ... ))` cho giá trị số học
+> - ✔️ NÊN: Bỏ dấu `$` trước tên biến bên trong `(( ... ))`
+> - ✔️ NÊN: Khai báo biến đếm bằng `local -i` khi biến đó chỉ chứa số nguyên
+> - ❌ TRÁNH: Không dùng `let`, `expr` hay cú pháp `$[ ... ]` đã lỗi thời
+> - ⚠️ CÂN NHẮC: Cẩn thận với `(( ... ))` đứng một mình dưới `set -e`: biểu thức có giá trị `0` sẽ trả về mã thoát `1` và làm dừng script
+
+`(( ... ))` là lệnh dựng sẵn, nên nhanh hơn `expr` và không cần tạo tiến trình con, đồng thời coi các toán hạng là số chứ không phải chuỗi.
+
+**Nên dùng**
+
+```sh
+if ((${#MAIN_ARGS[@]} > 0)); then
+  exec "${BATS_CMD}" "${MAIN_ARGS[@]}"
+fi
+
+local -i retries=0
+retries=$((retries + 1))
+
+# An toàn dưới set -e: phép tăng không quyết định mã thoát của cả dòng
+((count++)) || true
+```
+
+**Không nên dùng**
+
+```sh
+# Tạo tiến trình ngoài cho việc mà shell tự làm được
+retries=$(expr "$retries" + 1)
+
+# Cú pháp đã lỗi thời
+retries=$[retries + 1]
+
+# Dưới set -e, dòng này dừng script ngay lần count đi từ 0 lên 1
+((count++))
 ```
