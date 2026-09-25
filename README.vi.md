@@ -53,6 +53,10 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while)
   - [Vòng lặp for](#vong-l%E1%BA%B7p-for)
   - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
+- [Gọi lệnh](#g%E1%BB%8Di-l%E1%BB%87nh)
+  - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gia-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
+  - [Xử lý lỗi](#x%E1%BB%AD-ly-l%E1%BB%97i)
+  - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-va-l%E1%BB%87nh-ben-ngoai)
 
 <!-- tocstop -->
 
@@ -1249,4 +1253,130 @@ retries=$[retries + 1]
 
 # Dưới set -e, dòng này dừng script ngay lần count đi từ 0 lên 1
 ((count++))
+```
+## Gọi lệnh
+
+### Kiểm tra giá trị trả về
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Để `set -Eeuo pipefail`, hoặc `dybatpho::register_common_handlers`, dừng script khi có lỗi không được xử lý. (dybatpho)
+> - ✔️ NÊN: Kiểm tra trực tiếp trên lệnh: `if ! command; then ... fi`
+> - ✔️ NÊN: Thêm `|| true` cho lệnh mà việc thất bại là điều thực sự được dự liệu, và ghi chú lý do
+> - ✔️ NÊN: Thoát với mã có ý nghĩa: `0` khi thành công, khác `0` khi thất bại
+> - ❌ TRÁNH: Không kiểm tra `$?` trong một câu lệnh riêng
+> - ❌ TRÁNH: Không dựa vào `PIPESTATUS`
+
+Đọc `$?` ở dòng kế tiếp chỉ đúng nếu giữa hai dòng đó không có gì chạy, một điều kiện mà không ai giữ được khi script lớn dần. Kiểm tra ngay trên lệnh thì không bao giờ lạc hậu. `|| true` tường minh còn là một dấu hiệu: nó nói với người đọc sau rằng khả năng thất bại đã được cân nhắc, chứ không phải bị bỏ quên.
+
+**Nên dùng**
+
+```sh
+if ! command -v sudo &> /dev/null; then
+  dybatpho::die "sudo is required"
+fi
+
+# grep trả về 1 khi không khớp gì, ở đây đó là một kết quả hợp lệ
+expected_hash=$(grep -E "[[:space:]]\*?${asset_name}\$" "${sha256_file}" | awk '{print $1}') || true
+
+# Submodule có thể đã có sẵn, đừng vì thế mà làm hỏng cả lần chạy
+git -C "${DYBATPHO_DIR}" submodule update --init --recursive 2> /dev/null || true
+```
+
+**Không nên dùng**
+
+```sh
+# Mong manh: chỉ cần chèn thêm một dòng vào giữa là phép kiểm tra sai
+curl -fsSL "$url" -o "$file"
+if [[ $? -ne 0 ]]; then
+  echo "download failed"
+fi
+```
+
+### Xử lý lỗi
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Xử lý lỗi ngay trong hàm nơi nó xảy ra, không đẩy lên cho bên gọi
+> - ✔️ NÊN: Dừng bằng `dybatpho::die` khi script không thể tiếp tục, và `return 1` khi bên gọi còn xử lý được. (dybatpho)
+> - ✔️ NÊN: Nói rõ cái gì hỏng và người dùng có thể làm gì, trong một thông báo trên `STDERR`
+> - ✔️ NÊN: Cài đặt các trình xử lý chung một lần, ở đầu script thực thi, bằng `dybatpho::register_common_handlers`. (dybatpho)
+> - ❌ TRÁNH: Không trả về mã khác `0` trần trụi mà không kèm thông báo
+
+Hàm bị lỗi là nơi duy nhất còn biết tên tệp, địa chỉ URL và tùy chọn nào đã dẫn tới lỗi đó. Bên gọi chỉ nhận được số `1` thì hoặc là không báo được gì hữu ích, hoặc là phải bịa ra bối cảnh.
+
+**Nên dùng**
+
+```sh
+if [[ ! -x "${BATS_CMD}" ]]; then
+  dybatpho::die "Bats test runner not found. Install bats, or run: git -C ${DYBATPHO_DIR} submodule update --init --recursive"
+fi
+
+function get_dir {
+  local config_dir
+  dybatpho::expect_args config_dir -- "$@"
+  if [[ ! -e "$config_dir" ]]; then
+    dybatpho::error "Configuration directory ${config_dir} does not exist"
+    return 1
+  fi
+  echo "${config_dir}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+# Bên gọi không có cách nào biết chuyện gì đã sai
+function get_dir {
+  [[ -e "$1" ]] || return 1
+  echo "$1"
+}
+```
+
+### Lệnh dựng sẵn và lệnh bên ngoài
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Ưu tiên lệnh dựng sẵn hơn lệnh bên ngoài cho cùng một việc: khai triển tham số thay cho `sed`, `(( ... ))` thay cho `expr`, `[[ ... ]]` thay cho `test`
+> - ✔️ NÊN: Dùng công cụ bên ngoài như `sed`, `awk` hay `yq` khi nó làm mã ngắn gọn và rõ ràng hơn hẳn
+> - ✔️ NÊN: Gọi công cụ bên ngoài qua `command <tool>` khi có thể đang tồn tại một alias hay một hàm cùng tên. (tùy chỉnh)
+> - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
+
+Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
+
+**Nên dùng**
+
+```sh
+# Khai triển dựng sẵn cho các phép cắt chuỗi đơn giản
+local asset_name="${url##*/}"
+local base_url="${url%/*}"
+
+# Công cụ bên ngoài ở chỗ nó thực sự rõ ràng hơn
+function misc::replace_version {
+  local version
+  dybatpho::expect_args version -- "$@"
+  sed -e "s/%v/${version}/g" -e "s/%1v/${version:1}/g"
+}
+
+# Đúng tệp nhị phân, không phải alias của người dùng hay một hàm bọc
+mapfile -d '' -t files < <(command find "${root}" -type f -print0)
+```
+
+**Không nên dùng**
+
+```sh
+# Một tiến trình cho mỗi dòng để làm điều mà ${url##*/} đã làm
+asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
+
+# Không đọc nổi, mà cũng chỉ làm đúng việc của hai dòng sed
+result="${input//${a}\/${b}/${c}${d//x/y}}"
 ```

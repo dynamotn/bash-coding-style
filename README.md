@@ -52,6 +52,10 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Pipes to While](#pipes-to-while)
   - [For Loops](#for-loops)
   - [Arithmetic](#arithmetic)
+- [Calling Commands](#calling-commands)
+  - [Checking Return Values](#checking-return-values)
+  - [Error Handling](#error-handling)
+  - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
 
 <!-- tocstop -->
 
@@ -1253,4 +1257,130 @@ retries=$[retries + 1]
 
 # Under set -e this stops the script the first time count goes from 0 to 1
 ((count++))
+```
+## Calling Commands
+
+### Checking Return Values
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Let `set -Eeuo pipefail`, or `dybatpho::register_common_handlers`, stop the script on an unhandled failure. (dybatpho)
+> - ✔️ SHOULD: Test a command directly: `if ! command; then ... fi`
+> - ✔️ SHOULD: Append `|| true` to a command whose failure is genuinely expected, and say in a comment why
+> - ✔️ SHOULD: Exit with a meaningful status: `0` on success, non-zero on failure
+> - ❌ AVOID: Do not inspect `$?` in a separate statement
+> - ❌ AVOID: Do not rely on `PIPESTATUS`
+
+Reading `$?` on the next line only works if nothing else ran in between, which is a condition nobody can keep while the script grows. Testing the command itself cannot go stale. An explicit `|| true` is also a marker: it tells the next reader that the failure was considered, rather than forgotten.
+
+**Recommended**
+
+```sh
+if ! command -v sudo &> /dev/null; then
+  dybatpho::die "sudo is required"
+fi
+
+# grep exits 1 when it matches nothing, which is a valid outcome here
+expected_hash=$(grep -E "[[:space:]]\*?${asset_name}\$" "${sha256_file}" | awk '{print $1}') || true
+
+# The submodule may already be present, do not fail the run over it
+git -C "${DYBATPHO_DIR}" submodule update --init --recursive 2> /dev/null || true
+```
+
+**Discouraged**
+
+```sh
+# Fragile: any added line between the two breaks the check
+curl -fsSL "$url" -o "$file"
+if [[ $? -ne 0 ]]; then
+  echo "download failed"
+fi
+```
+
+### Error Handling
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Handle an error in the function where it happens, not in the caller
+> - ✔️ SHOULD: Stop with `dybatpho::die` when the script cannot continue, and `return 1` when the caller can. (dybatpho)
+> - ✔️ SHOULD: Say what failed and what the user can do about it, in a message on `STDERR`
+> - ✔️ SHOULD: Install the common handlers once, at the top of an entrypoint, with `dybatpho::register_common_handlers`. (dybatpho)
+> - ❌ AVOID: Do not return a bare non-zero status with no message
+
+The function that fails is the only place that still knows the file name, the URL and the option that produced the failure. A caller that receives only `1` can either report nothing useful or invent context.
+
+**Recommended**
+
+```sh
+if [[ ! -x "${BATS_CMD}" ]]; then
+  dybatpho::die "Bats test runner not found. Install bats, or run: git -C ${DYBATPHO_DIR} submodule update --init --recursive"
+fi
+
+function get_dir {
+  local config_dir
+  dybatpho::expect_args config_dir -- "$@"
+  if [[ ! -e "$config_dir" ]]; then
+    dybatpho::error "Configuration directory ${config_dir} does not exist"
+    return 1
+  fi
+  echo "${config_dir}"
+}
+```
+
+**Discouraged**
+
+```sh
+# The caller has no way to tell what went wrong
+function get_dir {
+  [[ -e "$1" ]] || return 1
+  echo "$1"
+}
+```
+
+### Builtin Commands vs External Commands
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Prefer a builtin to an external command for the same job: parameter expansion over `sed`, `(( ... ))` over `expr`, `[[ ... ]]` over `test`
+> - ✔️ SHOULD: Use an external tool such as `sed`, `awk` or `yq` when it makes the code clearly shorter and clearer
+> - ✔️ SHOULD: Call an external tool through `command <tool>` when an alias or a function of the same name may be in scope. (custom)
+> - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
+
+Builtins do not fork, so they are faster in a loop, and they behave the same on every machine. The exception is text transformation over many lines, where `sed` or `awk` say in one line what parameter expansion needs a loop for.
+
+**Recommended**
+
+```sh
+# Builtin expansion for simple slicing
+local asset_name="${url##*/}"
+local base_url="${url%/*}"
+
+# External tool where it is genuinely clearer
+function misc::replace_version {
+  local version
+  dybatpho::expect_args version -- "$@"
+  sed -e "s/%v/${version}/g" -e "s/%1v/${version:1}/g"
+}
+
+# The real binary, not a user alias or a wrapper function
+mapfile -d '' -t files < <(command find "${root}" -type f -print0)
+```
+
+**Discouraged**
+
+```sh
+# A process per line to do what ${url##*/} does
+asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
+
+# Unreadable, and it does the same as a two-line sed
+result="${input//${a}\/${b}/${c}${d//x/y}}"
 ```
