@@ -426,28 +426,28 @@ Shell loops are a bit different, but following the principle of braces when decl
 **Recommended**
 
 ```sh
-if [[ nantoka ]]; then
-  ;;
+if [[ -n "${name}" ]]; then
+  dybatpho::info "Installing ${name}"
 else
-  ;;
+  dybatpho::die "No tool name given"
 fi
 
-for i in $(seq 1 10); do
-  echo $i
+for tool in "${tools[@]}"; do
+  echo "${tool}"
 done
 ```
 
 **Discouraged**
 
 ```sh
-if [[ nantoka ]];
+if [[ -n "${name}" ]];
 then
-  ;;
+  dybatpho::info "Installing ${name}"
 fi
 
-for i in $(seq 1 10)
+for tool in "${tools[@]}"
 do
-  echo $i
+  echo "${tool}"
 done
 ```
 

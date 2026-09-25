@@ -428,28 +428,28 @@ Vòng lặp shell hơi khác một chút, nhưng tuân theo nguyên tắc dấu 
 **Nên dùng**
 
 ```sh
-if [[ nantoka ]]; then
-  ;;
+if [[ -n "${name}" ]]; then
+  dybatpho::info "Installing ${name}"
 else
-  ;;
+  dybatpho::die "No tool name given"
 fi
 
-for i in $(seq 1 10); do
-  echo $i
+for tool in "${tools[@]}"; do
+  echo "${tool}"
 done
 ```
 
 **Không nên dùng**
 
 ```sh
-if [[ nantoka ]];
+if [[ -n "${name}" ]];
 then
-  ;;
+  dybatpho::info "Installing ${name}"
 fi
 
-for i in $(seq 1 10)
+for tool in "${tools[@]}"
 do
-  echo $i
+  echo "${tool}"
 done
 ```
 
