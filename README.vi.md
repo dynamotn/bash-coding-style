@@ -90,10 +90,10 @@ DYBATPHO_DIR=<path to dybatpho>
 
 ### Trình kiểm tra
 
-[dyshellint](https://gitlab.com/dynamo-tools/dyshellint) kiểm tra một script theo hướng dẫn này. Nó điều phối toàn bộ việc kiểm tra: các quy tắc riêng của hướng dẫn này — namespace, chú thích shdoc, bố cục tệp, quy ước dybatpho — cùng với [ShellCheck](https://www.shellcheck.net/) dùng `.shellcheckrc` và [shfmt](https://github.com/mvdan/sh) dùng các tùy chọn của chương Định dạng. Quy tắc ✔️ NÊN và ❌ TRÁNH được báo là lỗi, quy tắc ⚠️ CÂN NHẮC được báo là cảnh báo.
+[dyshellint](https://github.com/dynamotn/dyshellint) ([GitLab](https://gitlab.com/dynamo-tools/dyshellint)) kiểm tra một script theo hướng dẫn này. Nó điều phối toàn bộ việc kiểm tra: các quy tắc riêng của hướng dẫn này — namespace, chú thích sh-docs, bố cục tệp, quy ước dybatpho — cùng với [ShellCheck](https://www.shellcheck.net/) dùng `.shellcheckrc` và [shfmt](https://github.com/mvdan/sh) dùng các tùy chọn của chương Định dạng. Quy tắc ✔️ NÊN và ❌ TRÁNH được báo là lỗi, quy tắc ⚠️ CÂN NHẮC được báo là cảnh báo.
 
 ```sh
-go install gitlab.com/dynamo-tools/dyshellint/tools/dyshellint@latest
+go install gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint@latest
 
 # Một kho, hoặc một tệp
 dyshellint ./scripts
@@ -547,7 +547,7 @@ done
 > [!TIP]
 >
 > - ✔️ NÊN: Thêm một comment ở đầu file để giải thích ngắn gọn mục đích hoặc nội dung của file. Tuy nhiên, không thêm comment trước dòng shebang.
-> - ✔️ NÊN: Sử dụng định dạng [shdoc](https://github.com/reconquest/shdoc) bao gồm: `@file`, `@brief`, `@description` để giải thích file. (tùy chỉnh)
+> - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) bao gồm: `@file`, `@brief`, `@description` để giải thích file. (tùy chỉnh)
 
 Tất cả các file nên có một comment cấp cao nhất mô tả ngắn gọn nội dung của chúng.
 
@@ -567,7 +567,7 @@ Tất cả các file nên có một comment cấp cao nhất mô tả ngắn g�
 
 > [!TIP]
 >
-> - ✔️ NÊN: Sử dụng định dạng [shdoc](https://github.com/reconquest/shdoc) để giải thích hàm. (tùy chỉnh)
+> - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) để giải thích hàm. (tùy chỉnh)
 
 Người khác có thể học cách sử dụng chương trình của bạn hoặc sử dụng một hàm trong thư viện của bạn bằng cách đọc các comment (và tự tìm hiểu, nếu có) mà không cần đọc code.
 

@@ -88,10 +88,10 @@ DYBATPHO_DIR=<path to dybatpho>
 
 ### Linter
 
-[dyshellint](https://gitlab.com/dynamo-tools/dyshellint) checks a script against this guide. It orchestrates the whole check: the rules that are specific to this guide — namespaces, shdoc headers, file layout, the dybatpho conventions — plus [ShellCheck](https://www.shellcheck.net/) with a `.shellcheckrc` and [shfmt](https://github.com/mvdan/sh) with the options of the Formatting chapter. ✔️ SHOULD and ❌ AVOID rules are reported as errors, ⚠️ CONSIDER rules as warnings.
+[dyshellint](https://github.com/dynamotn/dyshellint) ([GitLab](https://gitlab.com/dynamo-tools/dyshellint)) checks a script against this guide. It orchestrates the whole check: the rules that are specific to this guide — namespaces, sh-docs headers, file layout, the dybatpho conventions — plus [ShellCheck](https://www.shellcheck.net/) with a `.shellcheckrc` and [shfmt](https://github.com/mvdan/sh) with the options of the Formatting chapter. ✔️ SHOULD and ❌ AVOID rules are reported as errors, ⚠️ CONSIDER rules as warnings.
 
 ```sh
-go install gitlab.com/dynamo-tools/dyshellint/tools/dyshellint@latest
+go install gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint@latest
 
 # A repository, or one file
 dyshellint ./scripts
@@ -545,7 +545,7 @@ Custom rule
 > [!TIP]
 >
 > - ✔️ SHOULD: Include a comment at the beginning of the file that concisely explains the purpose or content of the file. However, do not include comments before the shebang line
-> - ✔️ SHOULD: Use [shdoc](https://github.com/reconquest/shdoc) format includes: `@file`, `@brief`, `@description` to explain the file. (custom)
+> - ✔️ SHOULD: Use [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) format includes: `@file`, `@brief`, `@description` to explain the file. (custom)
 
 All files should include a top-level comment that briefly describes their content.
 
@@ -565,7 +565,7 @@ Custom rule
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Use [shdoc](https://github.com/reconquest/shdoc) format to explain the function. (custom)
+> - ✔️ SHOULD: Use [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) format to explain the function. (custom)
 
 It should be possible for someone else to learn how to use your program or to use a function in your library by reading the comments (and self-help, if provided) without reading the code.
 
