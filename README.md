@@ -28,6 +28,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Naming Conventions](#naming-conventions)
   - [Function Names](#function-names)
   - [Variable Names](#variable-names)
+  - [Local Names in Nameref and Callback Functions](#local-names-in-nameref-and-callback-functions)
 - [Comments](#comments)
   - [File Header](#file-header)
   - [Function Comments](#function-comments)
@@ -534,6 +535,55 @@ NAME="$1"
 for i in "${tools[@]}"; do
   install "$i"
 done
+```
+
+### Local Names in Nameref and Callback Functions
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Prefix every other local of a function that binds `local -n` to a name its caller chose: `__<namespace>_<function>_<name>`
+> - ✔️ SHOULD: Prefix the locals of a function that runs caller code — `"$@"`, `eval`, a callback, handler or producer name — when they are live across that call
+> - ❌ AVOID: Do not give such a function plain locals like `status`, `name`, `path`, `count` or `result`
+
+Bash scopes variables dynamically. `local -n ref="$1"` resolves the name the caller passed when it is used, so if the function has a local of that name, the nameref binds to the local and the caller's variable is never filled. Code a function runs on its caller's behalf sees the function's locals in the same way, and can read or overwrite them: a command that kept its own `count` once changed how often a retry helper retried.
+
+**Recommended**
+
+```sh
+function text::split_into {
+  local -n __text_split_ref="$1"
+  local __text_split_input="$2"
+  IFS=, read -r -a __text_split_ref <<< "${__text_split_input}"
+}
+
+function net::retry {
+  local __net_retry_count=0
+  until "$@"; do
+    ((++__net_retry_count < 3)) || return 1
+  done
+}
+```
+
+**Discouraged**
+
+```sh
+function text::split_into {
+  local -n ref="$1"
+  # A caller that passes `input` gets this local back, unfilled
+  local input="$2"
+  IFS=, read -r -a ref <<< "${input}"
+}
+
+function net::retry {
+  local count=0
+  # A command that sets `count` changes how often this retries
+  until "$@"; do
+    ((++count < 3)) || return 1
+  done
+}
 ```
 
 ## Comments

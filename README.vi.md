@@ -29,6 +29,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-d%E1%BA%B7t-ten)
   - [Tên hàm](#ten-ham)
   - [Tên biến](#ten-bi%E1%BA%BFn)
+  - [Tên biến cục bộ trong hàm nameref và hàm callback](#ten-bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99-trong-ham-nameref-va-ham-callback)
 - [Chú thích](#chu-thich)
   - [Phần đầu file](#ph%E1%BA%A7n-d%E1%BA%A7u-file)
   - [Chú thích hàm](#chu-thich-ham)
@@ -536,6 +537,55 @@ NAME="$1"
 for i in "${tools[@]}"; do
   install "$i"
 done
+```
+
+### Tên biến cục bộ trong hàm nameref và hàm callback
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thêm tiền tố cho mọi biến cục bộ khác của một hàm gắn `local -n` với một tên do bên gọi chọn: `__<namespace>_<function>_<name>`
+> - ✔️ NÊN: Thêm tiền tố cho các biến cục bộ của một hàm chạy code của bên gọi — `"$@"`, `eval`, tên một callback, handler hay producer — khi chúng còn được dùng sau lần gọi đó
+> - ❌ TRÁNH: Không đặt cho những hàm như vậy các biến cục bộ trơn như `status`, `name`, `path`, `count` hay `result`
+
+Bash dùng phạm vi biến động. `local -n ref="$1"` chỉ phân giải tên bên gọi truyền vào lúc được dùng, nên nếu hàm có một biến cục bộ trùng tên đó, nameref sẽ gắn vào biến cục bộ và biến của bên gọi không bao giờ được gán. Code mà hàm chạy thay cho bên gọi cũng thấy các biến cục bộ của hàm theo cách đó, và có thể đọc hay ghi đè chúng: một lệnh tự giữ biến `count` của riêng nó từng làm thay đổi số lần thử lại của một helper retry.
+
+**Nên dùng**
+
+```sh
+function text::split_into {
+  local -n __text_split_ref="$1"
+  local __text_split_input="$2"
+  IFS=, read -r -a __text_split_ref <<< "${__text_split_input}"
+}
+
+function net::retry {
+  local __net_retry_count=0
+  until "$@"; do
+    ((++__net_retry_count < 3)) || return 1
+  done
+}
+```
+
+**Không nên dùng**
+
+```sh
+function text::split_into {
+  local -n ref="$1"
+  # Bên gọi truyền tên `input` sẽ nhận lại biến cục bộ này, chưa được gán
+  local input="$2"
+  IFS=, read -r -a ref <<< "${input}"
+}
+
+function net::retry {
+  local count=0
+  # Một lệnh gán `count` sẽ làm thay đổi số lần thử lại
+  until "$@"; do
+    ((++count < 3)) || return 1
+  done
+}
 ```
 
 ## Chú thích
