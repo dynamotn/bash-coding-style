@@ -1845,7 +1845,7 @@ fi
 > - ❌ AVOID: Do not use a single `=` for string comparison
 > - ❌ AVOID: Do not use `<` or `>` to compare numbers inside `[[ ... ]]`
 > - ❌ AVOID: Do not run a flag variable as a command, as in `if ${force}; then` or `while ${running}; do`: its value is executed `BSG121`
-> - ❌ AVOID: Do not prefix both sides of a comparison with a letter, as in `[[ "x${answer}" == "xyes" ]]`: quote the variable instead
+> - ❌ AVOID: Do not prefix both sides of a comparison with a letter, as in `[[ "x${answer}" == "xyes" ]]`: quote the variable instead `BSG127`
 
 Inside `[[ ... ]]` the operators `<` and `>` compare lexicographically, so `[[ 10 < 9 ]]` is true. Numbers belong in `(( ... ))`.
 
@@ -3408,7 +3408,7 @@ ssh "${host}" 'systemctl is-active app'
 > [!TIP]
 >
 > - ✔️ SHOULD: Run a local function on a remote host by sending its definition, printed by `declare -f`, and then the call to `bash -s` on standard input
-> - ✔️ SHOULD: Quote every local value that goes into a remote command with `${value@Q}`, or `printf %q`
+> - ✔️ SHOULD: Quote every local value that goes into a remote command with `${value@Q}`, or `printf %q` `BSG128`
 > - ✔️ SHOULD: Send every function the remote side calls, and use only commands the remote host has
 > - ❌ AVOID: Do not pass a remote command as separate words, as in `ssh "${host}" du -sh -- "${dir}"`: ssh joins them with spaces, and the remote shell splits them again
 > - ❌ AVOID: Do not copy the body of a function into a command string by hand

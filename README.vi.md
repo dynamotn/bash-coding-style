@@ -1847,7 +1847,7 @@ fi
 > - ❌ TRÁNH: Không dùng một dấu `=` để so sánh chuỗi
 > - ❌ TRÁNH: Không dùng `<` hay `>` để so sánh số trong `[[ ... ]]`
 > - ❌ TRÁNH: Không chạy một biến cờ như một lệnh, như `if ${force}; then` hay `while ${running}; do`: giá trị của nó bị thực thi `BSG121`
-> - ❌ TRÁNH: Không thêm một chữ cái vào trước cả hai vế của phép so sánh, như `[[ "x${answer}" == "xyes" ]]`: hãy đặt biến trong dấu nháy
+> - ❌ TRÁNH: Không thêm một chữ cái vào trước cả hai vế của phép so sánh, như `[[ "x${answer}" == "xyes" ]]`: hãy đặt biến trong dấu nháy `BSG127`
 
 Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ điển, nên `[[ 10 < 9 ]]` là đúng. Số thì phải nằm trong `(( ... ))`.
 
@@ -3410,7 +3410,7 @@ ssh "${host}" 'systemctl is-active app'
 > [!TIP]
 >
 > - ✔️ NÊN: Chạy một hàm cục bộ trên máy remote bằng cách gửi định nghĩa của nó, do `declare -f` in ra, rồi đến lời gọi hàm, cho `bash -s` qua standard input
-> - ✔️ NÊN: Đặt mọi giá trị cục bộ đưa vào lệnh remote trong dấu nháy bằng `${value@Q}`, hoặc `printf %q`
+> - ✔️ NÊN: Đặt mọi giá trị cục bộ đưa vào lệnh remote trong dấu nháy bằng `${value@Q}`, hoặc `printf %q` `BSG128`
 > - ✔️ NÊN: Gửi kèm mọi hàm mà phía remote gọi tới, và chỉ dùng những lệnh có trên máy remote
 > - ❌ TRÁNH: Không truyền lệnh remote thành các từ rời, như `ssh "${host}" du -sh -- "${dir}"`: ssh nối chúng lại bằng dấu cách, và shell bên remote tách chúng ra lần nữa
 > - ❌ TRÁNH: Không chép tay thân của một hàm vào một chuỗi lệnh
