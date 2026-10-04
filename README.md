@@ -1754,7 +1754,9 @@ done
 > - ✔️ SHOULD: Feed a `while read` loop with process substitution: `while read -r line; do ...; done < <(command)`
 > - ✔️ SHOULD: Use `readarray -t` or `mapfile -t` when the whole output is wanted as an array
 > - ✔️ SHOULD: Use `read -r`, and `mapfile -d ''` with `-print0` when the values may contain newlines
+> - ✔️ SHOULD: Read every line, including a last one without a newline: `while IFS= read -r line || [[ -n "${line}" ]]`
 > - ❌ AVOID: Do not pipe into a `while` loop
+> - ❌ AVOID: Do not rely on `while read -r line` alone for input that may not end with a newline
 
 The right-hand side of a pipe runs in a subshell, so every variable the loop sets is discarded when the loop ends. Process substitution keeps the loop in the current shell.
 
@@ -1783,6 +1785,26 @@ command find "${root}" -type f | while read -r line; do
   count=$((count + 1))
 done
 echo "${count}"
+```
+
+`read` returns non-zero when it hits the end of input before a newline, even though it has filled the variable. A file whose last line has no newline — common for hand-edited configs and `printf '%s'` output — loses that line. `IFS=` also keeps leading and trailing blanks.
+
+**Recommended**
+
+```sh
+local line
+while IFS= read -r line || [[ -n "${line}" ]]; do
+  process "${line}"
+done < "${file}"
+```
+
+**Discouraged**
+
+```sh
+# The last line is dropped when the file does not end with a newline
+while read -r line; do
+  process "${line}"
+done < "${file}"
 ```
 
 ### Process Substitution

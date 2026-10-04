@@ -1750,7 +1750,9 @@ done
 > - ✔️ NÊN: Cấp dữ liệu cho vòng lặp `while read` bằng thay thế tiến trình: `while read -r line; do ...; done < <(command)`
 > - ✔️ NÊN: Dùng `readarray -t` hoặc `mapfile -t` khi cần lấy toàn bộ kết quả thành một mảng
 > - ✔️ NÊN: Dùng `read -r`, và dùng `mapfile -d ''` cùng `-print0` khi giá trị có thể chứa ký tự xuống dòng
+> - ✔️ NÊN: Đọc mọi dòng, kể cả dòng cuối không có ký tự xuống dòng: `while IFS= read -r line || [[ -n "${line}" ]]`
 > - ❌ TRÁNH: Không đưa đường ống vào vòng lặp `while`
+> - ❌ TRÁNH: Không chỉ dựa vào `while read -r line` với đầu vào có thể không kết thúc bằng ký tự xuống dòng
 
 Vế phải của đường ống chạy trong một shell con, nên mọi biến mà vòng lặp gán đều bị vứt đi khi vòng lặp kết thúc. Thay thế tiến trình giữ vòng lặp ở lại trong shell hiện tại.
 
@@ -1779,6 +1781,26 @@ command find "${root}" -type f | while read -r line; do
   count=$((count + 1))
 done
 echo "${count}"
+```
+
+`read` trả về khác không khi gặp cuối đầu vào trước ký tự xuống dòng, dù nó đã gán giá trị cho biến. Một tệp có dòng cuối không có ký tự xuống dòng — thường gặp ở tệp cấu hình sửa tay và output của `printf '%s'` — sẽ mất dòng đó. `IFS=` còn giữ lại khoảng trắng ở đầu và cuối dòng.
+
+**Nên dùng**
+
+```sh
+local line
+while IFS= read -r line || [[ -n "${line}" ]]; do
+  process "${line}"
+done < "${file}"
+```
+
+**Không nên dùng**
+
+```sh
+# Dòng cuối bị mất khi tệp không kết thúc bằng ký tự xuống dòng
+while read -r line; do
+  process "${line}"
+done < "${file}"
 ```
 
 ### Thay thế tiến trình
