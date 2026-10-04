@@ -1251,6 +1251,9 @@ command1 | command2 | command3 | command4
 >
 > - ✔️ SHOULD: Place `; do` and `; then` on the same line as `while`, `for`, and `if`
 > - ✔️ SHOULD: Place `elif` and `else` on their own lines
+> - ✔️ SHOULD: Write a choice between two actions as `if`/`else`
+> - ❌ AVOID: Do not write `test && action || other` for an if/else: `other` also runs when `action` fails. ShellCheck reports it as SC2015
+> - ❌ AVOID: Do not use `test && { ...; }` as an `if` that spans several lines
 
 Shell loops are a bit different, but following the principle of braces when declaring functions, place `; then` and `; do` on the same line as `if/for/while`. `else` should be placed on its own line, and closing constructs should also be on their own lines. They should be vertically aligned with their opening constructs.
 
@@ -1280,6 +1283,33 @@ for tool in "${tools[@]}"
 do
   printf '%s\n' "${tool}"
 done
+```
+
+`a && b || c` is not an `if`: `c` runs when `a` fails, and also when `a` succeeds and `b` fails. A message such as `|| echo "not found"` then claims the opposite of what happened. A block after `&&` reads as an `if` without saying so, and its status leaks out when the test is false — see [Checking Return Values](#checking-return-values). The one-line guard `test || action`, which stops or skips, is still fine.
+
+**Recommended**
+
+```sh
+if [[ -f "${config}" ]]; then
+  dybatpho::info "Using ${config}"
+else
+  dybatpho::warn "No ${config}, using defaults"
+fi
+
+[[ -f "${config}" ]] || dybatpho::die "Missing ${config}"
+```
+
+**Discouraged**
+
+```sh
+# Also warns when the file exists but the message cannot be printed
+[[ -f "${config}" ]] && dybatpho::info "Using ${config}" || dybatpho::warn "No ${config}, using defaults"
+
+# An `if` in disguise
+[[ -f "${config}" ]] && {
+  load_config "${config}"
+  validate_config
+}
 ```
 
 ### Case statement

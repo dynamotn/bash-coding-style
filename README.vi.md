@@ -1253,6 +1253,9 @@ command1 | command2 | command3 | command4
 >
 > - ✔️ NÊN: Đặt `; do` và `; then` trên cùng dòng với `while`, `for` và `if`
 > - ✔️ NÊN: Đặt `elif` và `else` trên dòng riêng của chúng
+> - ✔️ NÊN: Viết lựa chọn giữa hai hành động bằng `if`/`else`
+> - ❌ TRÁNH: Không viết `test && action || other` thay cho if/else: `other` cũng chạy khi `action` lỗi. ShellCheck báo lỗi này là SC2015
+> - ❌ TRÁNH: Không dùng `test && { ...; }` làm một `if` trải trên nhiều dòng
 
 Vòng lặp shell hơi khác một chút, nhưng tuân theo nguyên tắc dấu ngoặc nhọn khi khai báo hàm, hãy đặt `; then` và `; do` trên cùng dòng với `if/for/while`. `else` nên được đặt trên dòng riêng của nó, và các cấu trúc đóng cũng nên ở trên dòng riêng của chúng. Chúng nên được căn chỉnh theo chiều dọc với các cấu trúc mở của chúng.
 
@@ -1282,6 +1285,33 @@ for tool in "${tools[@]}"
 do
   printf '%s\n' "${tool}"
 done
+```
+
+`a && b || c` không phải là `if`: `c` chạy khi `a` lỗi, và cả khi `a` thành công nhưng `b` lỗi. Một thông báo như `|| echo "not found"` khi đó nói ngược lại với điều đã xảy ra. Một khối sau `&&` trông như `if` mà không nói ra, và trạng thái của nó lọt ra ngoài khi test sai — xem [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gi%C3%A1-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81). Câu chặn một dòng `test || action`, để dừng hoặc bỏ qua, vẫn dùng được.
+
+**Nên dùng**
+
+```sh
+if [[ -f "${config}" ]]; then
+  dybatpho::info "Using ${config}"
+else
+  dybatpho::warn "No ${config}, using defaults"
+fi
+
+[[ -f "${config}" ]] || dybatpho::die "Missing ${config}"
+```
+
+**Không nên dùng**
+
+```sh
+# Vẫn cảnh báo khi tệp tồn tại nhưng không in được thông báo
+[[ -f "${config}" ]] && dybatpho::info "Using ${config}" || dybatpho::warn "No ${config}, using defaults"
+
+# Một `if` trá hình
+[[ -f "${config}" ]] && {
+  load_config "${config}"
+  validate_config
+}
 ```
 
 ### Câu lệnh case
