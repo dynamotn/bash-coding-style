@@ -3,7 +3,7 @@
 # @brief Keep the dyshellint rule codes on the tips of the guide in sync
 # @description
 #   Every tip the linter checks ends with the code of the rule that checks it,
-#   such as `BSG010`. This script reads the rules from `dyshellint --list-rules`
+#   written as a key, such as `<kbd>BSG010</kbd>`. This script reads the rules from `dyshellint --list-rules`
 #   and brings `README.md` in line with them:
 #
 #   - a code already on a tip stays where it is, as that placement may have been
@@ -35,8 +35,7 @@ readonly MIRROR_READMES=("${REPO_DIR}/README.vi.md")
 readonly STOP_WORDS=" the and not for with that this from when which than its are use into out does any all one "
 
 # One code at the end of a tip, and the tip before it.
-# shellcheck disable=SC2016 # the backticks are literal Markdown, not a substitution
-readonly TRAILING_CODE='^(.*[^ ]) +`(BSG[0-9]{3})`$'
+readonly TRAILING_CODE='^(.*[^ ]) +<kbd>(BSG[0-9]{3})</kbd>$'
 
 #######################################
 # @description Split a tip into its text and the codes at its end.
@@ -180,7 +179,7 @@ function _sync_source {
     kept=""
     for code in ${codes}; do
       if [[ -n "${known["${code}"]-}" ]]; then
-        kept+=" \`${code}\`"
+        kept+=" <kbd>${code}</kbd>"
         placed["${code}"]=1
       else
         printf 'removed %s, which dyshellint no longer has\n' "${code}" >&2
@@ -207,7 +206,7 @@ function _sync_source {
         best_score="${score}"
       fi
     done
-    lines[best]+=" \`${code}\`"
+    lines[best]+=" <kbd>${code}</kbd>"
     printf 'added %s on line %d: %s\n' "${code}" "$((best + 1))" "${lines[best]:0:100}" >&2
   done <<< "${sorted}"
 
@@ -288,7 +287,7 @@ function _sync_mirror {
         line="${BASH_REMATCH[1]}"
       done
       for code in ${codes_at["${at_section}:${at_tip}"]}; do
-        line+=" \`${code}\`"
+        line+=" <kbd>${code}</kbd>"
       done
     fi
     printf '%s\n' "${line}"
