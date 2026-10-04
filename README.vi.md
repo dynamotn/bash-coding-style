@@ -2594,6 +2594,7 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Tạo tệp trong thư mục dùng chung bằng `mktemp`, hoặc tự đặt tên với hậu tố ngẫu nhiên dưới noclobber (`set -C`), để một tên đã tồn tại bị từ chối
 > - ❌ TRÁNH: Không tự dựng đường dẫn tạm từ `$$`, từ dấu thời gian hay từ một tên cố định
 > - ❌ TRÁNH: Không để việc dọn dẹp ở dòng cuối script, nơi mà một lỗi sẽ không bao giờ chạy tới
+> - ❌ TRÁNH: Không trap `INT` hay `TERM` bằng một bước dọn dẹp không thoát: script sẽ chạy tiếp sau Ctrl-C
 > - ❌ TRÁNH: Không để một đường dẫn rỗng hay hỏng biến tệp staging thành một tệp trong thư mục làm việc
 > - ❌ TRÁNH: Không mở một tên trong thư mục dùng chung bằng `>` trơn: nó đi theo liên kết tượng trưng được đặt sẵn ở đó, kể cả khi tên có `$$` hay `$BASHPID`
 
@@ -2612,7 +2613,8 @@ tar -xf "${archive}" -C "${temp_dir}"
 
 # Khi không có thư viện; `--suffix` chỉ GNU có, nên tên tệp không có phần mở rộng
 temp_file="$(mktemp)"
-trap 'rm -f "${temp_file}"' EXIT INT TERM
+# Chỉ EXIT: Bash cũng chạy nó khi Ctrl-C hay TERM, rồi thoát với 130 hoặc 143
+trap 'rm -f "${temp_file}"' EXIT
 
 # Tệp staging cho một lần ghi lại nguyên tử: đích đã kiểm tra, tạo độc quyền
 [[ -n "${path}" && ! -d "${path}" ]] || dybatpho::die "Not a file path: ${path}"
@@ -2631,7 +2633,12 @@ rm -f "$temp_file"
 # Đường dẫn rỗng làm tệp staging nằm trong thư mục làm việc, và `>` đi theo liên kết đặt sẵn
 staging="$(dirname "${path}")/.staging.$$"
 printf '%s\n' "${content}" > "${staging}"
+
+# Ctrl-C chạy bước dọn dẹp rồi script chạy tiếp, sau đó dọn dẹp thêm lần nữa
+trap 'rm -f "${temp_file}"' EXIT INT TERM
 ```
+
+Một handler cho `INT` hay `TERM` thay thế hành động mặc định, vốn là thoát. Vì thế một bước dọn dẹp chỉ xóa tệp sẽ biến Ctrl-C thành "xóa tệp tạm của tôi rồi chạy tiếp": script tiếp tục mà không còn tệp đó, và thoát với mã 0. Trap `EXIT` vốn đã chạy khi Bash chết vì `INT` hay `TERM`; chỉ cần handler cho chính tín hiệu đó khi nó kết thúc bằng `exit`, như trong [Trình xử lý tín hiệu](#tr%C3%ACnh-x%E1%BB%AD-l%C3%BD-t%C3%ADn-hi%E1%BB%87u).
 
 `$$` và `$BASHPID` ai cũng thấy được và dễ đoán trước khi script chạy, nên một cái tên dựng từ chúng có thể bị chiếm trước — bằng một liên kết tượng trưng trỏ tới một tệp mà script được quyền ghi. `>` sẽ đi theo liên kết đó. `mktemp` tạo tệp độc quyền với một tên ngẫu nhiên; khi buộc phải tự chọn tên, noclobber làm `>` từ chối một tên đã tồn tại, dù có là liên kết hay không.
 

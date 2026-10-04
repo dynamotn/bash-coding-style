@@ -2598,6 +2598,7 @@ Custom rule
 > - ✔️ SHOULD: Create a file in a shared directory with `mktemp`, or by hand with a random suffix under noclobber (`set -C`), so a name that already exists is refused
 > - ❌ AVOID: Do not build a temporary path yourself from `$$`, a timestamp or a fixed name
 > - ❌ AVOID: Do not leave cleanup to the last line of the script, which an error never reaches
+> - ❌ AVOID: Do not trap `INT` or `TERM` with a cleanup that does not exit: the script carries on after Ctrl-C
 > - ❌ AVOID: Do not let an empty or failed path turn a staging file into one in the working directory
 > - ❌ AVOID: Do not open a name in a shared directory with a plain `>`: it follows a symlink planted there, even when the name carries `$$` or `$BASHPID`
 
@@ -2616,7 +2617,8 @@ tar -xf "${archive}" -C "${temp_dir}"
 
 # Without the library; `--suffix` is GNU only, so the name has no extension
 temp_file="$(mktemp)"
-trap 'rm -f "${temp_file}"' EXIT INT TERM
+# EXIT alone: Bash runs it on Ctrl-C and TERM too, then exits with 130 or 143
+trap 'rm -f "${temp_file}"' EXIT
 
 # A staging file for an atomic rewrite: checked destination, exclusive creation
 [[ -n "${path}" && ! -d "${path}" ]] || dybatpho::die "Not a file path: ${path}"
@@ -2635,7 +2637,12 @@ rm -f "$temp_file"
 # An empty path stages into the working directory, and `>` follows a planted link
 staging="$(dirname "${path}")/.staging.$$"
 printf '%s\n' "${content}" > "${staging}"
+
+# Ctrl-C runs the cleanup and the script carries on, then cleans up a second time
+trap 'rm -f "${temp_file}"' EXIT INT TERM
 ```
+
+A handler on `INT` or `TERM` replaces the default action, which is to exit. A cleanup that only removes files therefore turns Ctrl-C into "delete my temporary file and keep going": the script runs on without it, and exits with status 0. The `EXIT` trap already runs when Bash dies of `INT` or `TERM`; a handler for the signal itself is only needed when it ends with `exit`, as in [Signal Handlers](#signal-handlers).
 
 `$$` and `$BASHPID` are visible to every user and easy to guess before the script runs, so a name built from them can be taken in advance — as a symlink to a file the script is allowed to write. `>` follows that link. `mktemp` creates the file exclusively, under a random name; where a name has to be chosen by hand, noclobber makes `>` refuse a name that exists, link or not.
 
