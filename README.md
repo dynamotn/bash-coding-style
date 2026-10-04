@@ -904,6 +904,7 @@ function text::split_into {
 >
 > - ✔️ SHOULD: Ask only when standard input is a terminal, or honour a non-interactive mode, and fall back to a safe default otherwise
 > - ✔️ SHOULD: Give a prompt a timeout and a default answer
+> - ✔️ SHOULD: Ask a yes or no question with `dybatpho::confirm`, which asks only on a terminal, answers no without one, and takes a default answer. (dybatpho)
 > - ❌ AVOID: Do not call `read` or a prompt unconditionally in a script that may run in CI, cron or a pipe `BSG098`
 
 With no terminal, `read` waits for input that never comes — a CI job hangs until its timeout — or reads the next line of a pipe meant for something else. Checking `[[ -t 0 ]]` and having a default makes the unattended run decide on its own, and a timeout bounds the interactive one.
@@ -924,6 +925,15 @@ fi
 # Hangs forever in CI, and reads the wrong line from a pipe
 read -r -p "Overwrite ${file}? [y/N] " answer
 [[ "${answer}" == [yY] ]] || return 1
+```
+
+`dybatpho::confirm` writes the question to standard error and reads an answer only when `dybatpho::is_interactive` finds a terminal on standard input, or `DYBATPHO_INTERACTIVE=true` says there is one. Otherwise it warns and returns 1, so an unattended run takes the safe answer, and `DYBATPHO_FORCE=true` answers yes for a run approved beforehand. It sets no timeout: on a terminal it waits for the answer. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::confirm "Overwrite ${file}?" || return 1
+dybatpho::confirm "Keep the backup?" yes || rm -f -- "${file}.bak"
 ```
 
 ## Naming Conventions
