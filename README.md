@@ -2128,7 +2128,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 >
 > - ✔️ SHOULD: Pass tokens, passwords and secret URLs to a command through a config file, standard input or the environment: `curl --config`, `-H @file`
 > - ✔️ SHOULD: Redact a URL before it reaches a message or a log: keep the scheme and the host, drop the user info, the path and the query
-> - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell. (dybatpho)
+> - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell, with `dybatpho::secret_register`. (dybatpho)
 > - ❌ AVOID: Do not put a secret in the arguments of a command, where every user of the host reads it from `ps` and `/proc` `BSG081`
 > - ✔️ SHOULD: Create a file that holds a secret under `umask 077`, in a subshell, or with `mktemp`, which creates it `0600`
 > - ❌ AVOID: Do not log a request URL or body whole when it may carry a token
@@ -2162,6 +2162,17 @@ printf '%s\n' "${TOKEN}" > "${XDG_CONFIG_HOME}/app/token"
 
 # The webhook URL is the secret, and now it is in the log
 dybatpho::error "Request to ${WEBHOOK_URL} failed"
+```
+
+`dybatpho::secret_register` adds a value, and each line of one that spans several, to the masking list that every dybatpho logging function applies, so a message that carries it prints `***` instead. It runs in the caller's shell: registered inside `$(...)`, the value is forgotten when the substitution ends. (dybatpho)
+
+**Recommended**
+
+```sh
+API_TOKEN="$(< "${token_file}")"
+dybatpho::secret_register "${API_TOKEN}"
+# Logs "Request failed for ***"
+dybatpho::error "Request failed for ${API_TOKEN}"
 ```
 
 ### Building Structured Output
