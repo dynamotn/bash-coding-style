@@ -2476,12 +2476,22 @@ Các lệnh này đã lỗi thời, không có trong các image tối giản, ho
 **Nên dùng**
 
 ```sh
-curl --fail -sSL "${key_url}" | gpg --dearmor -o /etc/apt/keyrings/vendor.gpg
-echo "deb [signed-by=/etc/apt/keyrings/vendor.gpg] ${repo} stable main" > /etc/apt/sources.list.d/vendor.list
+# Khóa của nhà cung cấp, được đối chiếu với fingerprint mà họ công bố
+local key keys
+dybatpho::create_temp key ".asc"
+dybatpho::curl_download "${key_url}" "${key}"
+keys="$(gpg --show-keys --with-colons -- "${key}")"
+[[ "${keys}" == *"fpr:::::::::${VENDOR_FINGERPRINT}:"* ]] \
+  || dybatpho::die "Unexpected signing key from ${key_url}"
+# Ghi nguyên tử, có tôn trọng DRY_RUN
+gpg --dearmor < "${key}" | dybatpho::file_write_atomic /etc/apt/keyrings/vendor.gpg
+printf 'deb [signed-by=/etc/apt/keyrings/vendor.gpg] %s stable main\n' "${repo}" \
+  | dybatpho::file_write_atomic /etc/apt/sources.list.d/vendor.list
+
 grep -E -- "${pattern}" "${file}"
 command -v jq > /dev/null
 ip -brief address
-staging="$(mktemp)"
+dybatpho::create_temp staging ".txt"
 ```
 
 **Không nên dùng**
