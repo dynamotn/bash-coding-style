@@ -2060,8 +2060,10 @@ EOF
 > - ✔️ NÊN: Khai triển bằng `"${names[@]}"`, và lấy số phần tử bằng `"${#names[@]}"`
 > - ✔️ NÊN: Khai triển một mảng có thể rỗng bằng `${names[@]+"${names[@]}"}` khi script hỗ trợ Bash 4.3 dưới `set -u`
 > - ✔️ NÊN: Duyệt các chỉ số mà mảng thật sự có bằng `"${!names[@]}"`
+> - ✔️ NÊN: Thay cả mảng bằng `names=("${value}")`, và làm rỗng nó bằng `names=()`
 > - ❌ TRÁNH: Không giữ nhiều giá trị trong một chuỗi ngăn cách bằng dấu cách
 > - ❌ TRÁNH: Không duyệt từ `0` đến `${#names[@]} - 1` trên một mảng mà hàm không tự dựng
+> - ❌ TRÁNH: Không gán một giá trị đơn cho mảng, `names="${value}"`: nó chỉ thay phần tử 0 và giữ nguyên mọi phần tử khác
 >
 > Trình kiểm tra: `BSG049`, `BSG085`
 
@@ -2113,6 +2115,25 @@ done
 for ((index = 0; index < ${#names[@]}; index++)); do
   printf '%s\n' "${names[index]}"
 done
+```
+
+Một phép gán trơn vào tên mảng sẽ ghi vào phần tử 0. Sau `files=(a b c)` và `files=x`, mảng trở thành `(x b c)`: đoạn mã định bắt đầu lại từ đầu vẫn thấy các phần tử cũ, và `files+=x` nối thêm vào chuỗi đầu tiên thay vì thêm một phần tử.
+
+**Nên dùng**
+
+```sh
+files=("${only_file}")
+files+=("${another_file}")
+files=()
+```
+
+**Không nên dùng**
+
+```sh
+# Giữ nguyên files[1] và files[2]
+files="${only_file}"
+# Nối thêm vào chuỗi của files[0]
+files+="${another_file}"
 ```
 
 ### Mảng kết hợp
@@ -2520,8 +2541,12 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ✔️ NÊN: Kiểm tra trực tiếp trên lệnh: `if ! command; then ... fi`
 > - ✔️ NÊN: Thêm `|| true` cho lệnh mà việc thất bại là điều thực sự được dự liệu, và ghi chú lý do
 > - ✔️ NÊN: Thoát với mã có ý nghĩa: `0` khi thành công, khác `0` khi thất bại
+> - ✔️ NÊN: Kết thúc một hàm, hay một script, bằng một câu lệnh mà mã thoát chính là kết quả: viết `if cond; then action; fi` hoặc `cond || return 0`, không phải một `cond && action` trơn
+> - ✔️ NÊN: Chỉ tắt tiếng đúng lệnh mà thất bại của nó là đã lường trước, không phải cả hàm hay vòng lặp bao quanh
 > - ❌ TRÁNH: Không kiểm tra `$?` trong một câu lệnh riêng
 > - ❌ TRÁNH: Không dựa vào `PIPESTATUS`
+> - ❌ TRÁNH: Không kết thúc một hàm bằng `[[ ... ]] && action` hay `((flag)) && action`: khi điều kiện sai, hàm trả về 1 và `set -e` dừng bên gọi
+> - ❌ TRÁNH: Không chuyển hướng cả một khối vào `/dev/null`, như `} 2> /dev/null` hay `done 2> /dev/null`: nó giấu mọi lỗi bên trong, không chỉ lỗi đã lường trước
 >
 > Trình kiểm tra: `BSG044`
 
@@ -2549,6 +2574,38 @@ curl -fsSL "$url" -o "$file"
 if [[ $? -ne 0 ]]; then
   echo "download failed"
 fi
+```
+
+Mã thoát của một hàm là mã thoát của câu lệnh cuối cùng, và `set -e` chỉ bỏ qua vế trái của `&&`. Vì vậy một hàm kết thúc bằng `[[ -n "${verbose}" ]] && log "done"` sẽ trả về 1 mỗi khi `verbose` rỗng, và bên gọi dừng lại vì một hàm đã làm đủ mọi việc được yêu cầu. Dòng cuối của một script cũng vậy, nó trở thành mã thoát của cả script.
+
+**Nên dùng**
+
+```sh
+function report::summary {
+  local verbose
+  dybatpho::expect_args verbose -- "$@"
+  if dybatpho::is true "${verbose}"; then
+    dybatpho::info "Summary written"
+  fi
+}
+
+# Chỉ lệnh thăm dò có thể thất bại mới bị tắt tiếng
+rmdir -- "${maybe_empty}" 2> /dev/null || true # vẫn còn dữ liệu: một job khác đang dùng nó
+```
+
+**Không nên dùng**
+
+```sh
+function report::summary {
+  # Trả về 1 khi verbose là false, và set -e dừng bên gọi
+  [[ "$1" == true ]] && dybatpho::info "Summary written"
+}
+
+# Mọi lỗi của mọi lệnh trong hàm đều biến mất
+function sync::all {
+  cp -- "${src}" "${dst}"
+  rmdir -- "${maybe_empty}"
+} 2> /dev/null
 ```
 
 ### Errexit trong điều kiện
@@ -2613,6 +2670,7 @@ fi
 > - ✔️ NÊN: Nói rõ cái gì hỏng và người dùng có thể làm gì, trong một thông báo trên `STDERR`
 > - ✔️ NÊN: Cài đặt các trình xử lý chung một lần, ở đầu script thực thi, bằng `dybatpho::register_common_handlers`. (dybatpho)
 > - ✔️ NÊN: Ghi trong thông báo lỗi tên hàm mà bên gọi đã gọi: `FUNCNAME[1]` từ một helper được hàm đó gọi trực tiếp, một tên do hàm đó truyền vào, hoặc hàm public đầu tiên trên stack
+> - ✔️ NÊN: Hiển thị một giá trị đến từ bên ngoài — tên tệp, đối số, một dòng input — bằng `${value@Q}` trong thông báo
 > - ❌ TRÁNH: Không trả về mã khác `0` trần trụi mà không kèm thông báo
 > - ❌ TRÁNH: Không lấy một cấp cố định sâu hơn như `FUNCNAME[2]`, vì nó trỏ sang hàm khác ngay khi độ sâu lời gọi thay đổi
 >
@@ -2666,6 +2724,22 @@ function get_dir {
 function __csv_require_text {
   [[ "$1" != *$'\x1f'* ]] || dybatpho::die "${FUNCNAME[2]}: The input contains the unit separator"
 }
+```
+
+Một tên tệp có thể chứa ký tự xuống dòng, tab hay một escape sequence của terminal. In ra nguyên trạng, nó tách một bản ghi log làm đôi, giả mạo một dòng trông như một thông báo khác, hoặc vẽ lại terminal. `${value@Q}` (Bash 4.4) đặt giá trị trong nháy theo cách shell sẽ đọc lại, nên mọi ký tự đều nhìn thấy được và không có gì bị diễn giải.
+
+**Nên dùng**
+
+```sh
+dybatpho::die "File not found: ${path@Q}"
+# File not found: $'report\n2026 INFO all checks passed'
+```
+
+**Không nên dùng**
+
+```sh
+# Một tên chứa ký tự xuống dòng in ra thêm một dòng log giả mạo
+dybatpho::die "File not found: ${path}"
 ```
 
 ### Mã thoát
@@ -2781,7 +2855,10 @@ done < "${file}"
 > - ✔️ NÊN: Ghép một handler với các handler đã cài sẵn (`dybatpho::trap`), thay vì thay thế chúng. (dybatpho)
 > - ✔️ NÊN: Lưu handler của bên gọi trước một lời gọi có phạm vi, và khôi phục chúng sau đó
 > - ✔️ NÊN: Chạy phần dọn dẹp của lời gọi có phạm vi trước handler của bên gọi có gọi `exit`, rồi phát lại tín hiệu, để handler đó và hành động mặc định vẫn diễn ra
+> - ✔️ NÊN: Viết lệnh của trap trong nháy đơn, để biến của nó được khai triển khi trap chạy, không phải khi trap được cài
+> - ✔️ NÊN: Để handler `EXIT` giữ nguyên mã thoát của script: đọc `$?` trước và kết thúc bằng `exit "${status}"`, hoặc kết thúc mà không có `exit`
 > - ❌ TRÁNH: Không cài handler của thư viện bằng `trap '…' SIG` trơn, và không xóa handler bằng `trap - EXIT`
+> - ❌ TRÁNH: Không kết thúc một handler `EXIT` bằng `exit 0` hay một mã thoát cố định: một script đã thất bại lại báo thành công
 >
 > Trình kiểm tra: `BSG055`
 
@@ -2817,6 +2894,31 @@ function lib::with_lock {
 }
 ```
 
+Lệnh của trap viết trong nháy kép được khai triển một lần, lúc `trap` chạy: `trap "rm -f ${temp_file}" EXIT` xóa tệp được đặt tên vào lúc đó, không phải tệp mà biến trỏ tới khi script kết thúc, và một đường dẫn chứa dấu nháy sẽ làm hỏng handler. Một handler `EXIT` cũng quyết định mã thoát khi nó gọi `exit`, nên `exit 0` ở đó biến mọi thất bại thành thành công trong mắt bên gọi.
+
+**Nên dùng**
+
+```sh
+trap 'rm -f -- "${temp_file}"' EXIT
+
+function _on_exit {
+  local status=$?
+  rm -rf -- "${work_dir:?}"
+  exit "${status}"
+}
+trap _on_exit EXIT
+```
+
+**Không nên dùng**
+
+```sh
+# Khai triển ngay: những thay đổi sau đó của temp_file bị bỏ qua, và một dấu nháy trong nó làm hỏng handler
+trap "rm -f ${temp_file}" EXIT
+
+# Một lần chạy thất bại lại thoát với 0
+trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
+```
+
 ### Tiến trình con
 
 > [!NOTE]
@@ -2827,7 +2929,9 @@ function lib::with_lock {
 > - ✔️ NÊN: Khởi chạy mỗi job nền trong process group riêng, và gửi tín hiệu tới cả group, để tiến trình cháu cũng dừng
 > - ✔️ NÊN: Lặp lại tín hiệu tới khi group rỗng, trong một khoảng ân hạn có giới hạn, rồi gửi `KILL`
 > - ✔️ NÊN: Kết thúc mọi job mà một hàm đã khởi chạy trước khi nó trả về, kể cả khi nó trả về vì một tín hiệu
+> - ✔️ NÊN: Giữ pid của mọi job chạy nền, và đợi từng job, đếm số lần thất bại: `wait "${pid}" || failed=$((failed + 1))`
 > - ❌ TRÁNH: Không chỉ gửi tín hiệu tới pid của job, và không cho rằng một lần `TERM` là đủ
+> - ❌ TRÁNH: Không `wait` lần lượt từng job dưới `set -e` mà không kiểm tra mã thoát: thất bại đầu tiên dừng script và các job còn lại bị bỏ mặc
 
 Pid của một job thường là một subshell, còn việc thật chạy trong một tiến trình cháu mà tín hiệu gửi tới pid không bao giờ chạm tới. Ngay cả tín hiệu gửi tới cả group cũng có thể trượt một tiến trình đã fork mà chưa gọi `exec`: nó vẫn chạy các handler của shell cha, và một handler bắt `TERM` sẽ nuốt tín hiệu trước khi `exec` đặt lại nó. Gửi tín hiệu tới khi group rỗng, với `KILL` là bước cuối, là cách duy nhất để biết không còn gì sót lại.
 
@@ -2859,6 +2963,35 @@ local pid=$!
 ...
 # Các tiến trình con của worker vẫn chạy tiếp
 kill "${pid}"
+```
+
+`wait "${pid}"` trả về mã thoát của job đó, nên dưới `set -e` một vòng lặp gồm các lời gọi `wait` trơn sẽ dừng ở job đầu tiên thất bại. Những job phía sau không bao giờ được đợi, thất bại của chúng không bao giờ được báo, và chúng tiếp tục chạy sau khi script đã kết thúc.
+
+**Nên dùng**
+
+```sh
+local -a pids=()
+local host pid failed=0
+for host in "${hosts[@]}"; do
+  deploy::host "${host}" &
+  pids+=("$!")
+done
+for pid in "${pids[@]}"; do
+  wait "${pid}" || failed=$((failed + 1))
+done
+((failed == 0)) || dybatpho::die "${failed} of ${#pids[@]} deployments failed"
+```
+
+**Không nên dùng**
+
+```sh
+for host in "${hosts[@]}"; do
+  deploy::host "${host}" &
+done
+# Dừng ở thất bại đầu tiên: các job còn lại không được đợi và cũng không được báo
+for pid in $(jobs -p); do
+  wait "${pid}"
+done
 ```
 
 ### Kết thúc tùy chọn

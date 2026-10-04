@@ -2058,8 +2058,10 @@ EOF
 > - ✔️ SHOULD: Expand with `"${names[@]}"`, and take the length with `"${#names[@]}"`
 > - ✔️ SHOULD: Expand an array that may be empty as `${names[@]+"${names[@]}"}` when the script supports Bash 4.3 under `set -u`
 > - ✔️ SHOULD: Iterate the indexes an array really has with `"${!names[@]}"`
+> - ✔️ SHOULD: Replace an array with `names=("${value}")`, and empty it with `names=()`
 > - ❌ AVOID: Do not keep several values in one string separated by spaces
 > - ❌ AVOID: Do not walk `0` to `${#names[@]} - 1` over an array the function did not build itself
+> - ❌ AVOID: Do not assign a plain value to an array, `names="${value}"`: it replaces element 0 and keeps all the others
 >
 > Linter: `BSG049`, `BSG085`
 
@@ -2111,6 +2113,25 @@ done
 for ((index = 0; index < ${#names[@]}; index++)); do
   printf '%s\n' "${names[index]}"
 done
+```
+
+A plain assignment to an array name writes element 0. After `files=(a b c)` and `files=x`, the array is `(x b c)`: code that meant to start over still finds the old entries, and `files+=x` appends to the first string instead of adding an element.
+
+**Recommended**
+
+```sh
+files=("${only_file}")
+files+=("${another_file}")
+files=()
+```
+
+**Discouraged**
+
+```sh
+# Leaves files[1] and files[2] in place
+files="${only_file}"
+# Appends to the text of files[0]
+files+="${another_file}"
 ```
 
 ### Associative Arrays
@@ -2518,8 +2539,12 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ✔️ SHOULD: Test a command directly: `if ! command; then ... fi`
 > - ✔️ SHOULD: Append `|| true` to a command whose failure is genuinely expected, and say in a comment why
 > - ✔️ SHOULD: Exit with a meaningful status: `0` on success, non-zero on failure
+> - ✔️ SHOULD: End a function, or a script, with a statement whose status is the result: write `if cond; then action; fi` or `cond || return 0`, not a bare `cond && action`
+> - ✔️ SHOULD: Silence the one command whose failure is expected, not the function or loop around it
 > - ❌ AVOID: Do not inspect `$?` in a separate statement
 > - ❌ AVOID: Do not rely on `PIPESTATUS`
+> - ❌ AVOID: Do not end a function with `[[ ... ]] && action` or `((flag)) && action`: when the test is false, the function returns 1 and `set -e` stops the caller
+> - ❌ AVOID: Do not redirect a whole block to `/dev/null`, as in `} 2> /dev/null` or `done 2> /dev/null`: it hides every error in it, not only the expected one
 >
 > Linter: `BSG044`
 
@@ -2547,6 +2572,38 @@ curl -fsSL "$url" -o "$file"
 if [[ $? -ne 0 ]]; then
   echo "download failed"
 fi
+```
+
+The status of a function is the status of its last statement, and `set -e` only spares the left side of `&&`. A function that ends with `[[ -n "${verbose}" ]] && log "done"` therefore returns 1 whenever `verbose` is empty, and the caller stops on a function that did everything it was asked. The same holds for the last line of a script, which becomes its exit status.
+
+**Recommended**
+
+```sh
+function report::summary {
+  local verbose
+  dybatpho::expect_args verbose -- "$@"
+  if dybatpho::is true "${verbose}"; then
+    dybatpho::info "Summary written"
+  fi
+}
+
+# Only the probe that may fail is silenced
+rmdir -- "${maybe_empty}" 2> /dev/null || true # still populated: another job owns it
+```
+
+**Discouraged**
+
+```sh
+function report::summary {
+  # Returns 1 when verbose is false, and set -e stops the caller
+  [[ "$1" == true ]] && dybatpho::info "Summary written"
+}
+
+# Every error of every command in the function is gone
+function sync::all {
+  cp -- "${src}" "${dst}"
+  rmdir -- "${maybe_empty}"
+} 2> /dev/null
 ```
 
 ### Errexit in Conditions
@@ -2611,6 +2668,7 @@ fi
 > - ✔️ SHOULD: Say what failed and what the user can do about it, in a message on `STDERR`
 > - ✔️ SHOULD: Install the common handlers once, at the top of an entrypoint, with `dybatpho::register_common_handlers`. (dybatpho)
 > - ✔️ SHOULD: Name the function the caller called in an error message: `FUNCNAME[1]` from a helper that function calls directly, a name it passes in, or the first public function on the stack
+> - ✔️ SHOULD: Show a value that came from outside — a file name, an argument, a line of input — with `${value@Q}` in a message
 > - ❌ AVOID: Do not return a bare non-zero status with no message
 > - ❌ AVOID: Do not reach a fixed deeper level such as `FUNCNAME[2]`, which names another function as soon as the call depth changes
 >
@@ -2664,6 +2722,22 @@ function get_dir {
 function __csv_require_text {
   [[ "$1" != *$'\x1f'* ]] || dybatpho::die "${FUNCNAME[2]}: The input contains the unit separator"
 }
+```
+
+A file name may hold a newline, a tab or a terminal escape sequence. Printed as it is, it splits one log record in two, forges a line that looks like another message, or rewrites the terminal. `${value@Q}` (Bash 4.4) quotes the value the way the shell would read it back, so every character is visible and nothing is interpreted.
+
+**Recommended**
+
+```sh
+dybatpho::die "File not found: ${path@Q}"
+# File not found: $'report\n2026 INFO all checks passed'
+```
+
+**Discouraged**
+
+```sh
+# A name holding a newline prints a second, forged log line
+dybatpho::die "File not found: ${path}"
 ```
 
 ### Exit Codes
@@ -2779,7 +2853,10 @@ done < "${file}"
 > - ✔️ SHOULD: Compose a handler with the handlers already installed (`dybatpho::trap`) rather than replacing them. (dybatpho)
 > - ✔️ SHOULD: Save the caller's handlers before a scoped call and restore them after it
 > - ✔️ SHOULD: Run the cleanup of a scoped call before a caller's handler that exits, then re-raise the signal, so that handler and the default action still happen
+> - ✔️ SHOULD: Write a trap command in single quotes, so its variables expand when the trap runs, not when it is installed
+> - ✔️ SHOULD: Let an `EXIT` handler keep the script's status: read `$?` first and end with `exit "${status}"`, or end without `exit`
 > - ❌ AVOID: Do not install a library handler with a plain `trap '…' SIG`, and do not clear one with `trap - EXIT`
+> - ❌ AVOID: Do not end an `EXIT` handler with `exit 0` or any fixed status: a script that failed reports success
 >
 > Linter: `BSG055`
 
@@ -2815,6 +2892,31 @@ function lib::with_lock {
 }
 ```
 
+A trap command in double quotes is expanded once, when `trap` runs: `trap "rm -f ${temp_file}" EXIT` removes the file that was named at that moment, not the one the variable names when the script ends, and a path holding a quote breaks the handler. An `EXIT` handler also decides the exit status when it calls `exit`, so `exit 0` there turns every failure into success for the caller.
+
+**Recommended**
+
+```sh
+trap 'rm -f -- "${temp_file}"' EXIT
+
+function _on_exit {
+  local status=$?
+  rm -rf -- "${work_dir:?}"
+  exit "${status}"
+}
+trap _on_exit EXIT
+```
+
+**Discouraged**
+
+```sh
+# Expanded now: later changes to temp_file are ignored, and a quote in it breaks the handler
+trap "rm -f ${temp_file}" EXIT
+
+# A failed run exits 0
+trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
+```
+
 ### Child Processes
 
 > [!NOTE]
@@ -2825,7 +2927,9 @@ function lib::with_lock {
 > - ✔️ SHOULD: Start each background job in its own process group, and signal the group, so grandchildren stop too
 > - ✔️ SHOULD: Repeat the signal until the group is empty, within a bounded grace period, then send `KILL`
 > - ✔️ SHOULD: End every job a function started before it returns, also when it returns because of a signal
+> - ✔️ SHOULD: Keep the pid of every background job, and wait for each of them, counting the failures: `wait "${pid}" || failed=$((failed + 1))`
 > - ❌ AVOID: Do not signal only the pid of a job, and do not assume one `TERM` is enough
+> - ❌ AVOID: Do not `wait` for jobs one after another under `set -e` without checking the status: the first failure stops the script and the other jobs are left behind
 
 The pid of a job is often a subshell whose real work runs in a grandchild that a signal to the pid never reaches. Even a signal to the group can miss a process that has forked and not yet called `exec`: it still runs the parent shell's handlers, and a handler that catches `TERM` swallows the signal before `exec` resets it. Signalling until the group is empty, with `KILL` as the last step, is the only way to know nothing was left behind.
 
@@ -2857,6 +2961,35 @@ local pid=$!
 ...
 # The worker's own children keep running
 kill "${pid}"
+```
+
+`wait "${pid}"` returns the status of that job, so under `set -e` a loop of bare `wait` calls stops at the first job that failed. The jobs after it are never waited for, their failures are never reported, and they keep running after the script has gone.
+
+**Recommended**
+
+```sh
+local -a pids=()
+local host pid failed=0
+for host in "${hosts[@]}"; do
+  deploy::host "${host}" &
+  pids+=("$!")
+done
+for pid in "${pids[@]}"; do
+  wait "${pid}" || failed=$((failed + 1))
+done
+((failed == 0)) || dybatpho::die "${failed} of ${#pids[@]} deployments failed"
+```
+
+**Discouraged**
+
+```sh
+for host in "${hosts[@]}"; do
+  deploy::host "${host}" &
+done
+# Stops at the first failure: the other jobs are neither waited for nor reported
+for pid in $(jobs -p); do
+  wait "${pid}"
+done
 ```
 
 ### End of Options
