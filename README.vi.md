@@ -70,6 +70,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-v%C3%A0-l%E1%BB%87nh-b%C3%AAn-ngo%C3%A0i)
   - [Trình xử lý tín hiệu](#tr%C3%ACnh-x%E1%BB%AD-l%C3%BD-t%C3%ADn-hi%E1%BB%87u)
   - [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con)
+  - [Kết thúc tùy chọn](#k%E1%BA%BFt-th%C3%BAc-t%C3%B9y-ch%E1%BB%8Dn)
 - [Ổn định hóa script](#%E1%BB%95n-%C4%91%E1%BB%8Bnh-h%C3%B3a-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-%C4%91%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-th%C3%A1i-tr%C6%B0%E1%BB%9Bc-khi-thay-%C4%91%E1%BB%95i)
@@ -2208,6 +2209,34 @@ local pid=$!
 ...
 # Các tiến trình con của worker vẫn chạy tiếp
 kill "${pid}"
+```
+
+### Kết thúc tùy chọn
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đặt `--` trước các toán hạng lấy từ biến: `rm -- "${file}"`, `grep -- "${pattern}" "${file}"`
+> - ❌ TRÁNH: Không truyền một biến làm toán hạng đầu tiên của lệnh mà thiếu `--` khi giá trị của nó có thể bắt đầu bằng `-`
+
+Một lệnh đọc mọi tham số bắt đầu bằng `-` là tùy chọn cho tới khi gặp `--`. Khi đó một tệp tên `-rf`, một mẫu như `-v`, hay một đường dẫn do người dùng gõ vào sẽ bị hiểu là cờ: lệnh thất bại, hoặc làm một việc khác. Công cụ BSD trên macOS khắt khe về thứ tự hơn GNU, và đó thường là nơi việc thiếu `--` lộ ra.
+
+**Nên dùng**
+
+```sh
+rm -f -- "${file}"
+grep -- "${pattern}" "${file}"
+chmod 600 -- "${path}"
+```
+
+**Không nên dùng**
+
+```sh
+# Một tệp tên -rf, hay một mẫu bắt đầu bằng -, bị đọc là tùy chọn
+rm -f "${file}"
+grep "${pattern}" "${file}"
 ```
 
 ## Ổn định hóa script

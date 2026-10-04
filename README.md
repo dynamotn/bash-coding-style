@@ -69,6 +69,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
   - [Signal Handlers](#signal-handlers)
   - [Child Processes](#child-processes)
+  - [End of Options](#end-of-options)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
@@ -2212,6 +2213,34 @@ local pid=$!
 ...
 # The worker's own children keep running
 kill "${pid}"
+```
+
+### End of Options
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Put `--` before operands that come from variables: `rm -- "${file}"`, `grep -- "${pattern}" "${file}"`
+> - ❌ AVOID: Do not pass a variable as the first operand of a command without `--` when its value may start with `-`
+
+A command reads every argument that starts with `-` as an option until it sees `--`. A file called `-rf`, a pattern like `-v`, or a path a user typed is then taken as a flag: the command fails, or does something else. BSD tools on macOS are stricter about the order than GNU ones, which is where a missing `--` usually shows.
+
+**Recommended**
+
+```sh
+rm -f -- "${file}"
+grep -- "${pattern}" "${file}"
+chmod 600 -- "${path}"
+```
+
+**Discouraged**
+
+```sh
+# A file named -rf, or a pattern starting with -, is read as an option
+rm -f "${file}"
+grep "${pattern}" "${file}"
 ```
 
 ## Script Stabilization
