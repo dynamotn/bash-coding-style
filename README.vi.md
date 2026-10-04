@@ -3072,6 +3072,7 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Tách một chuỗi thành các trường bằng `read`, `IFS=: read -r user _ uid _ <<< "${record}"`, đặt tên `_` cho mỗi trường bỏ đi `BSG126`
 > - ✔️ NÊN: Đưa tệp cho lệnh bằng tên, `grep foo "${file}"`, hoặc bằng `< "${file}"`. `useless-use-of-cat` trong [`.shellcheckrc`](.shellcheckrc) kiểm tra điều này
 > - ⚠️ CÂN NHẮC: Tách theo một delimiter nhiều ký tự, hoặc giữ một trường rỗng ở cuối, bằng `dybatpho::split` vào một mảng: `mapfile -t parts < <(dybatpho::split "${entry}" ' :: ')`. (dybatpho)
+> - ⚠️ CÂN NHẮC: Tách theo một delimiter nhiều ký tự, hoặc giữ một trường rỗng ở cuối, bằng `dybatpho::split` vào một mảng: `mapfile -t parts < <(dybatpho::split "${entry}" ' :: ')`. (dybatpho)
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
 > - ❌ TRÁNH: Không pipe một chuỗi vào `cut` hay `awk '{print $2}'` chỉ để lấy một trường của nó
@@ -3146,6 +3147,22 @@ IFS=: read -r user _ uid _ _ home _ <<< "${record}"
 user="$(echo "${record}" | cut -d: -f1)"
 uid="$(echo "${record}" | cut -d: -f3)"
 home="$(echo "${record}" | awk -F: '{print $6}')"
+```
+
+`IFS` là một tập các ký tự đơn, nên `IFS=' :: '` tách ở mọi dấu cách và mọi dấu hai chấm, và `read -a` bỏ mất một trường rỗng ở cuối: `a:b:` cho hai trường, không phải ba. `dybatpho::split` coi delimiter là một chuỗi nguyên văn, và giữ mọi trường, kể cả các trường rỗng. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local -a parts=()
+mapfile -t parts < <(dybatpho::split "${entry}" ' :: ')
+```
+
+**Không nên dùng**
+
+```sh
+# Tách ở mọi dấu cách và mọi dấu hai chấm, không phải ở " :: "
+IFS=' :: ' read -r -a parts <<< "${entry}"
 ```
 
 `IFS` là một tập các ký tự đơn, nên `IFS=' :: '` tách ở mọi dấu cách và mọi dấu hai chấm, và `read -a` bỏ mất một trường rỗng ở cuối: `a:b:` cho hai trường, không phải ba. `dybatpho::split` coi delimiter là một chuỗi nguyên văn, và giữ mọi trường, kể cả các trường rỗng. (dybatpho)
