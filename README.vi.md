@@ -2828,7 +2828,7 @@ target="$(readlink -f "${link}")"
 
 > [!TIP]
 >
-> - ✔️ NÊN: So sánh phiên bản bằng một helper semver
+> - ✔️ NÊN: So sánh phiên bản bằng một helper semver: `dybatpho::semver_compare`, và `dybatpho::semver_sort` để sắp xếp một danh sách. (dybatpho)
 > - ⚠️ CÂN NHẮC: Chỉ dùng `sort -V` cho các số có dấu chấm thuần túy như `1.10.2`, ở nơi có lệnh này
 > - ❌ TRÁNH: Không so sánh phiên bản bằng `<` hay `>` trên chuỗi, hoặc bằng phép tính trên chuỗi có dấu chấm `BSG097`
 > - ❌ TRÁNH: Không sắp xếp các phiên bản có thể mang hậu tố pre-release bằng `sort -V`: nó đặt `2.0.0-rc1` sau `2.0.0`
@@ -2862,6 +2862,18 @@ fi
 
 # In ra 2.0.0-rc1: bản release candidate trông mới hơn bản phát hành
 newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
+```
+
+`dybatpho::semver_compare` in ra `-1`, `0` hoặc `1`, so sánh từng trường số như một con số, và xếp một bản pre-release trước bản phát hành của nó. `dybatpho::semver_sort` sắp xếp một danh sách theo cùng quy tắc, chấp nhận tiền tố `v`, và dừng khi gặp một giá trị không phải phiên bản. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local newest
+newest="$(dybatpho::semver_sort 2.0.0-rc.1 2.0.0 1.10.0 | tail -n 1)" || return 1
+if [[ "$(dybatpho::semver_compare "${installed}" "${newest}")" == -1 ]]; then
+  dybatpho::info "Upgrading to ${newest}"
+fi
 ```
 
 ## Gọi lệnh
