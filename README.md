@@ -451,8 +451,10 @@ When a caller writes `value="$(fn)"` or `fn | store`, everything on standard out
 
 ```sh
 function cache::set {
+  local key
+  dybatpho::expect_args key -- "$@"
   dybatpho::ensure_dir "${CACHE_DIR}" > /dev/null
-  cat > "${CACHE_DIR}/$1"
+  cat > "${CACHE_DIR}/${key}"
 }
 
 function release::package {
@@ -661,9 +663,12 @@ function fs::list {
   )
 }
 
-function text::split {
+function text::split_into {
+  local __text_split_var __text_split_input
+  dybatpho::expect_args __text_split_var __text_split_input -- "$@"
+  local -n __text_split_ref="${__text_split_var}"
   local IFS=,
-  read -r -a parts <<< "$1"
+  read -r -a __text_split_ref <<< "${__text_split_input}"
 }
 ```
 
@@ -676,9 +681,12 @@ function fs::list {
   printf '%s\n' "$1"/*
 }
 
-function text::split {
+function text::split_into {
+  local __text_split_var __text_split_input
+  dybatpho::expect_args __text_split_var __text_split_input -- "$@"
+  local -n __text_split_ref="${__text_split_var}"
   IFS=,
-  read -r -a parts <<< "$1"
+  read -r -a __text_split_ref <<< "${__text_split_input}"
 }
 ```
 
@@ -840,8 +848,9 @@ Bash scopes variables dynamically. `local -n ref="$1"` resolves the name the cal
 
 ```sh
 function text::split_into {
-  local -n __text_split_ref="$1"
-  local __text_split_input="$2"
+  local __text_split_var __text_split_input
+  dybatpho::expect_args __text_split_var __text_split_input -- "$@"
+  local -n __text_split_ref="${__text_split_var}"
   IFS=, read -r -a __text_split_ref <<< "${__text_split_input}"
 }
 
@@ -1395,12 +1404,14 @@ SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
 
 ```sh
 function text::lines_into {
-  local -n __text_lines_ref="$1"
+  local __text_lines_var __text_lines_text
+  dybatpho::expect_args __text_lines_var __text_lines_text -- "$@"
+  local -n __text_lines_ref="${__text_lines_var}"
   __text_lines_ref=()
   local __text_lines_line
   while IFS= read -r __text_lines_line || [[ -n "${__text_lines_line}" ]]; do
     __text_lines_ref+=("${__text_lines_line}")
-  done < <(printf '%s' "$2")
+  done < <(printf '%s' "${__text_lines_text}")
 }
 ```
 
@@ -1431,14 +1442,17 @@ Custom rule
 ```sh
 # Validates in the caller's shell, then sets the variable the caller named
 function __net_port_into {
-  local -n __net_port_ref="$1"
-  [[ "$2" =~ ^[0-9]+$ ]] || dybatpho::die "Not a port: $2"
-  __net_port_ref="$2"
+  local __net_port_var __net_port_value
+  dybatpho::expect_args __net_port_var __net_port_value -- "$@"
+  local -n __net_port_ref="${__net_port_var}"
+  [[ "${__net_port_value}" =~ ^[0-9]+$ ]] || dybatpho::die "Not a port: ${__net_port_value}"
+  __net_port_ref="${__net_port_value}"
 }
 
 function net::connect {
-  local port
-  __net_port_into port "$1"
+  local raw_port port
+  dybatpho::expect_args raw_port -- "$@"
+  __net_port_into port "${raw_port}"
   nc "${HOST}" "${port}"
 }
 
@@ -1473,7 +1487,9 @@ The subshell discards side effects as well as refusals. A memo set inside `$(...
 
 ```sh
 function __date_flavor_into {
-  local -n __date_flavor_ref="$1"
+  local __date_flavor_var
+  dybatpho::expect_args __date_flavor_var -- "$@"
+  local -n __date_flavor_ref="${__date_flavor_var}"
   if [[ -z "${__DATE_FLAVOR-}" ]]; then
     if date --version > /dev/null 2>&1; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
   fi
@@ -1964,7 +1980,7 @@ A variable a function assigns without declaring it is global. It outlives the fu
 function fs::count_lines {
   local file total=0 line
   for file in "$@"; do
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "${line}" ]]; do
       total=$((total + 1))
     done < "${file}"
   done
@@ -1981,7 +1997,7 @@ function fs::count_lines {
   local total=0
   # `file`, `line` and `summary` are globals now, and clobber the caller's
   for file in "$@"; do
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "${line}" ]]; do
       total=$((total + 1))
     done < "${file}"
   done
@@ -2089,11 +2105,15 @@ macOS ships BSD tools and Alpine ships BusyBox, and the same flag means somethin
 **Recommended**
 
 ```sh
-if date -d @0 +%s > /dev/null 2>&1; then
-  __date_from_epoch() { date -d "@$1" "+$2"; }
-else
-  __date_from_epoch() { date -r "$1" "+$2"; }
-fi
+function __date_from_epoch {
+  local epoch format
+  dybatpho::expect_args epoch format -- "$@"
+  if date -d @0 +%s > /dev/null 2>&1; then
+    date -d "@${epoch}" "+${format}"
+  else
+    date -r "${epoch}" "+${format}"
+  fi
+}
 
 # A portable in-place edit: write a copy, then move it over the file
 sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
@@ -2220,11 +2240,15 @@ function get_dir {
 
 # The caller passes its own name, so the message names it at any depth
 function __csv_require_text {
-  [[ "$2" != *$'\x1f'* ]] || dybatpho::die "$1: The input contains the unit separator"
+  local caller text
+  dybatpho::expect_args caller text -- "$@"
+  [[ "${text}" != *$'\x1f'* ]] || dybatpho::die "${caller}: The input contains the unit separator"
 }
 
 function csv::read {
-  __csv_require_text "${FUNCNAME[0]}" "$1"
+  local input
+  dybatpho::expect_args input -- "$@"
+  __csv_require_text "${FUNCNAME[0]}" "${input}"
 }
 ```
 
@@ -2351,7 +2375,8 @@ set +m
 ...
 local tries=0
 while kill -0 -- "-${pgid}" 2> /dev/null; do
-  if ((tries++ < 50)); then
+  tries=$((tries + 1))
+  if ((tries <= 50)); then
     kill -TERM -- "-${pgid}" 2> /dev/null
   else
     kill -KILL -- "-${pgid}" 2> /dev/null
