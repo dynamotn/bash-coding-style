@@ -2821,6 +2821,7 @@ dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
 >
 > - ✔️ NÊN: Dò tính năng trước khi dùng một cờ chỉ GNU có, và giữ một nhánh di động: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix` `BSG083`
 > - ✔️ NÊN: Phát hiện tính năng bằng cách thử chính cờ đó, không dựa vào tên công cụ hay `--version` của nó
+> - ✔️ NÊN: Đọc thời điểm sửa đổi và kích thước của tệp bằng `dybatpho::file_mtime` và `dybatpho::file_size`, và sửa tệp tại chỗ bằng `dybatpho::file_replace`. (dybatpho)
 > - ❌ TRÁNH: Không mặc định có GNU coreutils khi script chạy trên macOS, BSD hay BusyBox
 > - ⚠️ CÂN NHẮC: Ưu tiên lệnh dựng sẵn của Bash hoặc dạng POSIX khi chúng làm được việc: `printf '%(%s)T'`, khai triển tham số
 
@@ -2853,6 +2854,16 @@ sed 's/old/new/' "${file}" > "${staging}" && mv -- "${staging}" "${file}"
 date -d "@${epoch}" +%F
 sed -i 's/old/new/' "${file}"
 target="$(readlink -f "${link}")"
+```
+
+`dybatpho::file_mtime` và `dybatpho::file_size` thử `stat -c` của GNU rồi tới `stat -f` của BSD, nên chúng trả lời được trên Linux, macOS và BusyBox. `dybatpho::file_replace` chạy `sed` không có `-i`, ghi kết quả vào một tệp tạm cạnh tệp gốc, rồi chuyển nó vào đúng chỗ, giữ nguyên quyền của tệp. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local mtime
+mtime="$(dybatpho::file_mtime "${file}")" || return 1
+dybatpho::file_replace "${config}" '^debug = true$' 'debug = false'
 ```
 
 ### So sánh phiên bản
