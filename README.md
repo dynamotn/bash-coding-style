@@ -2785,6 +2785,7 @@ dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
 >
 > - ✔️ SHOULD: Probe for a feature before using a GNU-only flag, and keep a portable branch: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix` `BSG083`
 > - ✔️ SHOULD: Detect a feature by trying the flag, not by the name of the tool or its `--version`
+> - ✔️ SHOULD: Read a file's modification time and size with `dybatpho::file_mtime` and `dybatpho::file_size`, and edit a file in place with `dybatpho::file_replace`. (dybatpho)
 > - ❌ AVOID: Do not assume GNU coreutils when the script runs on macOS, BSD or BusyBox
 > - ⚠️ CONSIDER: Prefer a Bash builtin or a POSIX form when one does the job: `printf '%(%s)T'`, parameter expansion
 
@@ -2817,6 +2818,16 @@ sed 's/old/new/' "${file}" > "${staging}" && mv -- "${staging}" "${file}"
 date -d "@${epoch}" +%F
 sed -i 's/old/new/' "${file}"
 target="$(readlink -f "${link}")"
+```
+
+`dybatpho::file_mtime` and `dybatpho::file_size` try the GNU `stat -c` and then the BSD `stat -f`, so they answer on Linux, macOS and BusyBox. `dybatpho::file_replace` runs `sed` without `-i`, writes the result to a staging file beside the original, and moves it into place, keeping the mode of the file. (dybatpho)
+
+**Recommended**
+
+```sh
+local mtime
+mtime="$(dybatpho::file_mtime "${file}")" || return 1
+dybatpho::file_replace "${config}" '^debug = true$' 'debug = false'
 ```
 
 ### Comparing Versions
