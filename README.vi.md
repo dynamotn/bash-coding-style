@@ -2129,6 +2129,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > [!TIP]
 >
 > - ✔️ NÊN: Truyền token, mật khẩu và URL bí mật cho một lệnh qua tệp cấu hình, standard input hoặc biến môi trường: `curl --config`, `-H @file`
+> - ✔️ NÊN: Gửi bearer token bằng `dybatpho::curl_auth_bearer`, hàm trao nó cho `curl` qua một tệp cấu hình riêng. (dybatpho)
 > - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
 > - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi, bằng `dybatpho::secret_register`. (dybatpho)
 > - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc` `BSG081`
@@ -2184,6 +2185,14 @@ dybatpho::error "Request failed for ${API_TOKEN}"
 
 ```sh
 dybatpho::secret_write_file "${XDG_CONFIG_HOME:-${HOME}/.config}/app/token" API_TOKEN
+```
+
+`dybatpho::curl_auth_bearer` đặt header `Authorization` vào một tệp cấu hình mà chỉ script đọc được, rồi truyền tệp đó cho `curl`, nên token không nằm trong tham số của tiến trình nào. Hàm thử lại và thất bại giống `dybatpho::curl_do`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::curl_auth_bearer "${api}/v1/me" "${API_TOKEN}" "${response}" || dybatpho::die "Cannot read the profile"
 ```
 
 ### Dựng output có cấu trúc
