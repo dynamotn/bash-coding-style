@@ -614,7 +614,8 @@ function net::fetch {
   local url
   dybatpho::expect_args url -- "$@"
   [[ -n "${url}" ]] || dybatpho::die "net::fetch: no URL given"
-  curl --fail -sS "${url}" || return 4
+  # curl's own status reaches the caller, which decides what a failure means
+  curl --fail -sS -- "${url}" || return $?
 }
 ```
 
