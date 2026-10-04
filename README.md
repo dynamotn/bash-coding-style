@@ -1858,8 +1858,30 @@ major="${BASH_REMATCH[1]}"
 > - ⚠️ CONSIDER: Use `compgen -G` when you need the matches as data and an empty result is acceptable. (custom)
 > - ❌ AVOID: Do not pass a bare `*` to a command
 > - ❌ AVOID: Do not assume a glob that matched nothing expands to nothing: it stays as the literal pattern
+> - ❌ AVOID: Do not parse the output of `ls`: loop over a glob, or use `find -print0` for a tree `BSG125`
 
 A file named `-rf` in the directory turns `rm *` into `rm -rf`. `./*` expands to paths that begin with `./`, which no command can mistake for an option.
+
+`ls` writes names for a person to read. In `$(ls)` or `ls | ...` a name with a space becomes two words, a name with a newline two lines, and a name with `*` expands again; some versions also replace unprintable characters with `?`. A glob hands each name to the script as it is. `ls` that only shows a listing to the user is fine.
+
+**Recommended**
+
+```sh
+local file
+for file in ./*.log; do
+  [[ -e "${file}" ]] || continue
+  gzip -- "${file}"
+done
+```
+
+**Discouraged**
+
+```sh
+# "my app.log" becomes "my" and "app.log"
+for file in $(ls *.log); do
+  gzip "${file}"
+done
+```
 
 **Recommended**
 

@@ -1860,8 +1860,30 @@ major="${BASH_REMATCH[1]}"
 > - ⚠️ CÂN NHẮC: Dùng `compgen -G` khi bạn cần các kết quả khớp như dữ liệu và chấp nhận kết quả rỗng. (tùy chỉnh)
 > - ❌ TRÁNH: Không truyền `*` trần cho một lệnh
 > - ❌ TRÁNH: Không cho rằng một glob không khớp gì sẽ khai triển thành rỗng: nó vẫn giữ nguyên là mẫu
+> - ❌ TRÁNH: Không parse output của `ls`: hãy lặp trên một glob, hoặc dùng `find -print0` cho cả một cây thư mục `BSG125`
 
 Một tệp tên `-rf` trong thư mục sẽ biến `rm *` thành `rm -rf`. `./*` khai triển thành các đường dẫn bắt đầu bằng `./`, không lệnh nào nhầm chúng với tùy chọn được.
+
+`ls` in tên tệp cho người đọc. Trong `$(ls)` hay `ls | ...`, một tên có dấu cách thành hai từ, một tên có ký tự xuống dòng thành hai dòng, và một tên có `*` lại bị khai triển lần nữa; một số phiên bản còn thay ký tự không in được bằng `?`. Glob trao từng tên cho script đúng như nó vốn có. `ls` chỉ để hiển thị danh sách cho người dùng thì vẫn dùng được.
+
+**Nên dùng**
+
+```sh
+local file
+for file in ./*.log; do
+  [[ -e "${file}" ]] || continue
+  gzip -- "${file}"
+done
+```
+
+**Không nên dùng**
+
+```sh
+# "my app.log" thành "my" và "app.log"
+for file in $(ls *.log); do
+  gzip "${file}"
+done
+```
 
 **Nên dùng**
 
