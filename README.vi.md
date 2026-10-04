@@ -2737,19 +2737,27 @@ Quy tắc tùy chỉnh
 > [!TIP]
 >
 > - ✔️ NÊN: Khai triển biến dùng để dựng đường dẫn cho một lệnh phá hủy bằng `${var:?}`, hoặc kiểm tra trước rằng nó không rỗng và nằm trong một thư mục gốc được phép
+> - ✔️ NÊN: Phân giải thư mục gốc và đích bằng `cd -P` trước khi so sánh, và dừng lại khi thư mục gốc rỗng
 > - ✔️ NÊN: Ưu tiên một helper có bảo vệ, kiểm tra đường dẫn và xác nhận trước khi hành động. (dybatpho)
 > - ❌ TRÁNH: Không chạy `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` hay `mv` đè lên một đích có sẵn với đường dẫn dựng từ các biến chưa từng được kiểm tra
+> - ❌ TRÁNH: Không kiểm tra một đường dẫn có nằm trong thư mục gốc hay không bằng cách so sánh chuỗi như được nhập vào
 
 Một biến chưa đặt hoặc rỗng biến `rm -rf "${BUILD_DIR}/cache"` thành `rm -rf /cache`, và `rm -rf "${prefix}"*` thành thư mục làm việc. `${var:?}` dừng script khi biến chưa đặt hoặc rỗng, trước khi lệnh chạy; kiểm tra thư mục gốc chặn được một giá trị đã đặt nhưng sai.
+
+Kiểm tra thư mục gốc trên chuỗi như được nhập vào yếu hơn vẻ ngoài của nó. Khi thư mục gốc rỗng, `"${target}" == "${WORK_ROOT}"/*` trở thành `== /*`, mọi đường dẫn tuyệt đối đều khớp; còn `${WORK_ROOT}/../etc` hay một liên kết tượng trưng bên trong thư mục gốc vẫn qua được phép so sánh trong khi trỏ tới một thư mục bên ngoài.
 
 **Nên dùng**
 
 ```sh
 rm -rf -- "${BUILD_DIR:?}/cache"
 
-[[ -n "${target}" && "${target}" == "${WORK_ROOT}"/* ]] \
-  || dybatpho::die "Refusing to delete outside ${WORK_ROOT}: ${target}"
-dybatpho::safe_rm "${target}"
+# Phân giải cả hai phía trước: `..` và liên kết tượng trưng không còn trong thứ được so sánh
+local root resolved
+root="$(CDPATH='' cd -P -- "${WORK_ROOT:?}" && pwd)" || return 1
+resolved="$(CDPATH='' cd -P -- "${target:?}" && pwd)" || return 1
+[[ "${resolved}" == "${root}"/* ]] \
+  || dybatpho::die "Refusing to delete outside ${root}: ${target}"
+dybatpho::safe_rm "${resolved}"
 ```
 
 **Không nên dùng**
@@ -2760,6 +2768,9 @@ rm -rf "${BUILD_DIR}/cache"
 
 # target rỗng: chown duyệt cả thư mục làm việc
 chown -R "${owner}" "${target}"
+
+# WORK_ROOT rỗng thì khớp mọi đường dẫn tuyệt đối, và work/../etc cũng khớp
+[[ "${target}" == "${WORK_ROOT}"/* ]] && rm -rf -- "${target}"
 ```
 
 ## Kiểm thử

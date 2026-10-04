@@ -2741,19 +2741,27 @@ Custom rule
 > [!TIP]
 >
 > - ✔️ SHOULD: Expand a variable that builds the path of a destructive command with `${var:?}`, or check first that it is non-empty and inside an allowed root
+> - ✔️ SHOULD: Resolve the root and the target with `cd -P` before comparing them, and stop when the root is empty
 > - ✔️ SHOULD: Prefer a guarded helper that validates the path and confirms before it acts. (dybatpho)
 > - ❌ AVOID: Do not run `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` or `mv` onto an existing target with a path built from variables that were never checked
+> - ❌ AVOID: Do not check that a path is inside a root by comparing the strings as typed
 
 An unset or empty variable turns `rm -rf "${BUILD_DIR}/cache"` into `rm -rf /cache`, and `rm -rf "${prefix}"*` into the working directory. `${var:?}` stops the script when the variable is unset or empty, before the command runs; a root check stops a value that is set but wrong.
+
+A root check on the strings as typed is weaker than it looks. With an empty root, `"${target}" == "${WORK_ROOT}"/*` becomes `== /*`, which every absolute path matches; and `${WORK_ROOT}/../etc` or a symbolic link inside the root passes the comparison while naming a directory outside it.
 
 **Recommended**
 
 ```sh
 rm -rf -- "${BUILD_DIR:?}/cache"
 
-[[ -n "${target}" && "${target}" == "${WORK_ROOT}"/* ]] \
-  || dybatpho::die "Refusing to delete outside ${WORK_ROOT}: ${target}"
-dybatpho::safe_rm "${target}"
+# Resolve both sides first: `..` and symbolic links are gone from what is compared
+local root resolved
+root="$(CDPATH='' cd -P -- "${WORK_ROOT:?}" && pwd)" || return 1
+resolved="$(CDPATH='' cd -P -- "${target:?}" && pwd)" || return 1
+[[ "${resolved}" == "${root}"/* ]] \
+  || dybatpho::die "Refusing to delete outside ${root}: ${target}"
+dybatpho::safe_rm "${resolved}"
 ```
 
 **Discouraged**
@@ -2764,6 +2772,9 @@ rm -rf "${BUILD_DIR}/cache"
 
 # target empty: chown walks the working directory
 chown -R "${owner}" "${target}"
+
+# WORK_ROOT empty matches any absolute path, and work/../etc matches too
+[[ "${target}" == "${WORK_ROOT}"/* ]] && rm -rf -- "${target}"
 ```
 
 ## Testing
