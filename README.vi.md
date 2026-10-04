@@ -552,8 +552,10 @@ Quy tắc tùy chỉnh
 >
 > - ✔️ NÊN: Trả về một trạng thái từ hàm thư viện, hoặc dừng qua helper die của thư viện, thứ báo rõ lỗi. (dybatpho)
 > - ✔️ NÊN: Đổi thư mục bên trong một subshell, `( cd -- "${dir}" && ... )`, hoặc khôi phục thư mục cũ trước khi trả về
+> - ✔️ NÊN: Giới hạn phạm vi một tùy chọn shell mà hàm cần: một subshell, `local -` cho tùy chọn của `set`, `local IFS`, hoặc lưu và khôi phục nó trên mọi nhánh trả về
 > - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện
 > - ❌ TRÁNH: Không `cd` trong shell của bên gọi từ một hàm thư viện
+> - ❌ TRÁNH: Không để `set -e`/`+e`/`-C`/`-f`, một tùy chọn `shopt`, `IFS` hay `umask` bị thay đổi khi hàm thư viện trả về
 
 Một thư viện chạy trong shell của bên gọi. `exit` ở đó kết thúc cả script — bỏ qua phần xử lý lỗi của bên gọi, quyết định dọn dẹp của nó và thông báo lẽ ra phải nói lý do — còn bên trong `$(...)` thì nó chỉ kết thúc subshell, nên bên gọi không phân biệt được lỗi với một câu trả lời rỗng.
 
@@ -595,6 +597,42 @@ function repo::files {
 function repo::files {
   # Bên gọi bị bỏ lại trong ${root} sau khi hàm này trả về
   cd "$1" && git ls-files
+}
+```
+
+Tùy chọn shell có hiệu lực toàn shell. Một thư viện bật `nullglob` làm thay đổi kết quả khai triển của mọi glob sau đó của bên gọi; một thư viện để lại `set +e` tắt mất phần xử lý lỗi của bên gọi; một `IFS` hay `umask` bị đổi làm thay đổi cách tách từ và quyền tệp ở những chỗ cách xa dòng đã thay đổi chúng.
+
+**Nên dùng**
+
+```sh
+function fs::list {
+  local dir
+  dybatpho::expect_args dir -- "$@"
+  (
+    shopt -s nullglob dotglob
+    local -a entries=("${dir}"/*)
+    printf '%s\n' ${entries[@]+"${entries[@]}"}
+  )
+}
+
+function text::split {
+  local IFS=,
+  read -r -a parts <<< "$1"
+}
+```
+
+**Không nên dùng**
+
+```sh
+function fs::list {
+  # Mọi glob mà bên gọi viết sau đó giờ khai triển thành rỗng khi không khớp
+  shopt -s nullglob
+  printf '%s\n' "$1"/*
+}
+
+function text::split {
+  IFS=,
+  read -r -a parts <<< "$1"
 }
 ```
 

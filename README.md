@@ -550,8 +550,10 @@ Custom rule
 >
 > - ✔️ SHOULD: Return a status from a library function, or stop through the library's die helper, which reports the failure. (dybatpho)
 > - ✔️ SHOULD: Change directory inside a subshell, `( cd -- "${dir}" && ... )`, or restore the previous directory before returning
+> - ✔️ SHOULD: Scope a shell option a function needs: a subshell, `local -` for `set` options, `local IFS`, or save and restore it on every return path
 > - ❌ AVOID: Do not call `exit` in a library function: it ends the script that sourced the library
 > - ❌ AVOID: Do not `cd` in the caller's shell from a library function
+> - ❌ AVOID: Do not leave `set -e`/`+e`/`-C`/`-f`, a `shopt` option, `IFS` or `umask` changed when a library function returns
 
 A library runs in its caller's shell. `exit` there ends the whole script — skipping the caller's error handling, its cleanup decisions and the message that would have said why — and inside `$(...)` it ends only the subshell, so the caller cannot tell a failure from an empty answer.
 
@@ -593,6 +595,42 @@ function repo::files {
 function repo::files {
   # The caller is left in ${root} after this returns
   cd "$1" && git ls-files
+}
+```
+
+Shell options are global to the shell. A library that turns on `nullglob` changes what every later glob of the caller expands to; one that leaves `set +e` turns off the caller's error handling; a changed `IFS` or `umask` alters word splitting and file permissions far from the line that changed them.
+
+**Recommended**
+
+```sh
+function fs::list {
+  local dir
+  dybatpho::expect_args dir -- "$@"
+  (
+    shopt -s nullglob dotglob
+    local -a entries=("${dir}"/*)
+    printf '%s\n' ${entries[@]+"${entries[@]}"}
+  )
+}
+
+function text::split {
+  local IFS=,
+  read -r -a parts <<< "$1"
+}
+```
+
+**Discouraged**
+
+```sh
+function fs::list {
+  # Every glob the caller writes afterwards now expands to nothing on no match
+  shopt -s nullglob
+  printf '%s\n' "$1"/*
+}
+
+function text::split {
+  IFS=,
+  read -r -a parts <<< "$1"
 }
 ```
 
