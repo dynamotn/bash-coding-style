@@ -444,7 +444,7 @@ do_something
 echo "LỖI: Không thể thực hiện do_something"
 
 # hiển thị các thông báo không cần thiết
-grep -rn "abc" README.md || echo "LỖI: README.md không có từ `abc`"
+grep -rn "abc" README.md || echo "LỖI: README.md không có từ 'abc'"
 ```
 
 Khi bên gọi viết `value="$(fn)"` hay `fn | store`, mọi thứ trên standard output đều là kết quả. Một helper bên trong `fn` in ra thư mục nó vừa tạo, hay một dòng tiến độ, sẽ trở thành một phần của giá trị: một mục cache bắt đầu bằng một đường dẫn, một đường dẫn archive kèm theo `Packaging ...`.

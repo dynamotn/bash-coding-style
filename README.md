@@ -442,7 +442,7 @@ do_something
 echo "Error: Unable to do_something"
 
 # show unnecessary messages
-grep -rn "abc" README.md || echo "Error: README.md not has `abc` word"
+grep -rn "abc" README.md || echo "Error: README.md has no 'abc' word"
 ```
 
 When a caller writes `value="$(fn)"` or `fn | store`, everything on standard output is the result. A helper inside `fn` that prints the directory it created, or a progress line, becomes part of the value: a cached entry that starts with a path, an archive path followed by `Packaging ...`.
