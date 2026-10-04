@@ -54,6 +54,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Eval là xấu xa](#eval-la-x%E1%BA%A5u-xa)
   - [Mảng](#m%E1%BA%A3ng)
   - [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while)
+  - [Thay thế tiến trình](#thay-th%E1%BA%BF-ti%E1%BA%BFn-trinh)
   - [Vòng lặp for](#vong-l%E1%BA%B7p-for)
   - [Biến cục bộ](#bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99)
   - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
@@ -1320,6 +1321,37 @@ command find "${root}" -type f | while read -r line; do
   count=$((count + 1))
 done
 echo "${count}"
+```
+
+### Thay thế tiến trình
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Lưu output của một producer có thể thất bại vào một biến trước, kiểm tra mã thoát của nó, rồi mới đọc biến đó: `listing="$(cmd)" || return $?`
+> - ✔️ NÊN: Kiểm tra những gì truyền cho producer trước khi đọc nó qua `< <(...)`, khi chỉ có đầu vào sai mới làm nó thất bại
+> - ✔️ NÊN: Bật `pipefail` khi vế trái của một pipe có thể thất bại và kết quả phụ thuộc vào nó
+> - ❌ TRÁNH: Không đọc `< <(cmd)` hay `<(cmd)` từ một lệnh mà khi nó thất bại thì công việc phải dừng
+
+Không có gì chờ lệnh bên trong `<(...)`: `mapfile`, `while read` và hàm bao quanh chúng đều thành công dù lệnh đó thất bại hay không, nên một producer thất bại được đọc như đầu vào rỗng. Khi đó một archive hỏng không liệt kê entry nào và qua được bước kiểm tra an toàn, còn hai tài liệu không parse được thì so ra giống hệt nhau. Vế trái của một pipe cũng mất mã thoát theo cách đó khi không bật `pipefail`. [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while) nói về việc giữ biến; mục này nói về việc giữ lỗi.
+
+**Nên dùng**
+
+```sh
+local listing
+listing="$(tar -tzf "${archive}")" || dybatpho::die "Cannot list ${archive}"
+local -a entries=()
+[[ -z "${listing}" ]] || mapfile -t entries <<< "${listing}"
+```
+
+**Không nên dùng**
+
+```sh
+# Một archive hỏng không liệt kê gì, và vòng lặp không thấy gì nguy hiểm
+local -a entries=()
+mapfile -t entries < <(tar -tzf "${archive}")
 ```
 
 ### Vòng lặp for

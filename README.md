@@ -53,6 +53,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Eval is Evil](#eval-is-evil)
   - [Arrays](#arrays)
   - [Pipes to While](#pipes-to-while)
+  - [Process Substitution](#process-substitution)
   - [For Loops](#for-loops)
   - [Local Variables](#local-variables)
   - [Arithmetic](#arithmetic)
@@ -1324,6 +1325,37 @@ command find "${root}" -type f | while read -r line; do
   count=$((count + 1))
 done
 echo "${count}"
+```
+
+### Process Substitution
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Capture the output of a producer that can fail into a variable first, check its status, then read the variable: `listing="$(cmd)" || return $?`
+> - ✔️ SHOULD: Validate what a producer is given before reading it through `< <(...)`, when only bad input can make it fail
+> - ✔️ SHOULD: Turn on `pipefail` when the left side of a pipe can fail and the result depends on it
+> - ❌ AVOID: Do not read `< <(cmd)` or `<(cmd)` from a command whose failure has to stop the work
+
+Nothing waits for the command inside `<(...)`: `mapfile`, `while read` and the function around them succeed whether it failed or not, so a failing producer reads as empty input. A corrupt archive then lists no entries and passes a safety check, and two documents that do not parse compare as identical. The left side of a pipe is lost the same way without `pipefail`. [Pipes to While](#pipes-to-while) is about keeping variables; this is about keeping the failure.
+
+**Recommended**
+
+```sh
+local listing
+listing="$(tar -tzf "${archive}")" || dybatpho::die "Cannot list ${archive}"
+local -a entries=()
+[[ -z "${listing}" ]] || mapfile -t entries <<< "${listing}"
+```
+
+**Discouraged**
+
+```sh
+# A corrupt archive lists nothing, and the loop finds nothing unsafe
+local -a entries=()
+mapfile -t entries < <(tar -tzf "${archive}")
 ```
 
 ### For Loops
