@@ -208,6 +208,7 @@ fi
 > - ✔️ SHOULD: Check `BASH_VERSINFO` at the top of an entrypoint, before anything that needs a newer feature, and stop with a message that names the version found
 > - ✔️ SHOULD: Write the version that introduced a feature next to a rule that depends on it, when it is newer than the target
 > - ❌ AVOID: Do not assume the `bash` on `PATH` is new: macOS still ships Bash 3.2 as `/bin/bash`
+> - ❌ AVOID: Do not compare the version as `major >= X && minor >= Y`, which refuses Bash 6.0 for a 5.2 floor, nor `BASH_VERSION` as a string, where `5.10` sorts before `5.2`
 >
 > Linter: `BSG099`
 
@@ -235,6 +236,17 @@ set -euo pipefail
 # On Bash 3.2: `local: -n: invalid option`, then `mapfile: command not found`
 local -n result="$1"
 mapfile -d '' -t files < <(command find . -print0)
+```
+
+A floor of 5.2 holds for every major above 5 whatever its minor, and for 5 only from minor 2 on. Testing both numbers with `&&` drops the first half: Bash 6.0 has a minor of 0 and is refused. Write the major comparison and the boundary case separately, as in the check above.
+
+**Discouraged**
+
+```sh
+# Refuses Bash 6.0: the minor 0 is below 2
+((BASH_VERSINFO[0] >= 5 && BASH_VERSINFO[1] >= 2)) || exit 1
+# Text comparison: "5.10.0" < "5.2"
+[[ "${BASH_VERSION}" > "5.2" ]] || exit 1
 ```
 
 ### When to Use Shell
@@ -311,7 +323,9 @@ A wrapper that runs through `sudo`, a systemd unit or an SSH `ForceCommand` and 
 ```sh
 unset LD_PRELOAD LD_LIBRARY_PATH LD_AUDIT BASH_ENV ENV PYTHONPATH PERL5LIB RUBYLIB NODE_PATH
 exec /usr/libexec/app/helper "$@"
+```
 
+```sh
 # Stronger: nothing is inherited but what is named
 exec env -i HOME="${HOME}" PATH=/usr/bin:/bin /usr/libexec/app/helper "$@"
 ```
@@ -504,7 +518,9 @@ dybatpho::dry_run systemctl --user restart app.service
 > - ✔️ SHOULD: Suppress all unnecessary messages to `/dev/null`. (custom)
 > - ✔️ SHOULD: Use logging library from [dybatpho](https://github.com/dynamotn/dybatpho) to output messages for better logging. (dybatpho)
 > - ✔️ SHOULD: Keep the standard output of a function whose output is captured for its result alone: send progress, paths and notices to `STDERR` or `/dev/null`
+> - ✔️ SHOULD: Send both streams to one place with `&>` and `&>>`: `cmd &> /dev/null`, `cmd &>> "${log}"`
 > - ❌ AVOID: Do not call a helper that prints to `STDOUT` from a function whose output a caller captures or pipes into a file
+> - ❌ AVOID: Do not mix `&>` with `> file 2>&1` in one codebase, and never write `2>&1 > file`, which still sends errors to the terminal
 >
 > Linter: `BSG036`
 
@@ -564,6 +580,22 @@ function release::package {
   printf '%s\n' "${archive}"
 }
 archive="$(release::package)"
+```
+
+Redirections apply from left to right. `> file 2>&1` points standard output at the file, then standard error at the same place; `2>&1 > file` points standard error at the terminal first and only then moves standard output, so errors still reach the screen. `&>` says "both" in one operator and cannot be written in the wrong order.
+
+**Recommended**
+
+```sh
+command -v jq &> /dev/null
+backup::run &>> "${LOG_FILE}"
+```
+
+**Discouraged**
+
+```sh
+# Errors still go to the terminal: 2>&1 copied it before > moved stdout
+backup::run 2>&1 > "${LOG_FILE}"
 ```
 
 ### Common Function Scripts
@@ -1709,7 +1741,7 @@ function __date_flavor_into {
   dybatpho::expect_args __date_flavor_var -- "$@"
   local -n __date_flavor_ref="${__date_flavor_var}"
   if [[ -z "${__DATE_FLAVOR-}" ]]; then
-    if date --version > /dev/null 2>&1; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
+    if date --version &> /dev/null; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
   fi
   __date_flavor_ref="${__DATE_FLAVOR}"
 }
@@ -1768,6 +1800,7 @@ fi
 > - ✔️ SHOULD: Compare numbers with `(( ... ))`, or with `-lt`, `-gt`, `-eq` inside `[[ ... ]]`
 > - ❌ AVOID: Do not use a single `=` for string comparison
 > - ❌ AVOID: Do not use `<` or `>` to compare numbers inside `[[ ... ]]`
+> - ❌ AVOID: Do not run a flag variable as a command, as in `if ${force}; then` or `while ${running}; do`: its value is executed
 
 Inside `[[ ... ]]` the operators `<` and `>` compare lexicographically, so `[[ 10 < 9 ]]` is true. Numbers belong in `(( ... ))`.
 
@@ -1798,6 +1831,28 @@ fi
 
 # Verbose way of writing -z
 [[ "${value}" == "" ]]
+```
+
+`if ${force}; then` works while the variable holds `true` or `false`, because those are commands. Any other value runs too: a typo in a config file is a "command not found", and a value an attacker controls is a command they chose. Compare the value instead.
+
+**Recommended**
+
+```sh
+if dybatpho::is true "${FORCE}"; then
+  overwrite=true
+fi
+while [[ "${running}" == true ]]; do
+  poll::once || running=false
+done
+```
+
+**Discouraged**
+
+```sh
+# Runs whatever FORCE holds
+if ${FORCE}; then
+  overwrite=true
+fi
 ```
 
 ### Regular Expressions
@@ -2452,10 +2507,12 @@ function fs::count_lines {
 > - ✔️ SHOULD: Declare counters with `local -i` when the variable only ever holds an integer
 > - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))`
 > - ✔️ SHOULD: Increment with `((count += 1))` or `count=$((count + 1))`
+> - ✔️ SHOULD: Compute with fractions in `awk`, passing the values with `-v`: Bash arithmetic is integer only
 > - ❌ AVOID: Do not use `let`, `expr` or the deprecated `$[ ... ]`
 > - ❌ AVOID: Do not feed a number read from input, a file name or a date straight into `(( ))`: a leading zero makes it octal
 > - ❌ AVOID: Do not write `((count++))` or `((count--))` as a statement under `set -e`
 > - ⚠️ CONSIDER: Be careful with a bare `(( ... ))` under `set -e`: an expression whose value is `0` has exit status `1` and stops the script
+> - ❌ AVOID: Do not compare decimal numbers with `[[ < ]]` or feed them to `(( ))`: the first compares text, the second refuses the dot
 >
 > Linter: `BSG087`, `BSG088`
 
@@ -2527,6 +2584,26 @@ local count=0
 ((count++))
 ```
 
+`$((10 / 3))` is `3`, and `((1.5 > 1))` stops with a syntax error. A load average, a percentage or a duration with a fraction belongs to `awk`, which also answers a comparison with its exit status.
+
+**Recommended**
+
+```sh
+ratio="$(awk -v used="${used}" -v total="${total}" 'BEGIN { printf "%.2f", used / total }')"
+if awk -v value="${load}" 'BEGIN { exit !(value > 1.5) }'; then
+  dybatpho::warn "Load is ${load}"
+fi
+```
+
+**Discouraged**
+
+```sh
+# Text comparison: "10.0" < "9.5"
+[[ "${load}" > "1.5" ]]
+# syntax error: invalid arithmetic operator
+((load > 1.5))
+```
+
 ### Portability
 
 > [!NOTE]
@@ -2550,7 +2627,7 @@ macOS ships BSD tools and Alpine ships BusyBox, and the same flag means somethin
 function __date_from_epoch {
   local epoch format
   dybatpho::expect_args epoch format -- "$@"
-  if date -d @0 +%s > /dev/null 2>&1; then
+  if date -d @0 +%s &> /dev/null; then
     date -d "@${epoch}" "+${format}"
   else
     date -r "${epoch}" "+${format}"
@@ -2891,6 +2968,7 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ SHOULD: Use an external tool such as `sed`, `awk` or `yq` when it makes the code clearly shorter and clearer
 > - ✔️ SHOULD: Call an external tool through `command <tool>` when an alias or a function of the same name may be in scope. (custom)
 > - ✔️ SHOULD: Read a whole file with `$(< file)`, not `$(cat file)`
+> - ✔️ SHOULD: End `find -exec` with `+`, which runs the command once for many files, unless the command takes exactly one
 > - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
 >
@@ -2932,6 +3010,21 @@ result="${input//${a}\/${b}/${c}${d//x/y}}"
 while IFS= read -r line; do
   printf '%s\n' "$(echo "${line}" | sed 's/old/new/')"
 done < "${file}"
+```
+
+`-exec cmd {} \;` starts one process per match, which over a tree of thousands of files is most of the run time. `-exec cmd {} +` passes as many paths as fit on one command line.
+
+**Recommended**
+
+```sh
+command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} +
+```
+
+**Discouraged**
+
+```sh
+# One gzip per file
+command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
 ```
 
 ### Signal Handlers
@@ -3124,7 +3217,10 @@ grep "${pattern}" "${file}"
 > - ✔️ SHOULD: Download to a file, verify it against a checksum or signature, then run it
 > - ✔️ SHOULD: Bound every network call: `curl --connect-timeout` and `--max-time`, or `timeout` around a tool that has no limit of its own
 > - ✔️ SHOULD: Retry only what may succeed on a second try, a bounded number of times: `curl --retry 3` retries timeouts and 5xx answers, not a 404
+> - ✔️ SHOULD: Wait longer between each retry, with a random part and a cap: `delay=$((2 ** attempt + RANDOM % 3))`
+> - ✔️ SHOULD: Bound `ssh` too, `-o ConnectTimeout=10 -o BatchMode=yes` under `timeout`, and tell a timeout (status 124) from a failure
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh`
+> - ❌ AVOID: Do not retry in a tight loop, `until curl ...; do :; done`, or forever
 >
 > Linter: `BSG056`, `BSG058`, `BSG107`
 
@@ -3147,6 +3243,39 @@ bash "${installer}"
 ```sh
 # A 404 page, or a truncated script, runs as it arrives
 curl -sSL "${url}" | bash
+```
+
+A failing service gets a retry from every client at once. Retrying without a pause, or after the same fixed delay everywhere, keeps it down; doubling the wait and adding a random part spreads the clients out, and a limit on the attempts turns an outage into an error instead of a hang. `ssh` waits for a host that drops packets as long as the kernel does, and for a password prompt forever, unless it is told otherwise.
+
+**Recommended**
+
+```sh
+local attempt=1 delay
+until curl --fail -sS --connect-timeout 10 --max-time 60 "${url}" -o "${target}"; do
+  ((attempt < 5)) || dybatpho::die "Gave up on ${url} after ${attempt} attempts"
+  # Doubling, with a random part so that clients do not retry together
+  delay=$((2 ** attempt + RANDOM % 3))
+  ((delay <= 60)) || delay=60
+  sleep "${delay}"
+  attempt=$((attempt + 1))
+done
+
+local status=0
+timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" 'systemctl is-active app' || status=$?
+case "${status}" in
+  0) ;;
+  124) dybatpho::die "${host} did not answer within 5 minutes" ;;
+  *) dybatpho::die "${host}: the check failed with status ${status}" ;;
+esac
+```
+
+**Discouraged**
+
+```sh
+# Hammers a service that is already failing, and never stops
+until curl --fail -sS "${url}" -o "${target}"; do :; done
+# Waits for a password, or for an unreachable host, with no limit
+ssh "${host}" 'systemctl is-active app'
 ```
 
 ### Deprecated Commands

@@ -210,6 +210,7 @@ fi
 > - ✔️ NÊN: Kiểm tra `BASH_VERSINFO` ở đầu một entrypoint, trước mọi thứ cần một tính năng mới hơn, và dừng lại với một thông báo nêu phiên bản đang có
 > - ✔️ NÊN: Ghi phiên bản đã giới thiệu một tính năng bên cạnh quy tắc phụ thuộc vào nó, khi phiên bản đó mới hơn mục tiêu
 > - ❌ TRÁNH: Không cho rằng `bash` trên `PATH` là bản mới: macOS vẫn đi kèm Bash 3.2 ở `/bin/bash`
+> - ❌ TRÁNH: Không so sánh phiên bản theo dạng `major >= X && minor >= Y`, dạng này từ chối Bash 6.0 khi mức tối thiểu là 5.2, và không so sánh `BASH_VERSION` như chuỗi, khi đó `5.10` xếp trước `5.2`
 >
 > Trình kiểm tra: `BSG099`
 
@@ -237,6 +238,17 @@ set -euo pipefail
 # Trên Bash 3.2: `local: -n: invalid option`, rồi `mapfile: command not found`
 local -n result="$1"
 mapfile -d '' -t files < <(command find . -print0)
+```
+
+Mức tối thiểu 5.2 thỏa mãn với mọi major lớn hơn 5 bất kể minor, và với major 5 chỉ từ minor 2 trở lên. Kiểm tra cả hai số bằng `&&` làm mất nửa đầu: Bash 6.0 có minor là 0 và bị từ chối. Hãy viết phép so sánh major và trường hợp biên riêng rẽ, như trong bước kiểm tra ở trên.
+
+**Không nên dùng**
+
+```sh
+# Từ chối Bash 6.0: minor 0 nhỏ hơn 2
+((BASH_VERSINFO[0] >= 5 && BASH_VERSINFO[1] >= 2)) || exit 1
+# So sánh chuỗi: "5.10.0" < "5.2"
+[[ "${BASH_VERSION}" > "5.2" ]] || exit 1
 ```
 
 ### Khi nào nên sử dụng shell
@@ -313,7 +325,9 @@ Một wrapper chạy qua `sudo`, một unit systemd hay `ForceCommand` của SSH
 ```sh
 unset LD_PRELOAD LD_LIBRARY_PATH LD_AUDIT BASH_ENV ENV PYTHONPATH PERL5LIB RUBYLIB NODE_PATH
 exec /usr/libexec/app/helper "$@"
+```
 
+```sh
 # Mạnh hơn: không kế thừa gì ngoài những gì được nêu tên
 exec env -i HOME="${HOME}" PATH=/usr/bin:/bin /usr/libexec/app/helper "$@"
 ```
@@ -506,7 +520,9 @@ dybatpho::dry_run systemctl --user restart app.service
 > - ✔️ NÊN: Triệt tiêu tất cả các thông báo không cần thiết vào `/dev/null`. (tùy chỉnh)
 > - ✔️ NÊN: Sử dụng thư viện ghi log từ [dybatpho](https://github.com/dynamotn/dybatpho) để xuất các thông báo để ghi log tốt hơn. (dybatpho)
 > - ✔️ NÊN: Giữ standard output của một hàm bị bắt output chỉ cho kết quả của nó: gửi tiến độ, đường dẫn và thông báo sang `STDERR` hoặc `/dev/null`
+> - ✔️ NÊN: Gửi cả hai luồng về một nơi bằng `&>` và `&>>`: `cmd &> /dev/null`, `cmd &>> "${log}"`
 > - ❌ TRÁNH: Không gọi một helper in ra `STDOUT` từ một hàm mà output của nó bị bên gọi bắt lại hoặc pipe vào một tệp
+> - ❌ TRÁNH: Không trộn `&>` với `> file 2>&1` trong cùng một codebase, và không bao giờ viết `2>&1 > file`, cách này vẫn gửi lỗi ra terminal
 >
 > Trình kiểm tra: `BSG036`
 
@@ -566,6 +582,22 @@ function release::package {
   printf '%s\n' "${archive}"
 }
 archive="$(release::package)"
+```
+
+Các phép chuyển hướng được áp dụng từ trái sang phải. `> file 2>&1` trỏ standard output vào tệp, rồi trỏ standard error vào cùng chỗ đó; `2>&1 > file` trỏ standard error vào terminal trước rồi mới chuyển standard output đi, nên lỗi vẫn hiện ra màn hình. `&>` nói "cả hai" trong một toán tử và không thể bị viết sai thứ tự.
+
+**Nên dùng**
+
+```sh
+command -v jq &> /dev/null
+backup::run &>> "${LOG_FILE}"
+```
+
+**Không nên dùng**
+
+```sh
+# Lỗi vẫn ra terminal: 2>&1 sao chép nó trước khi > chuyển stdout đi
+backup::run 2>&1 > "${LOG_FILE}"
 ```
 
 ### Hàm sử dụng chung
@@ -1711,7 +1743,7 @@ function __date_flavor_into {
   dybatpho::expect_args __date_flavor_var -- "$@"
   local -n __date_flavor_ref="${__date_flavor_var}"
   if [[ -z "${__DATE_FLAVOR-}" ]]; then
-    if date --version > /dev/null 2>&1; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
+    if date --version &> /dev/null; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
   fi
   __date_flavor_ref="${__DATE_FLAVOR}"
 }
@@ -1770,6 +1802,7 @@ fi
 > - ✔️ NÊN: So sánh số bằng `(( ... ))`, hoặc bằng `-lt`, `-gt`, `-eq` trong `[[ ... ]]`
 > - ❌ TRÁNH: Không dùng một dấu `=` để so sánh chuỗi
 > - ❌ TRÁNH: Không dùng `<` hay `>` để so sánh số trong `[[ ... ]]`
+> - ❌ TRÁNH: Không chạy một biến cờ như một lệnh, như `if ${force}; then` hay `while ${running}; do`: giá trị của nó bị thực thi
 
 Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ điển, nên `[[ 10 < 9 ]]` là đúng. Số thì phải nằm trong `(( ... ))`.
 
@@ -1800,6 +1833,28 @@ fi
 
 # Cách viết dài dòng của -z
 [[ "${value}" == "" ]]
+```
+
+`if ${force}; then` chạy được chừng nào biến còn chứa `true` hay `false`, vì đó là các lệnh. Mọi giá trị khác cũng sẽ chạy: một lỗi gõ trong tệp cấu hình thành "command not found", và một giá trị do kẻ tấn công kiểm soát là một lệnh do chính họ chọn. Hãy so sánh giá trị thay vì chạy nó.
+
+**Nên dùng**
+
+```sh
+if dybatpho::is true "${FORCE}"; then
+  overwrite=true
+fi
+while [[ "${running}" == true ]]; do
+  poll::once || running=false
+done
+```
+
+**Không nên dùng**
+
+```sh
+# Chạy bất cứ thứ gì FORCE chứa
+if ${FORCE}; then
+  overwrite=true
+fi
 ```
 
 ### Biểu thức chính quy
@@ -2454,10 +2509,12 @@ function fs::count_lines {
 > - ✔️ NÊN: Khai báo biến đếm bằng `local -i` khi biến đó chỉ chứa số nguyên
 > - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))`
 > - ✔️ NÊN: Tăng giá trị bằng `((count += 1))` hoặc `count=$((count + 1))`
+> - ✔️ NÊN: Tính toán với số thập phân trong `awk`, truyền giá trị qua `-v`: phép tính của Bash chỉ dùng số nguyên
 > - ❌ TRÁNH: Không dùng `let`, `expr` hay cú pháp `$[ ... ]` đã lỗi thời
 > - ❌ TRÁNH: Không đưa thẳng một số đọc từ đầu vào, tên tệp hay ngày tháng vào `(( ))`: số 0 ở đầu biến nó thành hệ bát phân
 > - ❌ TRÁNH: Không viết `((count++))` hay `((count--))` như một câu lệnh khi có `set -e`
 > - ⚠️ CÂN NHẮC: Cẩn thận với `(( ... ))` đứng một mình dưới `set -e`: biểu thức có giá trị `0` sẽ trả về mã thoát `1` và làm dừng script
+> - ❌ TRÁNH: Không so sánh số thập phân bằng `[[ < ]]` hay đưa chúng vào `(( ))`: cách đầu so sánh chuỗi, cách sau từ chối dấu chấm
 >
 > Trình kiểm tra: `BSG087`, `BSG088`
 
@@ -2529,6 +2586,26 @@ local count=0
 ((count++))
 ```
 
+`$((10 / 3))` bằng `3`, và `((1.5 > 1))` dừng lại với lỗi cú pháp. Một chỉ số tải, một tỉ lệ phần trăm hay một khoảng thời gian có phần thập phân thuộc về `awk`, công cụ cũng trả lời một phép so sánh bằng mã thoát của nó.
+
+**Nên dùng**
+
+```sh
+ratio="$(awk -v used="${used}" -v total="${total}" 'BEGIN { printf "%.2f", used / total }')"
+if awk -v value="${load}" 'BEGIN { exit !(value > 1.5) }'; then
+  dybatpho::warn "Load is ${load}"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# So sánh chuỗi: "10.0" < "9.5"
+[[ "${load}" > "1.5" ]]
+# syntax error: invalid arithmetic operator
+((load > 1.5))
+```
+
 ### Tính di động
 
 > [!NOTE]
@@ -2552,7 +2629,7 @@ macOS dùng công cụ BSD, Alpine dùng BusyBox, và cùng một cờ lại man
 function __date_from_epoch {
   local epoch format
   dybatpho::expect_args epoch format -- "$@"
-  if date -d @0 +%s > /dev/null 2>&1; then
+  if date -d @0 +%s &> /dev/null; then
     date -d "@${epoch}" "+${format}"
   else
     date -r "${epoch}" "+${format}"
@@ -2893,6 +2970,7 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Dùng công cụ bên ngoài như `sed`, `awk` hay `yq` khi nó làm mã ngắn gọn và rõ ràng hơn hẳn
 > - ✔️ NÊN: Gọi công cụ bên ngoài qua `command <tool>` khi có thể đang tồn tại một alias hay một hàm cùng tên. (tùy chỉnh)
 > - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)`
+> - ✔️ NÊN: Kết thúc `find -exec` bằng `+`, cách này chạy lệnh một lần cho nhiều tệp, trừ khi lệnh chỉ nhận đúng một tệp
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
 >
@@ -2934,6 +3012,21 @@ result="${input//${a}\/${b}/${c}${d//x/y}}"
 while IFS= read -r line; do
   printf '%s\n' "$(echo "${line}" | sed 's/old/new/')"
 done < "${file}"
+```
+
+`-exec cmd {} \;` khởi động một tiến trình cho mỗi kết quả, và trên một cây thư mục hàng nghìn tệp, đó là phần lớn thời gian chạy. `-exec cmd {} +` truyền nhiều đường dẫn nhất có thể trên một dòng lệnh.
+
+**Nên dùng**
+
+```sh
+command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} +
+```
+
+**Không nên dùng**
+
+```sh
+# Mỗi tệp một lần chạy gzip
+command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
 ```
 
 ### Trình xử lý tín hiệu
@@ -3126,7 +3219,10 @@ grep "${pattern}" "${file}"
 > - ✔️ NÊN: Tải về thành tệp, kiểm tra nó với checksum hoặc chữ ký, rồi mới chạy
 > - ✔️ NÊN: Giới hạn thời gian của mọi lời gọi mạng: `curl --connect-timeout` và `--max-time`, hoặc `timeout` bao quanh một công cụ không có giới hạn riêng
 > - ✔️ NÊN: Chỉ thử lại những gì có thể thành công ở lần sau, với số lần có giới hạn: `curl --retry 3` thử lại khi hết thời gian hay gặp lỗi 5xx, không thử lại một lỗi 404
+> - ✔️ NÊN: Chờ lâu hơn giữa mỗi lần thử lại, có thêm một phần ngẫu nhiên và một mức trần: `delay=$((2 ** attempt + RANDOM % 3))`
+> - ✔️ NÊN: Giới hạn cả `ssh`, `-o ConnectTimeout=10 -o BatchMode=yes` dưới `timeout`, và phân biệt hết giờ (mã 124) với thất bại
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh`
+> - ❌ TRÁNH: Không thử lại trong một vòng lặp sát nút, `until curl ...; do :; done`, hay thử lại mãi mãi
 >
 > Trình kiểm tra: `BSG056`, `BSG058`, `BSG107`
 
@@ -3149,6 +3245,39 @@ bash "${installer}"
 ```sh
 # Một trang 404, hay một script bị cắt cụt, được chạy ngay khi nó tới
 curl -sSL "${url}" | bash
+```
+
+Một dịch vụ đang lỗi nhận lệnh thử lại từ mọi client cùng lúc. Thử lại không nghỉ, hay sau cùng một khoảng chờ cố định ở mọi nơi, sẽ giữ nó tiếp tục sập; nhân đôi thời gian chờ và cộng thêm một phần ngẫu nhiên giúp dàn các client ra, và giới hạn số lần thử biến một sự cố thành một lỗi thay vì một lần treo. `ssh` chờ một host đánh rơi gói tin lâu như kernel chờ, và chờ một lời nhắc mật khẩu mãi mãi, trừ khi được bảo khác đi.
+
+**Nên dùng**
+
+```sh
+local attempt=1 delay
+until curl --fail -sS --connect-timeout 10 --max-time 60 "${url}" -o "${target}"; do
+  ((attempt < 5)) || dybatpho::die "Gave up on ${url} after ${attempt} attempts"
+  # Nhân đôi, kèm một phần ngẫu nhiên để các client không thử lại cùng lúc
+  delay=$((2 ** attempt + RANDOM % 3))
+  ((delay <= 60)) || delay=60
+  sleep "${delay}"
+  attempt=$((attempt + 1))
+done
+
+local status=0
+timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" 'systemctl is-active app' || status=$?
+case "${status}" in
+  0) ;;
+  124) dybatpho::die "${host} did not answer within 5 minutes" ;;
+  *) dybatpho::die "${host}: the check failed with status ${status}" ;;
+esac
+```
+
+**Không nên dùng**
+
+```sh
+# Dồn dập một dịch vụ vốn đang lỗi, và không bao giờ dừng
+until curl --fail -sS "${url}" -o "${target}"; do :; done
+# Chờ mật khẩu, hay chờ một host không tới được, mà không có giới hạn
+ssh "${host}" 'systemctl is-active app'
 ```
 
 ### Lệnh đã lỗi thời
