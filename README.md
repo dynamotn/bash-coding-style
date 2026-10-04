@@ -15,6 +15,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Linter](#linter)
 - [Background](#background)
   - [Which Shell to Use](#which-shell-to-use)
+  - [Bash Version](#bash-version)
   - [When to Use Shell](#when-to-use-shell)
 - [Shell Files and Interpreter Invocation](#shell-files-and-interpreter-invocation)
   - [File Extensions](#file-extensions)
@@ -174,6 +175,44 @@ DYBATPHO_DIR="<path to dybatpho>"
 #!/bin/bash -euo pipefail
 # Use -euo after shebang, it is disabled when using `bash ./script.sh`.
 # Wrong shebang
+```
+
+### Bash Version
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Target Bash 4.4 or newer, and say so in the README of the project. (custom)
+> - ✔️ SHOULD: Check `BASH_VERSINFO` at the top of an entrypoint, before anything that needs a newer feature, and stop with a message that names the version found
+> - ✔️ SHOULD: Write the version that introduced a feature next to a rule that depends on it, when it is newer than the target
+> - ❌ AVOID: Do not assume the `bash` on `PATH` is new: macOS still ships Bash 3.2 as `/bin/bash`
+
+The guide relies on features that older releases do not have: namerefs (`local -n`, 4.3), `mapfile -d` and `local -` (4.4), and empty arrays that `set -u` accepts (4.4). On Bash 3.2 a script written this way does not fail where the feature is missing; it fails later, with `invalid option` or `unbound variable`, far from the cause. One check at the top turns that into a message the user can act on, such as installing a newer Bash with Homebrew, whose `bash` `#!/usr/bin/env bash` then finds first.
+
+dybatpho checks for the Bash version it needs when it is sourced. (dybatpho)
+
+**Recommended**
+
+```sh
+#!/usr/bin/env bash
+# Bash 3.2 still parses this, so the message is what the user sees
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'This script needs Bash 4.4 or newer, found %s\n' "${BASH_VERSION}" >&2
+  exit 1
+fi
+set -euo pipefail
+```
+
+**Discouraged**
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail
+# On Bash 3.2: `local: -n: invalid option`, then `mapfile: command not found`
+local -n result="$1"
+mapfile -d '' -t files < <(command find . -print0)
 ```
 
 ### When to Use Shell

@@ -16,6 +16,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Trình kiểm tra](#tr%C3%ACnh-ki%E1%BB%83m-tra)
 - [Bối cảnh](#b%E1%BB%91i-c%E1%BA%A3nh)
   - [Nên sử dụng shell nào](#n%C3%AAn-s%E1%BB%AD-d%E1%BB%A5ng-shell-n%C3%A0o)
+  - [Phiên bản Bash](#phi%C3%AAn-b%E1%BA%A3n-bash)
   - [Khi nào nên sử dụng shell](#khi-n%C3%A0o-n%C3%AAn-s%E1%BB%AD-d%E1%BB%A5ng-shell)
 - [Tệp shell và cách thực thi trình thông dịch](#t%E1%BB%87p-shell-v%C3%A0-c%C3%A1ch-th%E1%BB%B1c-thi-tr%C3%ACnh-th%C3%B4ng-d%E1%BB%8Bch)
   - [Phần mở rộng tệp](#ph%E1%BA%A7n-m%E1%BB%9F-r%E1%BB%99ng-t%E1%BB%87p)
@@ -176,6 +177,44 @@ DYBATPHO_DIR="<path to dybatpho>"
 #!/bin/bash -euo pipefail
 # Để tùy chọn -euo ngay sau shebang, nó sẽ bị vô hiệu hóa khi gọi `bash ./script.sh`
 # Sai shebang
+```
+
+### Phiên bản Bash
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Nhắm tới Bash 4.4 trở lên, và ghi rõ điều này trong README của dự án. (tùy chỉnh)
+> - ✔️ NÊN: Kiểm tra `BASH_VERSINFO` ở đầu một entrypoint, trước mọi thứ cần một tính năng mới hơn, và dừng lại với một thông báo nêu phiên bản đang có
+> - ✔️ NÊN: Ghi phiên bản đã giới thiệu một tính năng bên cạnh quy tắc phụ thuộc vào nó, khi phiên bản đó mới hơn mục tiêu
+> - ❌ TRÁNH: Không cho rằng `bash` trên `PATH` là bản mới: macOS vẫn đi kèm Bash 3.2 ở `/bin/bash`
+
+Hướng dẫn này dựa vào các tính năng mà những bản cũ không có: nameref (`local -n`, 4.3), `mapfile -d` và `local -` (4.4), và mảng rỗng được `set -u` chấp nhận (4.4). Trên Bash 3.2, một script viết theo cách này không thất bại ngay chỗ thiếu tính năng; nó thất bại muộn hơn, với `invalid option` hay `unbound variable`, ở xa nguyên nhân. Một bước kiểm tra ở đầu biến điều đó thành một thông báo mà người dùng có thể xử lý, chẳng hạn cài một bản Bash mới hơn bằng Homebrew, bản mà `#!/usr/bin/env bash` sẽ tìm thấy trước.
+
+dybatpho tự kiểm tra phiên bản Bash nó cần khi được source. (dybatpho)
+
+**Nên dùng**
+
+```sh
+#!/usr/bin/env bash
+# Bash 3.2 vẫn phân tích được đoạn này, nên người dùng thấy đúng thông báo
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'This script needs Bash 4.4 or newer, found %s\n' "${BASH_VERSION}" >&2
+  exit 1
+fi
+set -euo pipefail
+```
+
+**Không nên dùng**
+
+```sh
+#!/usr/bin/env bash
+set -euo pipefail
+# Trên Bash 3.2: `local: -n: invalid option`, rồi `mapfile: command not found`
+local -n result="$1"
+mapfile -d '' -t files < <(command find . -print0)
 ```
 
 ### Khi nào nên sử dụng shell
