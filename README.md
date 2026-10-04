@@ -1254,6 +1254,7 @@ command1 | command2 | command3 | command4
 > - ✔️ SHOULD: Write a choice between two actions as `if`/`else`
 > - ❌ AVOID: Do not write `test && action || other` for an if/else: `other` also runs when `action` fails. ShellCheck reports it as SC2015
 > - ❌ AVOID: Do not use `test && { ...; }` as an `if` that spans several lines
+> - ❌ AVOID: Do not end a statement with `;`: a semicolon belongs only before `then` and `do`, or between statements on one line
 
 Shell loops are a bit different, but following the principle of braces when declaring functions, place `; then` and `; do` on the same line as `if/for/while`. `else` should be placed on its own line, and closing constructs should also be on their own lines. They should be vertically aligned with their opening constructs.
 
@@ -1310,6 +1311,22 @@ fi
   load_config "${config}"
   validate_config
 }
+```
+
+A newline ends a statement already, so a `;` at the end of a line is noise left over from other languages; shfmt removes it.
+
+**Recommended**
+
+```sh
+name="dotfiles"
+printf '%s\n' "${name}"
+```
+
+**Discouraged**
+
+```sh
+name="dotfiles";
+printf '%s\n' "${name}";
 ```
 
 ### Case statement

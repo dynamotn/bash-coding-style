@@ -1256,6 +1256,7 @@ command1 | command2 | command3 | command4
 > - ✔️ NÊN: Viết lựa chọn giữa hai hành động bằng `if`/`else`
 > - ❌ TRÁNH: Không viết `test && action || other` thay cho if/else: `other` cũng chạy khi `action` lỗi. ShellCheck báo lỗi này là SC2015
 > - ❌ TRÁNH: Không dùng `test && { ...; }` làm một `if` trải trên nhiều dòng
+> - ❌ TRÁNH: Không kết thúc câu lệnh bằng `;`: dấu chấm phẩy chỉ đứng trước `then` và `do`, hoặc giữa các câu lệnh trên cùng một dòng
 
 Vòng lặp shell hơi khác một chút, nhưng tuân theo nguyên tắc dấu ngoặc nhọn khi khai báo hàm, hãy đặt `; then` và `; do` trên cùng dòng với `if/for/while`. `else` nên được đặt trên dòng riêng của nó, và các cấu trúc đóng cũng nên ở trên dòng riêng của chúng. Chúng nên được căn chỉnh theo chiều dọc với các cấu trúc mở của chúng.
 
@@ -1312,6 +1313,22 @@ fi
   load_config "${config}"
   validate_config
 }
+```
+
+Xuống dòng đã kết thúc một câu lệnh, nên `;` ở cuối dòng chỉ là thói quen thừa từ ngôn ngữ khác; shfmt sẽ xoá nó.
+
+**Nên dùng**
+
+```sh
+name="dotfiles"
+printf '%s\n' "${name}"
+```
+
+**Không nên dùng**
+
+```sh
+name="dotfiles";
+printf '%s\n' "${name}";
 ```
 
 ### Câu lệnh case
