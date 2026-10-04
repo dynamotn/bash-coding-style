@@ -59,6 +59,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Vòng lặp for](#vong-l%E1%BA%B7p-for)
   - [Biến cục bộ](#bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99)
   - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
+  - [Tính di động](#tinh-di-d%E1%BB%99ng)
 - [Gọi lệnh](#g%E1%BB%8Di-l%E1%BB%87nh)
   - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gia-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
   - [Xử lý lỗi](#x%E1%BB%AD-ly-l%E1%BB%97i)
@@ -1541,6 +1542,42 @@ retries=$[retries + 1]
 # Dưới set -e, dòng này dừng script ngay lần count đi từ 0 lên 1
 ((count++))
 ```
+### Tính di động
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dò tính năng trước khi dùng một cờ chỉ GNU có, và giữ một nhánh di động: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix`
+> - ✔️ NÊN: Phát hiện tính năng bằng cách thử chính cờ đó, không dựa vào tên công cụ hay `--version` của nó
+> - ❌ TRÁNH: Không mặc định có GNU coreutils khi script chạy trên macOS, BSD hay BusyBox
+> - ⚠️ CÂN NHẮC: Ưu tiên lệnh dựng sẵn của Bash hoặc dạng POSIX khi chúng làm được việc: `printf '%(%s)T'`, khai triển tham số
+
+macOS dùng công cụ BSD, Alpine dùng BusyBox, và cùng một cờ lại mang nghĩa khác, hoặc không có nghĩa gì, trên mỗi nơi: `sed -i` đòi hậu tố sao lưu trên BSD, `stat -c` ở đó là `stat -f`, còn `date -d` thì không tồn tại. `date --version` thất bại không có nghĩa hệ thống là BSD — BusyBox cũng thất bại ở đó — nên hãy thử chính hành vi cần dùng, một lần, rồi giữ lại kết quả.
+
+**Nên dùng**
+
+```sh
+if date -d @0 +%s > /dev/null 2>&1; then
+  __date_from_epoch() { date -d "@$1" "+$2"; }
+else
+  __date_from_epoch() { date -r "$1" "+$2"; }
+fi
+
+# Sửa tại chỗ một cách di động: ghi ra bản sao, rồi chuyển đè lên tệp
+sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
+```
+
+**Không nên dùng**
+
+```sh
+# Chỉ GNU có: hỏng trên macOS và BusyBox
+date -d "@${epoch}" +%F
+sed -i 's/old/new/' "${file}"
+target="$(readlink -f "${link}")"
+```
+
 ## Gọi lệnh
 
 ### Kiểm tra giá trị trả về

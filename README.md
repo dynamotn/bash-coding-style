@@ -58,6 +58,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [For Loops](#for-loops)
   - [Local Variables](#local-variables)
   - [Arithmetic](#arithmetic)
+  - [Portability](#portability)
 - [Calling Commands](#calling-commands)
   - [Checking Return Values](#checking-return-values)
   - [Error Handling](#error-handling)
@@ -1545,6 +1546,42 @@ retries=$[retries + 1]
 # Under set -e this stops the script the first time count goes from 0 to 1
 ((count++))
 ```
+### Portability
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Probe for a feature before using a GNU-only flag, and keep a portable branch: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix`
+> - ✔️ SHOULD: Detect a feature by trying the flag, not by the name of the tool or its `--version`
+> - ❌ AVOID: Do not assume GNU coreutils when the script runs on macOS, BSD or BusyBox
+> - ⚠️ CONSIDER: Prefer a Bash builtin or a POSIX form when one does the job: `printf '%(%s)T'`, parameter expansion
+
+macOS ships BSD tools and Alpine ships BusyBox, and the same flag means something else, or nothing, on each: `sed -i` wants a backup suffix on BSD, `stat -c` is `stat -f` there, and `date -d` does not exist. `date --version` failing does not make a system BSD — BusyBox fails it too — so test the behaviour itself, once, and keep the answer.
+
+**Recommended**
+
+```sh
+if date -d @0 +%s > /dev/null 2>&1; then
+  __date_from_epoch() { date -d "@$1" "+$2"; }
+else
+  __date_from_epoch() { date -r "$1" "+$2"; }
+fi
+
+# A portable in-place edit: write a copy, then move it over the file
+sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
+```
+
+**Discouraged**
+
+```sh
+# GNU only: fails on macOS and on BusyBox
+date -d "@${epoch}" +%F
+sed -i 's/old/new/' "${file}"
+target="$(readlink -f "${link}")"
+```
+
 ## Calling Commands
 
 ### Checking Return Values
