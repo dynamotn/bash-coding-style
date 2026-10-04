@@ -34,5 +34,8 @@ jobs:
       - name: Lint the recommended examples
         run: bash ./scripts/lint_examples.sh
 
+      - name: Check the rule codes on the tips
+        run: bash ./scripts/sync_rule_codes.sh --check
+
       - name: Lint the scripts of the repository
         run: dyshellint scripts

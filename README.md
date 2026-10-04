@@ -134,7 +134,7 @@ dyshellint --list-rules
 cat script.sh | dyshellint --stdin-filename script.sh -
 ```
 
-Every rule carries a code: `BSG###` for a rule of this guide, `SC####` for a ShellCheck finding, and `FMT001` for a formatting difference. Any of them can be turned off for a run with `--exclude-rules`, and a ShellCheck finding can be silenced in place with a `# shellcheck disable=SCXXXX` comment that says why. A tip that the linter checks ends with the code of the rule that checks it, such as `BSG010`, so a finding leads straight to the sentence it enforces.
+Every rule carries a code: `BSG###` for a rule of this guide, `SC####` for a ShellCheck finding, and `FMT001` for a formatting difference. Any of them can be turned off for a run with `--exclude-rules`, and a ShellCheck finding can be silenced in place with a `# shellcheck disable=SCXXXX` comment that says why. A tip that the linter checks ends with the code of the rule that checks it, such as `BSG010`, so a finding leads straight to the sentence it enforces. [`scripts/sync_rule_codes.sh`](scripts/sync_rule_codes.sh) keeps those codes in line with `dyshellint --list-rules`: it puts the code of a new rule on the tip of its section that matches it best, for review, removes the code of a rule that is gone, and copies the codes to the translation; `--check`, which the hook and CI run, only reports.
 
 The [`.shellcheckrc`](.shellcheckrc) and [`.editorconfig`](.editorconfig) of this repository are the configuration this guide asks for, and are meant to be copied into a project. `dyshellint` reads the `.shellcheckrc` of the project it checks, and also ships a [nvim-lint](https://github.com/mfussenegger/nvim-lint) definition for Neovim.
 

@@ -124,7 +124,7 @@ function _main {
   local -A source_of=() fence_of=() allowed_in=()
   local -a block_files=()
   local block_file block_readme block_fence block_allow
-  while read -r block_file block_readme block_fence block_allow; do
+  while read -r block_file block_readme block_fence block_allow || [[ -n "${block_file}" ]]; do
     block_files+=("${block_file}")
     source_of["${block_file}"]="${block_readme#"${REPO_DIR}"/}"
     fence_of["${block_file}"]="${block_fence}"

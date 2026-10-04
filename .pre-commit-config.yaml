@@ -9,6 +9,12 @@ repos:
         language: system
         files: ^(README(\.vi)?\.md|\.shellcheckrc|\.editorconfig|scripts/.*)$
         pass_filenames: false
+      - id: sync-rule-codes
+        name: rule codes on the tips they check
+        entry: bash ./scripts/sync_rule_codes.sh --check
+        language: system
+        files: ^(README(\.vi)?\.md|scripts/sync_rule_codes\.sh)$
+        pass_filenames: false
       - id: dyshellint
         name: dyshellint
         entry: dyshellint

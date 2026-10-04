@@ -136,7 +136,7 @@ dyshellint --list-rules
 cat script.sh | dyshellint --stdin-filename script.sh -
 ```
 
-Mỗi quy tắc có một mã: `BSG###` cho quy tắc của hướng dẫn này, `SC####` cho phát hiện của ShellCheck, và `FMT001` cho khác biệt định dạng. Có thể tắt bất kỳ mã nào cho một lần chạy bằng `--exclude-rules`, và có thể tắt tại chỗ một phát hiện của ShellCheck bằng chú thích `# shellcheck disable=SCXXXX` kèm lý do. Một gợi ý được trình kiểm tra kiểm tra sẽ kết thúc bằng mã của quy tắc kiểm tra nó, như `BSG010`, để một phát hiện dẫn thẳng tới câu mà nó thực thi.
+Mỗi quy tắc có một mã: `BSG###` cho quy tắc của hướng dẫn này, `SC####` cho phát hiện của ShellCheck, và `FMT001` cho khác biệt định dạng. Có thể tắt bất kỳ mã nào cho một lần chạy bằng `--exclude-rules`, và có thể tắt tại chỗ một phát hiện của ShellCheck bằng chú thích `# shellcheck disable=SCXXXX` kèm lý do. Một gợi ý được trình kiểm tra kiểm tra sẽ kết thúc bằng mã của quy tắc kiểm tra nó, như `BSG010`, để một phát hiện dẫn thẳng tới câu mà nó thực thi. [`scripts/sync_rule_codes.sh`](scripts/sync_rule_codes.sh) giữ các mã đó khớp với `dyshellint --list-rules`: nó gắn mã của một quy tắc mới vào gợi ý khớp nhất trong mục của quy tắc, để bạn xem lại, gỡ mã của quy tắc đã bị bỏ, và chép các mã sang bản dịch; `--check`, thứ mà hook và CI chạy, chỉ báo cáo.
 
 [`.shellcheckrc`](.shellcheckrc) và [`.editorconfig`](.editorconfig) trong kho này là cấu hình mà hướng dẫn yêu cầu, và được dùng để sao chép vào dự án của bạn. `dyshellint` đọc `.shellcheckrc` của dự án mà nó kiểm tra, và cũng kèm sẵn một định nghĩa [nvim-lint](https://github.com/mfussenegger/nvim-lint) cho Neovim.
 
