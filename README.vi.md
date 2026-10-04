@@ -792,13 +792,14 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Đặt tên biến lặp theo tập hợp mà nó duyệt: `for tool in "${tools[@]}"`
 > - ❌ TRÁNH: Không khai báo và gán từ một lệnh thay thế trên cùng một dòng
 
-`local name="$(some_command)"` làm mất mã thoát của `some_command`, vì mã thoát của cả dòng là mã thoát của `local`, mà `local` thì luôn thành công. Dưới `set -e`, điều đó biến một lệnh thất bại thành một biến rỗng trong im lặng. Tách làm hai dòng giữ cho lỗi vẫn hiện ra.
+`local name="$(some_command)"` làm mất mã thoát của `some_command`, vì mã thoát của cả dòng là mã thoát của `local`, mà `local` thì luôn thành công. Dưới `set -e`, điều đó biến một lệnh thất bại thành một biến rỗng trong im lặng. Tách làm hai dòng giữ cho lỗi vẫn hiện ra. `readonly`, `export` và `declare` cũng nuốt mã thoát theo cùng cách đó, nên một hằng số được gán trước rồi mới đặt chỉ đọc ở dòng kế tiếp.
 
 **Nên dùng**
 
 ```sh
 # Hằng số đặt trước, chỉ đọc
-readonly SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+readonly SCRIPT_DIR
 
 function dytoy::install {
   local name
@@ -822,6 +823,7 @@ function dytoy::install {
 ```sh
 # Mã thoát của lệnh thay thế bị mất
 local version="$(dytoy::get_yaml "$name" "version")"
+readonly SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 
 # Vô tình thành biến toàn cục, rò rỉ sang mọi hàm được gọi sau đó
 version="1.2.3"

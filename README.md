@@ -790,13 +790,14 @@ Custom rule
 > - ✔️ SHOULD: Name a loop variable after the collection it walks: `for tool in "${tools[@]}"`
 > - ❌ AVOID: Do not declare and assign from a command substitution on the same line
 
-`local name="$(some_command)"` throws away the exit status of `some_command`, because the status of the line is the status of `local`, which always succeeds. Under `set -e` that turns a failing command into a silent empty variable. Splitting the two lines keeps the failure visible.
+`local name="$(some_command)"` throws away the exit status of `some_command`, because the status of the line is the status of `local`, which always succeeds. Under `set -e` that turns a failing command into a silent empty variable. Splitting the two lines keeps the failure visible. `readonly`, `export` and `declare` swallow the status in the same way, so a constant is assigned first and made read-only on the next line.
 
 **Recommended**
 
 ```sh
 # Constants first, read-only
-readonly SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
+readonly SCRIPT_DIR
 
 function dytoy::install {
   local name
@@ -820,6 +821,7 @@ function dytoy::install {
 ```sh
 # The exit status of the command substitution is lost
 local version="$(dytoy::get_yaml "$name" "version")"
+readonly SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 
 # Global by accident, leaks into every function called afterwards
 version="1.2.3"
