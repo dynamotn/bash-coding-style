@@ -53,6 +53,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Validation in Command Substitution](#validation-in-command-substitution)
   - [Test Expression](#test-expression)
   - [Testing Strings](#testing-strings)
+  - [Regular Expressions](#regular-expressions)
   - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
   - [Locale and Collation](#locale-and-collation)
   - [Eval is Evil](#eval-is-evil)
@@ -61,6 +62,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Printing Data](#printing-data)
   - [Here Documents](#here-documents)
   - [Arrays](#arrays)
+  - [Associative Arrays](#associative-arrays)
   - [Pipes to While](#pipes-to-while)
   - [Process Substitution](#process-substitution)
   - [For Loops](#for-loops)
@@ -1644,6 +1646,44 @@ fi
 [[ "${value}" == "" ]]
 ```
 
+### Regular Expressions
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Keep a regular expression in a variable and expand it unquoted on the right of `=~`
+> - ✔️ SHOULD: Quote only the parts that must match literally, such as a value spliced into the pattern
+> - ✔️ SHOULD: Copy what you need out of `BASH_REMATCH` right after the match
+> - ⚠️ CONSIDER: Use a glob pattern with `==` when it is enough: `[[ "${file}" == *.tar.gz ]]`
+> - ❌ AVOID: Do not quote the whole regular expression: a quoted right-hand side matches as a plain string
+
+Quoting on the right of `=~` makes that part literal, so `[[ "${tag}" =~ "^v[0-9]+" ]]` looks for the characters `^v[0-9]+` and never matches a version. Writing the pattern straight into `[[ ]]` works until it holds a space, a `|` or a `)` that the shell reads first. A variable sidesteps both. `BASH_REMATCH` is overwritten by the next `=~`, including one inside a function you call.
+
+**Recommended**
+
+```sh
+# The pattern in a variable, unquoted after =~
+local version_re='^v?([0-9]+)\.([0-9]+)\.([0-9]+)$'
+if [[ "${tag}" =~ ${version_re} ]]; then
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+fi
+
+# A literal part spliced in, quoted; the rest stays a pattern
+[[ "${name}" =~ ^"${prefix}"[0-9]+$ ]]
+```
+
+**Discouraged**
+
+```sh
+# Quoted: matches only the literal text ^v?([0-9]+)...
+[[ "${tag}" =~ "^v?([0-9]+)\.([0-9]+)" ]]
+
+# BASH_REMATCH may belong to a match inside other_check by now
+[[ "${tag}" =~ ^v?([0-9]+)\.([0-9]+)$ ]]
+other_check "${tag}"
+major="${BASH_REMATCH[1]}"
+```
+
 ### Wildcard Expansion of Filenames
 
 > [!TIP]
@@ -1982,6 +2022,48 @@ done
 # Misses the last element of a sparse array, and stops on the gap under set -u
 for ((index = 0; index < ${#names[@]}; index++)); do
   printf '%s\n' "${names[index]}"
+done
+```
+
+### Associative Arrays
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Declare a map explicitly, `local -A name=()` or `declare -A NAME=()`: without `-A` the keys are evaluated as arithmetic
+> - ✔️ SHOULD: Quote a key that comes from a variable: `"${map["${key}"]}"`
+> - ✔️ SHOULD: Test whether a key exists with `[[ -v map["${key}"] ]]`, which tells a missing key from an empty value
+> - ✔️ SHOULD: Sort the keys before using their order: `"${!map[@]}"` comes out in no particular order
+> - ❌ AVOID: Do not rely on the order of `"${!map[@]}"`, and do not use `[[ -n "${map[key]}" ]]` as an existence test
+
+Without `-A`, `versions[jq]=1` assigns to an indexed array: `jq` is read as an arithmetic variable, worth `0`, so every key lands on index `0` and overwrites the last one. The keys of a map come out in hash order, which changes with the keys and between Bash versions, so output built from it is not reproducible until it is sorted.
+
+**Recommended**
+
+```sh
+local -A versions=()
+versions["jq"]="1.7.1"
+versions["yq"]="4.44.3"
+
+# Present, even when the value is empty
+if [[ -v versions["${tool}"] ]]; then
+  printf '%s\n' "${versions["${tool}"]}"
+fi
+
+# A stable order
+local -a tools=()
+mapfile -t tools < <(printf '%s\n' "${!versions[@]}" | LC_ALL=C sort)
+```
+
+**Discouraged**
+
+```sh
+# No `declare -A`: this sets index 0 of an indexed array
+versions[jq]="1.7.1"
+
+# Empty and missing look the same, and the loop order changes between runs
+[[ -n "${versions[${tool}]}" ]] && install "${tool}"
+for tool in "${!versions[@]}"; do
+  printf '%s\n' "${tool}"
 done
 ```
 

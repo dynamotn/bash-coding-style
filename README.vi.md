@@ -54,6 +54,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra đầu vào trong thay thế lệnh](#ki%E1%BB%83m-tra-%C4%91%E1%BA%A7u-v%C3%A0o-trong-thay-th%E1%BA%BF-l%E1%BB%87nh)
   - [Biểu thức kiểm tra](#bi%E1%BB%83u-th%E1%BB%A9c-ki%E1%BB%83m-tra)
   - [Kiểm tra chuỗi](#ki%E1%BB%83m-tra-chu%E1%BB%97i)
+  - [Biểu thức chính quy](#bi%E1%BB%83u-th%E1%BB%A9c-ch%C3%ADnh-quy)
   - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-k%C3%BD-t%E1%BB%B1-%C4%91%E1%BA%A1i-di%E1%BB%87n-cho-t%C3%AAn-t%E1%BB%87p)
   - [Locale và thứ tự sắp xếp](#locale-v%C3%A0-th%E1%BB%A9-t%E1%BB%B1-s%E1%BA%AFp-x%E1%BA%BFp)
   - [Eval là xấu xa](#eval-l%C3%A0-x%E1%BA%A5u-xa)
@@ -62,6 +63,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [In dữ liệu](#in-d%E1%BB%AF-li%E1%BB%87u)
   - [Here document](#here-document)
   - [Mảng](#m%E1%BA%A3ng)
+  - [Mảng kết hợp](#m%E1%BA%A3ng-k%E1%BA%BFt-h%E1%BB%A3p)
   - [Đường ống vào while](#%C4%91%C6%B0%E1%BB%9Dng-%E1%BB%91ng-v%C3%A0o-while)
   - [Thay thế tiến trình](#thay-th%E1%BA%BF-ti%E1%BA%BFn-tr%C3%ACnh)
   - [Vòng lặp for](#v%C3%B2ng-l%E1%BA%B7p-for)
@@ -1646,6 +1648,44 @@ fi
 [[ "${value}" == "" ]]
 ```
 
+### Biểu thức chính quy
+
+> [!TIP]
+>
+> - ✔️ NÊN: Giữ biểu thức chính quy trong một biến và khai triển nó không có nháy ở bên phải `=~`
+> - ✔️ NÊN: Chỉ đặt trong nháy những phần phải khớp nguyên văn, như một giá trị được ghép vào mẫu
+> - ✔️ NÊN: Sao chép những gì cần ra khỏi `BASH_REMATCH` ngay sau khi khớp
+> - ⚠️ CÂN NHẮC: Dùng mẫu glob với `==` khi như vậy là đủ: `[[ "${file}" == *.tar.gz ]]`
+> - ❌ TRÁNH: Không đặt cả biểu thức chính quy trong nháy: vế phải có nháy được so khớp như một chuỗi thường
+
+Dấu nháy ở bên phải `=~` làm phần đó thành nguyên văn, nên `[[ "${tag}" =~ "^v[0-9]+" ]]` tìm đúng các ký tự `^v[0-9]+` và không bao giờ khớp một phiên bản. Viết thẳng mẫu vào `[[ ]]` chỉ chạy được cho tới khi nó chứa một khoảng trắng, một `|` hay một `)` mà shell đọc trước. Một biến tránh được cả hai. `BASH_REMATCH` bị ghi đè bởi lần `=~` tiếp theo, kể cả lần nằm trong một hàm mà bạn gọi.
+
+**Nên dùng**
+
+```sh
+# Mẫu nằm trong biến, không có nháy sau =~
+local version_re='^v?([0-9]+)\.([0-9]+)\.([0-9]+)$'
+if [[ "${tag}" =~ ${version_re} ]]; then
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+fi
+
+# Một phần nguyên văn được ghép vào, có nháy; phần còn lại vẫn là mẫu
+[[ "${name}" =~ ^"${prefix}"[0-9]+$ ]]
+```
+
+**Không nên dùng**
+
+```sh
+# Có nháy: chỉ khớp với chuỗi nguyên văn ^v?([0-9]+)...
+[[ "${tag}" =~ "^v?([0-9]+)\.([0-9]+)" ]]
+
+# Lúc này BASH_REMATCH có thể thuộc về một lần khớp bên trong other_check
+[[ "${tag}" =~ ^v?([0-9]+)\.([0-9]+)$ ]]
+other_check "${tag}"
+major="${BASH_REMATCH[1]}"
+```
+
 ### Khai triển ký tự đại diện cho tên tệp
 
 > [!TIP]
@@ -1984,6 +2024,48 @@ done
 # Bỏ sót phần tử cuối của mảng thưa, và dừng ở chỗ trống khi có set -u
 for ((index = 0; index < ${#names[@]}; index++)); do
   printf '%s\n' "${names[index]}"
+done
+```
+
+### Mảng kết hợp
+
+> [!TIP]
+>
+> - ✔️ NÊN: Khai báo map một cách tường minh, `local -A name=()` hoặc `declare -A NAME=()`: không có `-A`, các khóa bị tính như biểu thức số học
+> - ✔️ NÊN: Đặt trong nháy một khóa đến từ biến: `"${map["${key}"]}"`
+> - ✔️ NÊN: Kiểm tra khóa có tồn tại hay không bằng `[[ -v map["${key}"] ]]`, cách này phân biệt được khóa không có với giá trị rỗng
+> - ✔️ NÊN: Sắp xếp các khóa trước khi dùng thứ tự của chúng: `"${!map[@]}"` không theo thứ tự nào cả
+> - ❌ TRÁNH: Không dựa vào thứ tự của `"${!map[@]}"`, và không dùng `[[ -n "${map[key]}" ]]` để kiểm tra sự tồn tại
+
+Không có `-A`, `versions[jq]=1` gán vào một mảng chỉ số: `jq` được đọc như một biến số học, có giá trị `0`, nên mọi khóa đều rơi vào chỉ số `0` và ghi đè khóa trước. Các khóa của một map đi ra theo thứ tự băm, thay đổi theo chính các khóa và giữa các phiên bản Bash, nên output dựng từ nó không tái lập được cho tới khi được sắp xếp.
+
+**Nên dùng**
+
+```sh
+local -A versions=()
+versions["jq"]="1.7.1"
+versions["yq"]="4.44.3"
+
+# Có mặt, kể cả khi giá trị rỗng
+if [[ -v versions["${tool}"] ]]; then
+  printf '%s\n' "${versions["${tool}"]}"
+fi
+
+# Một thứ tự ổn định
+local -a tools=()
+mapfile -t tools < <(printf '%s\n' "${!versions[@]}" | LC_ALL=C sort)
+```
+
+**Không nên dùng**
+
+```sh
+# Không có `declare -A`: dòng này đặt chỉ số 0 của một mảng chỉ số
+versions[jq]="1.7.1"
+
+# Rỗng và không có trông như nhau, và thứ tự vòng lặp đổi giữa các lần chạy
+[[ -n "${versions[${tool}]}" ]] && install "${tool}"
+for tool in "${!versions[@]}"; do
+  printf '%s\n' "${tool}"
 done
 ```
 
