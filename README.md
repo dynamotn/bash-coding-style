@@ -176,6 +176,10 @@ set -euo pipefail
 
 #!/usr/bin/env bash
 DYBATPHO_DIR="<path to dybatpho>"
+if [[ ! -f "${DYBATPHO_DIR}/init.sh" ]]; then
+  printf 'dybatpho not found in %s\n' "${DYBATPHO_DIR}" >&2
+  exit 1
+fi
 . "${DYBATPHO_DIR}/init.sh"
 # If used dybatpho
 ```
@@ -491,7 +495,7 @@ echo "Error: Unable to do_something" >&2
 LOG_LEVEL=info
 
 # suppress unnecessary messages
-curl -fsSL "${url}" 2> /dev/null
+curl -fsSL --max-time 30 "${url}" 2> /dev/null
 
 # use dybatpho
 dybatpho::error "Unable to do_something"
@@ -682,7 +686,7 @@ function net::fetch {
   dybatpho::expect_args url -- "$@"
   [[ -n "${url}" ]] || dybatpho::die "net::fetch: no URL given"
   # curl's own status reaches the caller, which decides what a failure means
-  curl --fail -sS -- "${url}" || return $?
+  curl --fail -sS --connect-timeout 10 --max-time 60 -- "${url}" || return $?
 }
 ```
 
@@ -1167,7 +1171,7 @@ else
 fi
 
 for tool in "${tools[@]}"; do
-  echo "${tool}"
+  printf '%s\n' "${tool}"
 done
 ```
 
@@ -1181,7 +1185,7 @@ fi
 
 for tool in "${tools[@]}"
 do
-  echo "${tool}"
+  printf '%s\n' "${tool}"
 done
 ```
 
@@ -1247,11 +1251,11 @@ echo "many parameters: ${10}"
 # Braces avoiding confusion:
 # Output is "a0b0c0"
 set -- a b c
-echo "${1}0${2}0${3}0"
+printf '%s\n' "${1}0${2}0${3}0"
 
 # Preferred style for other variables:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
-echo "${PATH}"
+printf '%s\n' "${PATH}"
 while IFS= read -r -d '' file; do
   echo "file=${file}"
 done < <(command find /tmp -print0)
@@ -1319,7 +1323,7 @@ fi
 flag="$(some_command and its args "$@" 'quoted separately')"
 
 # "quote variables"
-echo "${flag}"
+printf '%s\n' "${flag}"
 
 # Use arrays with quoted expansion for lists.
 declare -a FLAGS
@@ -2165,7 +2169,7 @@ local count=0 path
 while IFS= read -r -d '' path; do
   count=$((count + 1))
 done < <(command find "${root}" -type f -print0)
-echo "${count}"
+printf '%s\n' "${count}"
 ```
 
 **Discouraged**
@@ -2176,7 +2180,7 @@ local count=0
 command find "${root}" -type f | while read -r line; do
   count=$((count + 1))
 done
-echo "${count}"
+printf '%s\n' "${count}"
 ```
 
 `read` returns non-zero when it hits the end of input before a newline, even though it has filled the variable. A file whose last line has no newline — common for hand-edited configs and `printf '%s'` output — loses that line. `IFS=` also keeps leading and trailing blanks.
@@ -2610,7 +2614,7 @@ function get_dir {
     dybatpho::error "Configuration directory ${config_dir} does not exist"
     return 1
   fi
-  echo "${config_dir}"
+  printf '%s\n' "${config_dir}"
 }
 
 # The caller passes its own name, so the message names it at any depth

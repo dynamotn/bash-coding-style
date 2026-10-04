@@ -178,6 +178,10 @@ set -euo pipefail
 
 #!/usr/bin/env bash
 DYBATPHO_DIR="<path to dybatpho>"
+if [[ ! -f "${DYBATPHO_DIR}/init.sh" ]]; then
+  printf 'dybatpho not found in %s\n' "${DYBATPHO_DIR}" >&2
+  exit 1
+fi
 . "${DYBATPHO_DIR}/init.sh"
 # Nếu dùng dybatpho
 ```
@@ -493,7 +497,7 @@ echo "Error: Không thể thực hiện do_something" >&2
 LOG_LEVEL=info
 
 # triệt tiêu các thông báo không cần thiết
-curl -fsSL "${url}" 2> /dev/null
+curl -fsSL --max-time 30 "${url}" 2> /dev/null
 
 # sử dụng dybatpho
 dybatpho::error "Không thể thực hiện do_something"
@@ -684,7 +688,7 @@ function net::fetch {
   dybatpho::expect_args url -- "$@"
   [[ -n "${url}" ]] || dybatpho::die "net::fetch: no URL given"
   # Mã thoát của curl đến thẳng bên gọi, bên gọi quyết định một thất bại nghĩa là gì
-  curl --fail -sS -- "${url}" || return $?
+  curl --fail -sS --connect-timeout 10 --max-time 60 -- "${url}" || return $?
 }
 ```
 
@@ -1169,7 +1173,7 @@ else
 fi
 
 for tool in "${tools[@]}"; do
-  echo "${tool}"
+  printf '%s\n' "${tool}"
 done
 ```
 
@@ -1183,7 +1187,7 @@ fi
 
 for tool in "${tools[@]}"
 do
-  echo "${tool}"
+  printf '%s\n' "${tool}"
 done
 ```
 
@@ -1249,11 +1253,11 @@ echo "many parameters: ${10}"
 # Dấu ngoặc nhọn tránh nhầm lẫn:
 # Đầu ra là "a0b0c0"
 set -- a b c
-echo "${1}0${2}0${3}0"
+printf '%s\n' "${1}0${2}0${3}0"
 
 # Kiểu ưu tiên cho các biến khác:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
-echo "${PATH}"
+printf '%s\n' "${PATH}"
 while IFS= read -r -d '' file; do
   echo "file=${file}"
 done < <(command find /tmp -print0)
@@ -1321,7 +1325,7 @@ fi
 flag="$(some_command and its args "$@" 'quoted separately')"
 
 # "dấu nháy cho biến"
-echo "${flag}"
+printf '%s\n' "${flag}"
 
 # Sử dụng mảng với khai triển được dùng dấu nháy cho các list.
 declare -a FLAGS
@@ -2167,7 +2171,7 @@ local count=0 path
 while IFS= read -r -d '' path; do
   count=$((count + 1))
 done < <(command find "${root}" -type f -print0)
-echo "${count}"
+printf '%s\n' "${count}"
 ```
 
 **Không nên dùng**
@@ -2178,7 +2182,7 @@ local count=0
 command find "${root}" -type f | while read -r line; do
   count=$((count + 1))
 done
-echo "${count}"
+printf '%s\n' "${count}"
 ```
 
 `read` trả về khác không khi gặp cuối đầu vào trước ký tự xuống dòng, dù nó đã gán giá trị cho biến. Một tệp có dòng cuối không có ký tự xuống dòng — thường gặp ở tệp cấu hình sửa tay và output của `printf '%s'` — sẽ mất dòng đó. `IFS=` còn giữ lại khoảng trắng ở đầu và cuối dòng.
@@ -2612,7 +2616,7 @@ function get_dir {
     dybatpho::error "Configuration directory ${config_dir} does not exist"
     return 1
   fi
-  echo "${config_dir}"
+  printf '%s\n' "${config_dir}"
 }
 
 # Bên gọi truyền tên của chính nó, nên thông báo ghi đúng tên ở mọi độ sâu
