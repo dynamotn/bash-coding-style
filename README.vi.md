@@ -3889,6 +3889,7 @@ sha256sum "${archive}" > "${archive}.sha256"
 >
 > - ✔️ NÊN: Khai triển biến dùng để dựng đường dẫn cho một lệnh phá hủy bằng `${var:?}`, hoặc kiểm tra trước rằng nó không rỗng và nằm trong một thư mục gốc được phép
 > - ✔️ NÊN: Phân giải thư mục gốc và đích bằng `cd -P` trước khi so sánh, và dừng lại khi thư mục gốc rỗng
+> - ✔️ NÊN: Kiểm tra một đường dẫn dựng từ biến bằng `dybatpho::assert_safe_path`, hàm tuân theo mọi điều trên. (dybatpho)
 > - ✔️ NÊN: Ưu tiên một helper có bảo vệ, kiểm tra đường dẫn và xác nhận trước khi hành động. (dybatpho)
 > - ❌ TRÁNH: Không chạy `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` hay `mv` đè lên một đích có sẵn với đường dẫn dựng từ các biến chưa từng được kiểm tra `BSG089`
 > - ❌ TRÁNH: Không kiểm tra một đường dẫn có nằm trong thư mục gốc hay không bằng cách so sánh chuỗi như được nhập vào
@@ -3922,6 +3923,15 @@ chown -R "${owner}" "${target}"
 
 # WORK_ROOT rỗng thì khớp mọi đường dẫn tuyệt đối, và work/../etc cũng khớp
 [[ "${target}" == "${WORK_ROOT}"/* ]] && rm -rf -- "${target}"
+```
+
+`dybatpho::assert_safe_path` từ chối một đường dẫn rỗng, `/`, các thư mục hệ thống cấp một, `${HOME}` và mọi mục trong `DYBATPHO_PROTECTED_PATHS`, và, khi `DYBATPHO_SAFE_ROOTS` được đặt, một đường dẫn nằm ngoài các thư mục gốc đó. Hàm phân giải các thư mục của đường dẫn qua symlink trước khi so sánh, nên một symlink bên trong thư mục gốc không thể dẫn ra ngoài, và in ra đường dẫn đúng như đã viết. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local target
+target="$(DYBATPHO_SAFE_ROOTS="${WORK_ROOT:?}" dybatpho::assert_safe_path "${WORK_ROOT}/${name}")" || return 1
 ```
 
 ## Kiểm thử
