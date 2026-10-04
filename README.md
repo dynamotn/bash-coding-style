@@ -1850,6 +1850,7 @@ fi
 > - ❌ AVOID: Do not use a single `=` for string comparison
 > - ❌ AVOID: Do not use `<` or `>` to compare numbers inside `[[ ... ]]`
 > - ❌ AVOID: Do not run a flag variable as a command, as in `if ${force}; then` or `while ${running}; do`: its value is executed `BSG121`
+> - ❌ AVOID: Do not prefix both sides of a comparison with a letter, as in `[[ "x${answer}" == "xyes" ]]`: quote the variable instead
 
 Inside `[[ ... ]]` the operators `<` and `>` compare lexicographically, so `[[ 10 < 9 ]]` is true. Numbers belong in `(( ... ))`.
 
@@ -1901,6 +1902,25 @@ done
 # Runs whatever FORCE holds
 if ${FORCE}; then
   overwrite=true
+fi
+```
+
+The `x` prefix is a workaround for the old `test` command, which could take a value such as `-n`, `!` or `(` for an operator. `[[ ... ]]` parses its operators before it expands anything, so a value is never read as one: the quoted variable is enough, and the prefix only makes the comparison harder to read.
+
+**Recommended**
+
+```sh
+if [[ "${answer}" == "yes" ]]; then
+  confirmed=true
+fi
+```
+
+**Discouraged**
+
+```sh
+# Guards against a problem [[ ... ]] does not have
+if [[ "x${answer}" == "xyes" ]]; then
+  confirmed=true
 fi
 ```
 

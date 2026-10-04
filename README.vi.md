@@ -1852,6 +1852,7 @@ fi
 > - ❌ TRÁNH: Không dùng một dấu `=` để so sánh chuỗi
 > - ❌ TRÁNH: Không dùng `<` hay `>` để so sánh số trong `[[ ... ]]`
 > - ❌ TRÁNH: Không chạy một biến cờ như một lệnh, như `if ${force}; then` hay `while ${running}; do`: giá trị của nó bị thực thi `BSG121`
+> - ❌ TRÁNH: Không thêm một chữ cái vào trước cả hai vế của phép so sánh, như `[[ "x${answer}" == "xyes" ]]`: hãy đặt biến trong dấu nháy
 
 Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ điển, nên `[[ 10 < 9 ]]` là đúng. Số thì phải nằm trong `(( ... ))`.
 
@@ -1903,6 +1904,25 @@ done
 # Chạy bất cứ thứ gì FORCE chứa
 if ${FORCE}; then
   overwrite=true
+fi
+```
+
+Tiền tố `x` là cách lách cho lệnh `test` cũ, vốn có thể hiểu một giá trị như `-n`, `!` hay `(` là toán tử. `[[ ... ]]` phân tích các toán tử trước khi khai triển bất cứ thứ gì, nên một giá trị không bao giờ bị hiểu là toán tử: biến đặt trong dấu nháy là đủ, còn tiền tố chỉ làm phép so sánh khó đọc hơn.
+
+**Nên dùng**
+
+```sh
+if [[ "${answer}" == "yes" ]]; then
+  confirmed=true
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Đề phòng một vấn đề mà [[ ... ]] không hề có
+if [[ "x${answer}" == "xyes" ]]; then
+  confirmed=true
 fi
 ```
 
