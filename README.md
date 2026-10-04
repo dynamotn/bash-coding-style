@@ -149,7 +149,7 @@ Use Bash. Restricting all executable shell scripts to `bash` ensures a consisten
 
 Executable files should start with `#!/usr/bin/env bash` and minimal flags. Using `#!/usr/bin/env bash` provides several notable advantages: works across environments (like Fedora or Termux), although slight performance hit from invoking env to search PATH.
 
-Using `set` for shell option settings ensures that even if the script is called with `bash script_name`, its functionality is not impaired. `set -euo pipefail` automatically detects errors early and terminates the script if an error occurs. `set -e` terminates the script if an error occurs. `set -u` triggers an error when referencing undefined variables. `set -o pipefail` terminates the script if an error occurs in the middle of a pipeline.
+Using `set` for shell option settings ensures that even if the script is called with `bash script_name`, its functionality is not impaired. `set -euo pipefail` automatically detects errors early and terminates the script if an error occurs. `set -e` terminates the script if an error occurs. `set -u` triggers an error when referencing undefined variables. `set -o pipefail` terminates the script if an error occurs in the middle of a pipeline. Add `-E` only when the script installs its own `ERR` trap, so that functions and subshells inherit it; `dybatpho::register_common_handlers` turns it on itself.
 
 **Recommended**
 
@@ -2183,7 +2183,7 @@ Custom rule
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Let `set -Eeuo pipefail`, or `dybatpho::register_common_handlers`, stop the script on an unhandled failure. (dybatpho)
+> - ✔️ SHOULD: Let `set -euo pipefail`, or `dybatpho::register_common_handlers`, stop the script on an unhandled failure. (dybatpho)
 > - ✔️ SHOULD: Test a command directly: `if ! command; then ... fi`
 > - ✔️ SHOULD: Append `|| true` to a command whose failure is genuinely expected, and say in a comment why
 > - ✔️ SHOULD: Exit with a meaningful status: `0` on success, non-zero on failure

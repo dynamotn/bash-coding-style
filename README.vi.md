@@ -151,7 +151,7 @@ Sử dụng Bash. Hạn chế tất cả các script shell có thể thực thi 
 
 Các tệp thực thi phải bắt đầu bằng `#!/usr/bin/env bash` và các cờ tối thiểu. Sử dụng `#!/usr/bin/env bash` cung cấp một số lợi thế đáng chú ý: hoạt động trên các môi trường (như Fedora hoặc Termux), mặc dù có một chút ảnh hưởng đến hiệu suất từ việc gọi env để tìm kiếm PATH.
 
-Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay cả khi script được gọi bằng `bash script_name`, chức năng của nó không bị suy giảm. `set -euo pipefail` tự động phát hiện lỗi sớm và kết thúc script nếu xảy ra lỗi. `set -e` kết thúc script nếu xảy ra lỗi. `set -u` kích hoạt lỗi khi tham chiếu đến các biến không xác định. `set -o pipefail` kết thúc script nếu xảy ra lỗi ở giữa pipeline.
+Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay cả khi script được gọi bằng `bash script_name`, chức năng của nó không bị suy giảm. `set -euo pipefail` tự động phát hiện lỗi sớm và kết thúc script nếu xảy ra lỗi. `set -e` kết thúc script nếu xảy ra lỗi. `set -u` kích hoạt lỗi khi tham chiếu đến các biến không xác định. `set -o pipefail` kết thúc script nếu xảy ra lỗi ở giữa pipeline. Chỉ thêm `-E` khi script tự cài trap `ERR`, để các hàm và subshell kế thừa nó; `dybatpho::register_common_handlers` tự bật cờ này.
 
 **Nên dùng**
 
@@ -2179,7 +2179,7 @@ Quy tắc tùy chỉnh
 
 > [!TIP]
 >
-> - ✔️ NÊN: Để `set -Eeuo pipefail`, hoặc `dybatpho::register_common_handlers`, dừng script khi có lỗi không được xử lý. (dybatpho)
+> - ✔️ NÊN: Để `set -euo pipefail`, hoặc `dybatpho::register_common_handlers`, dừng script khi có lỗi không được xử lý. (dybatpho)
 > - ✔️ NÊN: Kiểm tra trực tiếp trên lệnh: `if ! command; then ... fi`
 > - ✔️ NÊN: Thêm `|| true` cho lệnh mà việc thất bại là điều thực sự được dự liệu, và ghi chú lý do
 > - ✔️ NÊN: Thoát với mã có ý nghĩa: `0` khi thành công, khác `0` khi thất bại
