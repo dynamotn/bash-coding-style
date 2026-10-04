@@ -3620,6 +3620,7 @@ printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
 > - ✔️ SHOULD: Claim a lock in one atomic call that also records the holder: `ln -s "<pid>:<host>" "${lock}"`
 > - ✔️ SHOULD: Reclaim a stale lock by renaming it aside and checking that the moved copy is the holder you judged dead
 > - ✔️ SHOULD: Judge the holder you read, not whatever holds the name by the time the check runs
+> - ✔️ SHOULD: Take a lock with `dybatpho::lock_acquire` and `dybatpho::lock_release`, or run one command under it with `dybatpho::with_lock`, which follow all of the above. (dybatpho)
 > - ❌ AVOID: Do not delete a stale lock and then take it: two processes can both do so and both hold it
 > - ❌ AVOID: Do not create a lock first and write its owner afterwards
 
@@ -3654,6 +3655,17 @@ if ! kill -0 "$(cat "${lock}/pid")"; then
   rm -rf -- "${lock}"
   mkdir "${lock}"
 fi
+```
+
+`dybatpho::lock_acquire` claims the lock with one `ln -s` whose target names the holder, reclaims a stale lock by moving it aside and checking the holder it moved, and waits up to the number of seconds it is given. `dybatpho::lock_release` frees only a lock the current process holds, and `dybatpho::with_lock` also frees it when the command fails or the script is interrupted. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::with_lock "deploy" 30 -- ./deploy.sh --env prod
+
+dybatpho::lock_acquire "sync" || dybatpho::die "Another sync is running"
+dybatpho::trap 'dybatpho::lock_release "sync"' EXIT
 ```
 
 ### Atomic Writes
