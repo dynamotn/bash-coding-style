@@ -289,6 +289,7 @@ Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) 
 > [!TIP]
 >
 > - ✔️ NÊN: Sử dụng `sudo` nếu bạn cần nâng quyền
+> - ⚠️ CÂN NHẮC: Chạy một lệnh với quyền root bằng `dybatpho::privilege_run`, hàm chỉ dùng `sudo` hay `doas` khi script chưa phải root. (dybatpho)
 > - ✔️ NÊN: Xóa các biến của trình nạp và trình thông dịch trước khi một wrapper có quyền cao chuyển giao bằng `exec`: `LD_PRELOAD`, `LD_LIBRARY_PATH`, `LD_AUDIT`, `BASH_ENV`, `ENV`, `PYTHONPATH`, `PERL5LIB`, `RUBYLIB`, `NODE_PATH`, hoặc khởi động chương trình dưới `env -i`
 > - ❌ TRÁNH: SUID và SGID bị cấm
 > - ❌ TRÁNH: `sudo` cũng bị cấm trong các script CI (tùy chỉnh). `BSG035`
@@ -330,6 +331,14 @@ exec env -i HOME="${HOME}" PATH=/usr/bin:/bin /usr/libexec/app/helper "$@"
 ```sh
 # Chạy qua sudo: LD_PRELOAD và BASH_ENV tới được helper
 exec /usr/libexec/app/helper "$@"
+```
+
+`dybatpho::privilege_run` chạy thẳng lệnh khi script đã là root, nếu không thì chạy qua `sudo`, hoặc `doas` ở nơi không có `sudo`, có tôn trọng `DRY_RUN`. Hàm không từ chối chạy trong CI và cũng không xóa `LD_PRELOAD` cùng các biến khác của trình nạp, nên các quy tắc ở trên vẫn áp dụng cho nó. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::privilege_run -- systemctl restart nginx
 ```
 
 ## Môi trường
