@@ -77,6 +77,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-to%C3%A0n)
   - [Lock](#lock)
   - [Ghi nguyên tử](#ghi-nguy%C3%AAn-t%E1%BB%AD)
+  - [Lệnh phá hủy](#l%E1%BB%87nh-ph%C3%A1-h%E1%BB%A7y)
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
   - [Assertion output nghiêm ngặt](#assertion-output-nghi%C3%AAm-ng%E1%BA%B7t)
   - [Cô lập test](#c%C3%B4-l%E1%BA%ADp-test)
@@ -2473,6 +2474,39 @@ render_config > "${path}"
 # Hiện ra mà không có sidecar cho tới khi dòng sau chạy
 mv -- "${partial}" "${archive}"
 sha256sum "${archive}" > "${archive}.sha256"
+```
+
+### Lệnh phá hủy
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Khai triển biến dùng để dựng đường dẫn cho một lệnh phá hủy bằng `${var:?}`, hoặc kiểm tra trước rằng nó không rỗng và nằm trong một thư mục gốc được phép
+> - ✔️ NÊN: Ưu tiên một helper có bảo vệ, kiểm tra đường dẫn và xác nhận trước khi hành động. (dybatpho)
+> - ❌ TRÁNH: Không chạy `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` hay `mv` đè lên một đích có sẵn với đường dẫn dựng từ các biến chưa từng được kiểm tra
+
+Một biến chưa đặt hoặc rỗng biến `rm -rf "${BUILD_DIR}/cache"` thành `rm -rf /cache`, và `rm -rf "${prefix}"*` thành thư mục làm việc. `${var:?}` dừng script khi biến chưa đặt hoặc rỗng, trước khi lệnh chạy; kiểm tra thư mục gốc chặn được một giá trị đã đặt nhưng sai.
+
+**Nên dùng**
+
+```sh
+rm -rf -- "${BUILD_DIR:?}/cache"
+
+[[ -n "${target}" && "${target}" == "${WORK_ROOT}"/* ]] \
+  || dybatpho::die "Refusing to delete outside ${WORK_ROOT}: ${target}"
+dybatpho::safe_rm "${target}"
+```
+
+**Không nên dùng**
+
+```sh
+# BUILD_DIR chưa đặt: lệnh này xóa /cache
+rm -rf "${BUILD_DIR}/cache"
+
+# target rỗng: chown duyệt cả thư mục làm việc
+chown -R "${owner}" "${target}"
 ```
 
 ## Kiểm thử

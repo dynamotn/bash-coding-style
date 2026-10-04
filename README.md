@@ -76,6 +76,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Safely Creating Temporary Files](#safely-creating-temporary-files)
   - [Locks](#locks)
   - [Atomic Writes](#atomic-writes)
+  - [Destructive Commands](#destructive-commands)
 - [Testing](#testing)
   - [Strict Output Assertions](#strict-output-assertions)
   - [Test Isolation](#test-isolation)
@@ -2477,6 +2478,39 @@ render_config > "${path}"
 # Visible with no sidecar until the next line runs
 mv -- "${partial}" "${archive}"
 sha256sum "${archive}" > "${archive}.sha256"
+```
+
+### Destructive Commands
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Expand a variable that builds the path of a destructive command with `${var:?}`, or check first that it is non-empty and inside an allowed root
+> - ✔️ SHOULD: Prefer a guarded helper that validates the path and confirms before it acts. (dybatpho)
+> - ❌ AVOID: Do not run `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` or `mv` onto an existing target with a path built from variables that were never checked
+
+An unset or empty variable turns `rm -rf "${BUILD_DIR}/cache"` into `rm -rf /cache`, and `rm -rf "${prefix}"*` into the working directory. `${var:?}` stops the script when the variable is unset or empty, before the command runs; a root check stops a value that is set but wrong.
+
+**Recommended**
+
+```sh
+rm -rf -- "${BUILD_DIR:?}/cache"
+
+[[ -n "${target}" && "${target}" == "${WORK_ROOT}"/* ]] \
+  || dybatpho::die "Refusing to delete outside ${WORK_ROOT}: ${target}"
+dybatpho::safe_rm "${target}"
+```
+
+**Discouraged**
+
+```sh
+# BUILD_DIR unset: this removes /cache
+rm -rf "${BUILD_DIR}/cache"
+
+# target empty: chown walks the working directory
+chown -R "${owner}" "${target}"
 ```
 
 ## Testing
