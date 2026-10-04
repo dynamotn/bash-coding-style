@@ -3888,7 +3888,7 @@ sha256sum "${archive}" > "${archive}.sha256"
 > - ✔️ SHOULD: Expand a variable that builds the path of a destructive command with `${var:?}`, or check first that it is non-empty and inside an allowed root
 > - ✔️ SHOULD: Resolve the root and the target with `cd -P` before comparing them, and stop when the root is empty
 > - ✔️ SHOULD: Check a path built from variables with `dybatpho::assert_safe_path`, which follows all of the above. (dybatpho)
-> - ✔️ SHOULD: Prefer a guarded helper that validates the path and confirms before it acts. (dybatpho)
+> - ✔️ SHOULD: Prefer a guarded helper that validates the path and confirms before it acts: `dybatpho::safe_rm`, `dybatpho::safe_move`, `dybatpho::safe_overwrite`, `dybatpho::safe_system`. (dybatpho)
 > - ❌ AVOID: Do not run `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` or `mv` onto an existing target with a path built from variables that were never checked `BSG089`
 > - ❌ AVOID: Do not check that a path is inside a root by comparing the strings as typed
 
@@ -3930,6 +3930,17 @@ chown -R "${owner}" "${target}"
 ```sh
 local target
 target="$(DYBATPHO_SAFE_ROOTS="${WORK_ROOT:?}" dybatpho::assert_safe_path "${WORK_ROOT}/${name}")" || return 1
+```
+
+Each guarded helper checks its target with `dybatpho::assert_safe_path`, asks with `dybatpho::confirm` unless it is given `--force` or `DYBATPHO_FORCE=true`, and prints the command instead of running it under `DRY_RUN`. `dybatpho::safe_move` and `dybatpho::safe_overwrite` keep a `.bak` copy with `--backup`. (dybatpho)
+
+**Recommended**
+
+```sh
+DYBATPHO_SAFE_ROOTS="${WORK_ROOT:?}"
+dybatpho::safe_rm --recursive "${WORK_ROOT}/${name}"
+dybatpho::safe_move --backup "${staged}" "${target}"
+dybatpho::safe_system "Restart nginx" -- systemctl restart nginx
 ```
 
 ## Testing
