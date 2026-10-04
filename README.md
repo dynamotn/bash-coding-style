@@ -137,6 +137,13 @@ Every rule carries a code: `BSG###` for a rule of this guide, `SC####` for a She
 
 The [`.shellcheckrc`](.shellcheckrc) and [`.editorconfig`](.editorconfig) of this repository are the configuration this guide asks for, and are meant to be copied into a project. `dyshellint` reads the `.shellcheckrc` of the project it checks, and also ships a [nvim-lint](https://github.com/mfussenegger/nvim-lint) definition for Neovim.
 
+The recommended examples of this guide are held to it as well. [`scripts/lint_examples.sh`](scripts/lint_examples.sh) extracts every `sh` block under a **Recommended** label, in both languages, runs dyshellint on it, and reports each finding against the line of the README. It leaves out only the rules that a snippet breaks by being a snippet: no file header, no shebang, variables set somewhere else. A block that shows an exception on purpose names it on the line before its fence, `<!-- lint: allow BSG040 -->`, and `<!-- lint: skip -->` leaves a block out. The same check runs as a [prek](https://github.com/j178/prek) hook from [`.pre-commit-config.yaml`](.pre-commit-config.yaml), and in CI.
+
+```sh
+bash ./scripts/lint_examples.sh
+prek run --all-files
+```
+
 ## Background
 
 ### Which Shell to Use
@@ -271,6 +278,7 @@ As long as scripts are executed in CI, `sudo`, SUID, and SGID are unnecessary an
 
 **Recommended**
 
+<!-- lint: allow BSG035 -->
 ```sh
 # Use sudo when calling (Except in CI)
 sudo ./foo.sh
@@ -1195,6 +1203,7 @@ All other variables should preferably be enclosed in braces.
 
 **Recommended**
 
+<!-- lint: allow BSG043,SC2145,SC2250,SC2320 -->
 ```sh
 # Preferred style for 'special' variables:
 echo "Positional: $1" "$5" "$3"
@@ -1805,6 +1814,7 @@ When a string has to be evaluated — generated parser code, a configured comman
 
 **Recommended**
 
+<!-- lint: allow BSG040 -->
 ```sh
 # An argument list: nothing is parsed a second time
 dybatpho::dry_run gpg --detach-sign --output "${signature}" "${path}"
@@ -2347,6 +2357,7 @@ macOS ships BSD tools and Alpine ships BusyBox, and the same flag means somethin
 
 **Recommended**
 
+<!-- lint: allow BSG083 -->
 ```sh
 function __date_from_epoch {
   local epoch format
@@ -2686,6 +2697,7 @@ A library shares the trap table with the script that sourced it. `trap '…' INT
 
 **Recommended**
 
+<!-- lint: allow BSG040 -->
 ```sh
 function lib::with_lock {
   local __lib_saved __lib_caught=""

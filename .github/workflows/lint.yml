@@ -1,0 +1,38 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      SHELLCHECK_VERSION: v0.11.0
+      SHFMT_VERSION: v3.14.1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install the linters
+        run: |
+          go install "mvdan.cc/sh/v3/cmd/shfmt@${SHFMT_VERSION}"
+          go install gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint@latest
+          printf '%s\n' "$(go env GOPATH)/bin" >> "${GITHUB_PATH}"
+          url="https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}"
+          curl --fail -sSL --connect-timeout 10 --max-time 120 --retry 3 \
+            "${url}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz" | tar -xJ
+          printf '%s\n' "${PWD}/shellcheck-${SHELLCHECK_VERSION}" >> "${GITHUB_PATH}"
+
+      - name: Lint the recommended examples
+        run: bash ./scripts/lint_examples.sh
+
+      - name: Lint the scripts of the repository
+        run: dyshellint scripts

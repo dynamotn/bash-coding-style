@@ -139,6 +139,13 @@ Mỗi quy tắc có một mã: `BSG###` cho quy tắc của hướng dẫn này,
 
 [`.shellcheckrc`](.shellcheckrc) và [`.editorconfig`](.editorconfig) trong kho này là cấu hình mà hướng dẫn yêu cầu, và được dùng để sao chép vào dự án của bạn. `dyshellint` đọc `.shellcheckrc` của dự án mà nó kiểm tra, và cũng kèm sẵn một định nghĩa [nvim-lint](https://github.com/mfussenegger/nvim-lint) cho Neovim.
 
+Các ví dụ nên dùng của hướng dẫn này cũng phải tuân theo nó. [`scripts/lint_examples.sh`](scripts/lint_examples.sh) trích mọi khối `sh` nằm dưới nhãn **Nên dùng**, ở cả hai ngôn ngữ, chạy dyshellint trên đó, và báo từng phát hiện theo dòng của README. Nó chỉ bỏ qua những quy tắc mà một đoạn mã vi phạm chỉ vì nó là một đoạn trích: không có phần đầu tệp, không có shebang, biến được đặt ở nơi khác. Một khối cố ý minh họa một ngoại lệ ghi tên ngoại lệ đó ở dòng ngay trước dấu mở khối, `<!-- lint: allow BSG040 -->`, và `<!-- lint: skip -->` loại một khối ra. Cùng bước kiểm tra này chạy như một hook [prek](https://github.com/j178/prek) từ [`.pre-commit-config.yaml`](.pre-commit-config.yaml), và trong CI.
+
+```sh
+bash ./scripts/lint_examples.sh
+prek run --all-files
+```
+
 ## Bối cảnh
 
 ### Nên sử dụng shell nào
@@ -273,6 +280,7 @@ Miễn là các script được thực thi trong CI, `sudo`, SUID và SGID là k
 
 **Nên dùng**
 
+<!-- lint: allow BSG035 -->
 ```sh
 # Sử dụng sudo khi gọi (Trừ trong CI)
 sudo ./foo.sh
@@ -1197,6 +1205,7 @@ Tất cả các biến khác nên được đặt trong dấu ngoặc nhọn.
 
 **Nên dùng**
 
+<!-- lint: allow BSG043,SC2145,SC2250,SC2320 -->
 ```sh
 # Kiểu ưu tiên cho các biến 'đặc biệt':
 echo "Positional: $1" "$5" "$3"
@@ -1807,6 +1816,7 @@ Khi một chuỗi buộc phải được đánh giá — code parser được si
 
 **Nên dùng**
 
+<!-- lint: allow BSG040 -->
 ```sh
 # Danh sách tham số: không có gì bị parse lại lần nữa
 dybatpho::dry_run gpg --detach-sign --output "${signature}" "${path}"
@@ -2349,6 +2359,7 @@ macOS dùng công cụ BSD, Alpine dùng BusyBox, và cùng một cờ lại man
 
 **Nên dùng**
 
+<!-- lint: allow BSG083 -->
 ```sh
 function __date_from_epoch {
   local epoch format
@@ -2688,6 +2699,7 @@ Một thư viện dùng chung bảng trap với script đã source nó. `trap '�
 
 **Nên dùng**
 
+<!-- lint: allow BSG040 -->
 ```sh
 function lib::with_lock {
   local __lib_saved __lib_caught=""

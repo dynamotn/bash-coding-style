@@ -1,0 +1,16 @@
+# Hooks of the guide, run with `prek` (or `pre-commit`). They need dyshellint,
+# shellcheck and shfmt on PATH, as the Linter section of the README describes.
+repos:
+  - repo: local
+    hooks:
+      - id: lint-examples
+        name: lint the recommended examples
+        entry: bash ./scripts/lint_examples.sh
+        language: system
+        files: ^(README(\.vi)?\.md|\.shellcheckrc|\.editorconfig|scripts/.*)$
+        pass_filenames: false
+      - id: dyshellint
+        name: dyshellint
+        entry: dyshellint
+        language: system
+        files: ^scripts/.*\.sh$
