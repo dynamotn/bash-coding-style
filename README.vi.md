@@ -3403,6 +3403,7 @@ grep "${pattern}" "${file}"
 > - ✔️ NÊN: Tải về thành tệp, kiểm tra nó với checksum hoặc chữ ký, rồi mới chạy
 > - ✔️ NÊN: Giới hạn thời gian của mọi lời gọi mạng: `curl --connect-timeout` và `--max-time`, hoặc `timeout` bao quanh một công cụ không có giới hạn riêng `BSG107`
 > - ✔️ NÊN: Chỉ thử lại những gì có thể thành công ở lần sau, với số lần có giới hạn: `curl --retry 3` thử lại khi hết thời gian hay gặp lỗi 5xx, không thử lại một lỗi 404
+> - ✔️ NÊN: Gửi request bằng `dybatpho::curl_do`, hàm thất bại khi gặp lỗi HTTP và chỉ thử lại những gì có thể thành công, và giới hạn thời gian của nó bằng `dybatpho::curl_timeout`. (dybatpho)
 > - ✔️ NÊN: Chờ lâu hơn giữa mỗi lần thử lại, có thêm một phần ngẫu nhiên và một mức trần: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
 > - ✔️ NÊN: Giới hạn cả `ssh`, `-o ConnectTimeout=10 -o BatchMode=yes` dưới `timeout`, và phân biệt hết giờ (mã 124) với thất bại `BSG118`
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
@@ -3460,6 +3461,14 @@ esac
 until curl --fail -sS "${url}" -o "${target}"; do :; done
 # Chờ mật khẩu, hay chờ một host không tới được, mà không có giới hạn
 ssh "${host}" 'systemctl is-active app'
+```
+
+`dybatpho::curl_do` trả về 3, 4 hay 5 cho một response 3xx, 4xx hay 5xx thay vì 0, thử lại lỗi truyền tải, 5xx, 408, 425 hay 429 với số lần có giới hạn và độ trễ tăng dần có tôn trọng `Retry-After`, và ghi log URL sau khi đã bỏ các bí mật trong đó. Hàm không đặt giới hạn thời gian nào trừ khi được cấu hình: `dybatpho::curl_timeout` nhận timeout kết nối và timeout tổng, tính bằng giây, cho một request. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::curl_timeout "${url}" "${target}" 10 60 || dybatpho::die "Cannot download ${url}"
 ```
 
 ### Lệnh trên máy remote
