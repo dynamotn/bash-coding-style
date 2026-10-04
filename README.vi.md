@@ -3357,6 +3357,7 @@ grep "${pattern}" "${file}"
 > - ✔️ NÊN: Chờ lâu hơn giữa mỗi lần thử lại, có thêm một phần ngẫu nhiên và một mức trần: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
 > - ⚠️ CÂN NHẮC: Thử lại một lệnh không phải `curl` bằng `dybatpho::retry`, hàm nhân đôi độ trễ tới `DYBATPHO_RETRY_MAX_DELAY`; đặt `DYBATPHO_RETRY_JITTER=true` để có phần ngẫu nhiên. (dybatpho)
 > - ✔️ NÊN: Giới hạn cả `ssh`, `-o ConnectTimeout=10 -o BatchMode=yes` dưới `timeout`, và phân biệt hết giờ (mã 124) với thất bại `BSG118`
+> - ✔️ NÊN: Giới hạn thời gian của một lệnh hay một hàm shell bằng `dybatpho::run_with_timeout`, hàm trả về 124 khi hết giờ và chạy được ở nơi không có `timeout`. (dybatpho)
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
 > - ❌ TRÁNH: Không thử lại trong một vòng lặp sát nút, `until curl ...; do :; done`, hay thử lại mãi mãi
 
@@ -3430,6 +3431,18 @@ dybatpho::curl_timeout "${url}" "${target}" 10 60 || dybatpho::die "Cannot downl
 DYBATPHO_RETRY_JITTER=true
 dybatpho::retry 5 "git fetch --quiet origin" "fetch origin"
 dybatpho::retry 3 "$(printf '%q ' rsync -a -- "${source}" "${target}")" "sync files"
+```
+
+`dybatpho::run_with_timeout` chạy lệnh trong process group riêng, gửi `TERM` tới cả group khi hết giờ và `KILL` sau `DYBATPHO_TIMEOUT_KILL_AFTER` giây, và chỉ trả về 124 khi chính giới hạn thời gian đã kết thúc nó. Hàm nhận cả hàm shell lẫn chương trình. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local status=0
+dybatpho::run_with_timeout 30 ssh -o ConnectTimeout=10 -o BatchMode=yes "${host}" 'systemctl is-active app' || status=$?
+if ((status == 124)); then
+  dybatpho::die "${host} did not answer within 30 seconds"
+fi
 ```
 
 ### Lệnh đã lỗi thời

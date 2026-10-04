@@ -3355,6 +3355,7 @@ grep "${pattern}" "${file}"
 > - ✔️ SHOULD: Wait longer between each retry, with a random part and a cap: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
 > - ⚠️ CONSIDER: Retry a command other than `curl` with `dybatpho::retry`, which doubles the delay up to `DYBATPHO_RETRY_MAX_DELAY`; set `DYBATPHO_RETRY_JITTER=true` for the random part. (dybatpho)
 > - ✔️ SHOULD: Bound `ssh` too, `-o ConnectTimeout=10 -o BatchMode=yes` under `timeout`, and tell a timeout (status 124) from a failure `BSG118`
+> - ✔️ SHOULD: Bound a command or a shell function with `dybatpho::run_with_timeout`, which returns 124 on a timeout and works where there is no `timeout` binary. (dybatpho)
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
 > - ❌ AVOID: Do not retry in a tight loop, `until curl ...; do :; done`, or forever
 
@@ -3428,6 +3429,18 @@ dybatpho::curl_timeout "${url}" "${target}" 10 60 || dybatpho::die "Cannot downl
 DYBATPHO_RETRY_JITTER=true
 dybatpho::retry 5 "git fetch --quiet origin" "fetch origin"
 dybatpho::retry 3 "$(printf '%q ' rsync -a -- "${source}" "${target}")" "sync files"
+```
+
+`dybatpho::run_with_timeout` runs the command in its own process group, sends `TERM` to the whole group when the limit elapses and `KILL` after `DYBATPHO_TIMEOUT_KILL_AFTER` seconds, and returns 124 only when the limit was what ended it. It takes a shell function as well as a program. (dybatpho)
+
+**Recommended**
+
+```sh
+local status=0
+dybatpho::run_with_timeout 30 ssh -o ConnectTimeout=10 -o BatchMode=yes "${host}" 'systemctl is-active app' || status=$?
+if ((status == 124)); then
+  dybatpho::die "${host} did not answer within 30 seconds"
+fi
 ```
 
 ### Deprecated Commands
