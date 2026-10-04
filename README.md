@@ -937,12 +937,13 @@ All function header comments should describe the intended API behaviour using:
 # @exitcode 0 If successful
 # @exitcode 1 If configuration directory is not exist
 #######################################
-function get_dir() {
-  local config_dir=${1:-"${HOME}/.config/abc"}
-  if [ -e "${config_dir}" ]; then
-    echo "${config_dir}"
+function get_dir {
+  local config_dir="${1:-${HOME}/.config/abc}"
+  if [[ -e "${config_dir}" ]]; then
+    printf '%s\n' "${config_dir}"
   else
-    echo "Not have configuration directory" >&2 && return 1
+    echo "Not have configuration directory" >&2
+    return 1
   fi
 }
 ```

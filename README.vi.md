@@ -939,12 +939,13 @@ Tất cả các comment header của hàm nên mô tả hành vi API dự kiến
 # @exitcode 0 Nếu thành công
 # @exitcode 1 Nếu thư mục cấu hình không tồn tại
 #######################################
-function get_dir() {
-  local config_dir=${1:-"${HOME}/.config/abc"}
-  if [ -e "${config_dir}" ]; then
-    echo "${config_dir}"
+function get_dir {
+  local config_dir="${1:-${HOME}/.config/abc}"
+  if [[ -e "${config_dir}" ]]; then
+    printf '%s\n' "${config_dir}"
   else
-    echo "Không có thư mục cấu hình" >&2 && return 1
+    echo "Không có thư mục cấu hình" >&2
+    return 1
   fi
 }
 ```
