@@ -93,6 +93,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
   - [Assertion output nghiêm ngặt](#assertion-output-nghi%C3%AAm-ng%E1%BA%B7t)
   - [Cô lập test](#c%C3%B4-l%E1%BA%ADp-test)
+- [Tài liệu tham khảo](#t%C3%A0i-li%E1%BB%87u-tham-kh%E1%BA%A3o)
 
 <!-- tocstop -->
 
@@ -3774,3 +3775,14 @@ unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR FORCE_COLOR
   run bash -c ". ${LIB}; release::latest ${BATS_TEST_TMPDIR}/repo"
 }
 ```
+
+## Tài liệu tham khảo
+
+Hầu hết quy tắc ở đây đều kèm lý do; các trang dưới đây đi sâu hơn vào hành vi đứng sau chúng.
+
+- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) và [icy/bash-coding-style](https://github.com/icy/bash-coding-style), hai hướng dẫn làm nền cho hướng dẫn này
+- [BashGuide](https://mywiki.wooledge.org/BashGuide) của wiki Wooledge, hướng dẫn dạy các cách viết an toàn ngay từ đầu
+- [BashPitfalls](https://mywiki.wooledge.org/BashPitfalls), các lỗi thường gặp, kèm cách sửa từng lỗi
+- [BashFAQ](https://mywiki.wooledge.org/BashFAQ), đặc biệt là [Vì sao không dùng `set -e`](https://mywiki.wooledge.org/BashFAQ/105), [Vị trí của một script](https://mywiki.wooledge.org/BashFAQ/028) và [Vì sao không parse `ls`](https://mywiki.wooledge.org/ParsingLs)
+- [ShellCheck wiki](https://www.shellcheck.net/wiki/), mỗi mã `SCxxxx` một trang
+- [Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)

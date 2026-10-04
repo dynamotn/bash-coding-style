@@ -92,6 +92,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Testing](#testing)
   - [Strict Output Assertions](#strict-output-assertions)
   - [Test Isolation](#test-isolation)
+- [References](#references)
 
 <!-- tocstop -->
 
@@ -3772,3 +3773,14 @@ unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR FORCE_COLOR
   run bash -c ". ${LIB}; release::latest ${BATS_TEST_TMPDIR}/repo"
 }
 ```
+
+## References
+
+Most rules here come with their reason; these pages go deeper into the behaviour behind them.
+
+- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) and [icy/bash-coding-style](https://github.com/icy/bash-coding-style), the guides this one is based on
+- [BashGuide](https://mywiki.wooledge.org/BashGuide) of the Wooledge wiki, a tutorial that teaches the safe forms first
+- [BashPitfalls](https://mywiki.wooledge.org/BashPitfalls), the common mistakes, each with its fix
+- [BashFAQ](https://mywiki.wooledge.org/BashFAQ), in particular [Why not `set -e`](https://mywiki.wooledge.org/BashFAQ/105), [the location of a script](https://mywiki.wooledge.org/BashFAQ/028) and [Why not parse `ls`](https://mywiki.wooledge.org/ParsingLs)
+- [ShellCheck wiki](https://www.shellcheck.net/wiki/), one page per `SCxxxx` code
+- [Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
