@@ -3036,6 +3036,7 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ SHOULD: End `find -exec` with `+`, which runs the command once for many files, unless the command takes exactly one `BSG119`
 > - ✔️ SHOULD: Split a string into fields with `read`, `IFS=: read -r user _ uid _ <<< "${record}"`, naming each field you discard `_` `BSG126`
 > - ✔️ SHOULD: Give a file to the command by name, `grep foo "${file}"`, or with `< "${file}"`. `useless-use-of-cat` in [`.shellcheckrc`](.shellcheckrc) checks it
+> - ⚠️ CONSIDER: Split on a delimiter of several characters, or keep an empty last field, with `dybatpho::split` into an array: `mapfile -t parts < <(dybatpho::split "${entry}" ' :: ')`. (dybatpho)
 > - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
 > - ❌ AVOID: Do not pipe a string into `cut` or `awk '{print $2}'` to take one field of it
@@ -3110,6 +3111,22 @@ IFS=: read -r user _ uid _ _ home _ <<< "${record}"
 user="$(echo "${record}" | cut -d: -f1)"
 uid="$(echo "${record}" | cut -d: -f3)"
 home="$(echo "${record}" | awk -F: '{print $6}')"
+```
+
+`IFS` is a set of single characters, so `IFS=' :: '` splits on every space and every colon, and `read -a` drops an empty last field: `a:b:` gives two fields, not three. `dybatpho::split` takes the delimiter as one literal string, and keeps every field, the empty ones included. (dybatpho)
+
+**Recommended**
+
+```sh
+local -a parts=()
+mapfile -t parts < <(dybatpho::split "${entry}" ' :: ')
+```
+
+**Discouraged**
+
+```sh
+# Splits on every space and every colon, not on " :: "
+IFS=' :: ' read -r -a parts <<< "${entry}"
 ```
 
 `cat` in front of a command that can open the file itself is one more process and one more pipe, and it hides the file name from the error messages of the command.
