@@ -419,6 +419,8 @@ New rule
 >
 > - ✔️ SHOULD: Use `.` to invoke common functions
 > - ✔️ SHOULD: Put common functions as libraries in `lib` sub-folder
+> - ✔️ SHOULD: Guard a library against being sourced a second time before it declares `readonly` constants
+> - ❌ AVOID: Do not declare `readonly` at the top level of a library that may be sourced twice
 
 When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
 
@@ -433,6 +435,24 @@ When calling common functions, use `.` instead of `source`. This is because `.` 
 ```sh
 # Use source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+A library is easily sourced twice — by the script and by another library it loads. The second `readonly NAME=...` fails with `NAME: readonly variable`, which `set -e` turns into an exit. A guard on a variable the library sets makes the second source do nothing.
+
+**Recommended**
+
+```sh
+# scripts/lib/net.sh
+[[ -z "${__NET_LOADED-}" ]] || return 0
+__NET_LOADED=1
+readonly NET_TIMEOUT=10
+```
+
+**Discouraged**
+
+```sh
+# scripts/lib/net.sh: a second `.` stops the script
+readonly NET_TIMEOUT=10
 ```
 
 ## Naming Conventions

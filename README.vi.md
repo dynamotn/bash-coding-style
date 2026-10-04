@@ -421,6 +421,8 @@ Quy tắc mới
 >
 > - ✔️ NÊN: Sử dụng `.` để gọi các hàm chung
 > - ✔️ NÊN: Các hàm chung nên được để chung dưới dạng library trong thư mục con `lib`
+> - ✔️ NÊN: Chặn việc một thư viện bị source lần thứ hai trước khi nó khai báo các hằng `readonly`
+> - ❌ TRÁNH: Không khai báo `readonly` ở cấp cao nhất của một thư viện có thể bị source hai lần
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
@@ -435,6 +437,24 @@ Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này 
 ```sh
 # Sử dụng source
 source "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+```
+
+Một thư viện rất dễ bị source hai lần — bởi chính script và bởi một thư viện khác mà nó nạp. Lần `readonly NAME=...` thứ hai thất bại với lỗi `NAME: readonly variable`, mà `set -e` biến thành một lần thoát. Một điều kiện chặn dựa trên biến do thư viện đặt khiến lần source thứ hai không làm gì cả.
+
+**Nên dùng**
+
+```sh
+# scripts/lib/net.sh
+[[ -z "${__NET_LOADED-}" ]] || return 0
+__NET_LOADED=1
+readonly NET_TIMEOUT=10
+```
+
+**Không nên dùng**
+
+```sh
+# scripts/lib/net.sh: lần `.` thứ hai dừng script
+readonly NET_TIMEOUT=10
 ```
 
 ## Quy ước đặt tên
