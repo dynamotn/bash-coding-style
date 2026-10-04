@@ -209,6 +209,8 @@ fi
 > - ✔️ NÊN: Kiểm tra `BASH_VERSINFO` ở đầu một entrypoint, trước mọi thứ cần một tính năng mới hơn, và dừng lại với một thông báo nêu phiên bản đang có
 > - ✔️ NÊN: Ghi phiên bản đã giới thiệu một tính năng bên cạnh quy tắc phụ thuộc vào nó, khi phiên bản đó mới hơn mục tiêu
 > - ❌ TRÁNH: Không cho rằng `bash` trên `PATH` là bản mới: macOS vẫn đi kèm Bash 3.2 ở `/bin/bash`
+>
+> Trình kiểm tra: `BSG099`
 
 Hướng dẫn này dựa vào các tính năng mà những bản cũ không có: nameref (`local -n`, 4.3), `mapfile -d` và `local -` (4.4), và mảng rỗng được `set -u` chấp nhận (4.4). Trên Bash 3.2, một script viết theo cách này không thất bại ngay chỗ thiếu tính năng; nó thất bại muộn hơn, với `invalid option` hay `unbound variable`, ở xa nguyên nhân. Một bước kiểm tra ở đầu biến điều đó thành một thông báo mà người dùng có thể xử lý, chẳng hạn cài một bản Bash mới hơn bằng Homebrew, bản mà `#!/usr/bin/env bash` sẽ tìm thấy trước.
 
@@ -416,7 +418,7 @@ done
 > - ❌ TRÁNH: Không thực hiện trực tiếp một tác dụng phụ trong script có hỗ trợ chạy thử, kể cả một lần tải về hay ghi cache "vô hại"
 > - ⚠️ CÂN NHẮC: Đặt chạy thử làm mặc định cho script mà lần chạy thật có tính phá hủy. (tùy chỉnh)
 >
-> Trình kiểm tra: `BSG034`
+> Trình kiểm tra: `BSG034`, `BSG095`
 
 Một script có thể được hỏi rằng nó *sẽ* làm gì là một script mà người ta dám chạy trên máy họ quan tâm. Bọc lệnh thay đổi trạng thái, thay vì rẽ nhánh quanh nó, giúp đường chạy thử và đường chạy thật giống hệt nhau cho tới bước cuối, nên lần chạy thử đi qua đúng những điều kiện và đúng những tham số đó.
 
@@ -561,7 +563,7 @@ archive="$(release::package)"
 > - ❌ TRÁNH: Không dùng `$0` trong thư viện: nó là tên của script đã source thư viện
 > - ❌ TRÁNH: Không source một đường dẫn tính ra mà không kiểm tra
 >
-> Trình kiểm tra: `BSG032`, `BSG038`
+> Trình kiểm tra: `BSG032`, `BSG038`, `BSG039`, `BSG096`
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
@@ -677,6 +679,8 @@ dir="$(cd "${relative}" && pwd)"
 > - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện
 > - ❌ TRÁNH: Không `cd` trong shell của bên gọi từ một hàm thư viện
 > - ❌ TRÁNH: Không để `set -e`/`+e`/`-C`/`-f`, một tùy chọn `shopt`, `IFS` hay `umask` bị thay đổi khi hàm thư viện trả về
+>
+> Trình kiểm tra: `BSG090`, `BSG091`, `BSG092`
 
 Một thư viện chạy trong shell của bên gọi. `exit` ở đó kết thúc cả script — bỏ qua phần xử lý lỗi của bên gọi, quyết định dọn dẹp của nó và thông báo lẽ ra phải nói lý do — còn bên trong `$(...)` thì nó chỉ kết thúc subshell, nên bên gọi không phân biệt được lỗi với một câu trả lời rỗng.
 
@@ -775,6 +779,8 @@ function text::split_into {
 > - ✔️ NÊN: Chỉ hỏi khi standard input là terminal, hoặc tôn trọng chế độ không tương tác, và nếu không thì dùng một mặc định an toàn
 > - ✔️ NÊN: Đặt timeout và câu trả lời mặc định cho một lời nhắc
 > - ❌ TRÁNH: Không gọi `read` hay một lời nhắc vô điều kiện trong script có thể chạy trong CI, cron hay một pipe
+>
+> Trình kiểm tra: `BSG098`
 
 Khi không có terminal, `read` chờ một đầu vào không bao giờ tới — một job CI treo cho tới khi hết thời gian — hoặc đọc dòng tiếp theo của một pipe vốn dành cho thứ khác. Kiểm tra `[[ -t 0 ]]` và có sẵn một mặc định giúp lần chạy không người trông tự quyết định, còn timeout giới hạn lần chạy có tương tác.
 
@@ -1463,6 +1469,8 @@ function _main {
 > - ✔️ NÊN: Chỉ cho ShellCheck biết thư viện được source qua một đường dẫn tính ra bằng `# shellcheck source=<path>`, thay vì tắt SC1091
 > - ⚠️ CÂN NHẮC: Cân nhắc giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "info" trở lên. (tùy chỉnh)
 > - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng, kèm lý do trên cùng dòng. (tùy chỉnh)
+>
+> Trình kiểm tra: `BSG109`
 
 Dự án [ShellCheck](https://www.shellcheck.net/) phát hiện các lỗi và cảnh báo phổ biến trong các tập lệnh shell. Hãy áp dụng nó cho tất cả các tập lệnh shell, bất kể kích thước của chúng.
 
@@ -1750,6 +1758,8 @@ major="${BASH_REMATCH[1]}"
 > - ⚠️ CÂN NHẮC: Dùng `compgen -G` khi bạn cần các kết quả khớp như dữ liệu và chấp nhận kết quả rỗng. (tùy chỉnh)
 > - ❌ TRÁNH: Không truyền `*` trần cho một lệnh
 > - ❌ TRÁNH: Không cho rằng một glob không khớp gì sẽ khai triển thành rỗng: nó vẫn giữ nguyên là mẫu
+>
+> Trình kiểm tra: `BSG093`
 
 Một tệp tên `-rf` trong thư mục sẽ biến `rm *` thành `rm -rf`. `./*` khai triển thành các đường dẫn bắt đầu bằng `./`, không lệnh nào nhầm chúng với tùy chọn được.
 
@@ -1964,6 +1974,8 @@ printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 > - ✔️ NÊN: Đặt các phần thay đổi vào đối số của `printf`, không bao giờ đặt vào chuỗi định dạng
 > - ⚠️ CÂN NHẮC: `echo` vẫn ổn cho một thông báo cố định không chứa biến và không bắt đầu bằng `-`
 > - ❌ TRÁNH: Không dùng `echo -e` hay `echo -n`, và không `echo` một giá trị có thể bắt đầu bằng `-` hoặc chứa dấu gạch chéo ngược
+>
+> Trình kiểm tra: `BSG100`
 
 `echo` đọc các đối số đầu tiên như tùy chọn và, tùy shell và `xpg_echo`, khai triển dấu gạch chéo ngược. `echo "${value}"` không in gì khi giá trị là `-n`, và biến `C:\temp` thành một ký tự tab khi giá trị đi qua `echo -e`. `printf '%s\n'` in đối số đúng như nó là, trên mọi hệ thống. Một giá trị trong chuỗi định dạng cũng không an toàn: dấu `%` trong đó bị đọc như một chỉ thị.
 
@@ -1997,6 +2009,8 @@ echo -n "${token}" | gpg --encrypt --recipient "${recipient}"
 > - ✔️ NÊN: Viết phần thân và dấu phân cách đóng ở đầu dòng
 > - ❌ TRÁNH: Không dùng `<<-` để thụt lề một here document: nó chỉ bỏ ký tự tab, thứ mà hướng dẫn này không cho phép
 > - ❌ TRÁNH: Không escape từng dấu `$` của một văn bản không khai triển gì: hãy đặt dấu phân cách trong nháy
+>
+> Trình kiểm tra: `BSG101`, `BSG102`
 
 Một dấu phân cách không có nháy chạy khai triển tham số, thay thế lệnh và phép tính số học trên toàn bộ phần thân: một văn bản trợ giúp nhắc tới `$(date)` sẽ chạy `date`, và một mức giá `$5` trở thành đối số thứ năm. Dạng có nháy khiến phần thân được giữ nguyên. `<<-` chỉ bỏ các tab ở đầu dòng, nên với thụt lề hai khoảng trắng của hướng dẫn này nó không làm gì cả, và `EOF` đóng không được tìm thấy.
 
@@ -2110,6 +2124,8 @@ done
 > - ✔️ NÊN: Kiểm tra khóa có tồn tại hay không bằng `[[ -v map["${key}"] ]]`, cách này phân biệt được khóa không có với giá trị rỗng
 > - ✔️ NÊN: Sắp xếp các khóa trước khi dùng thứ tự của chúng: `"${!map[@]}"` không theo thứ tự nào cả
 > - ❌ TRÁNH: Không dựa vào thứ tự của `"${!map[@]}"`, và không dùng `[[ -n "${map[key]}" ]]` để kiểm tra sự tồn tại
+>
+> Trình kiểm tra: `BSG103`
 
 Không có `-A`, `versions[jq]=1` gán vào một mảng chỉ số: `jq` được đọc như một biến số học, có giá trị `0`, nên mọi khóa đều rơi vào chỉ số `0` và ghi đè khóa trước. Các khóa của một map đi ra theo thứ tự băm, thay đổi theo chính các khóa và giữa các phiên bản Bash, nên output dựng từ nó không tái lập được cho tới khi được sắp xếp.
 
@@ -2154,7 +2170,7 @@ done
 > - ❌ TRÁNH: Không đưa đường ống vào vòng lặp `while`
 > - ❌ TRÁNH: Không chỉ dựa vào `while read -r line` với đầu vào có thể không kết thúc bằng ký tự xuống dòng
 >
-> Trình kiểm tra: `BSG041`
+> Trình kiểm tra: `BSG041`, `BSG094`
 
 Vế phải của đường ống chạy trong một shell con, nên mọi biến mà vòng lặp gán đều bị vứt đi khi vòng lặp kết thúc. Thay thế tiến trình giữ vòng lặp ở lại trong shell hiện tại.
 
@@ -2331,7 +2347,7 @@ function fs::count_lines {
 > - ❌ TRÁNH: Không viết `((count++))` hay `((count--))` như một câu lệnh khi có `set -e`
 > - ⚠️ CÂN NHẮC: Cẩn thận với `(( ... ))` đứng một mình dưới `set -e`: biểu thức có giá trị `0` sẽ trả về mã thoát `1` và làm dừng script
 >
-> Trình kiểm tra: `BSG087`
+> Trình kiểm tra: `BSG087`, `BSG088`
 
 `(( ... ))` là lệnh dựng sẵn, nên nhanh hơn `expr` và không cần tạo tiến trình con, đồng thời coi các toán hạng là số chứ không phải chuỗi.
 
@@ -2457,6 +2473,8 @@ target="$(readlink -f "${link}")"
 > - ⚠️ CÂN NHẮC: Chỉ dùng `sort -V` cho các số có dấu chấm thuần túy như `1.10.2`, ở nơi có lệnh này
 > - ❌ TRÁNH: Không so sánh phiên bản bằng `<` hay `>` trên chuỗi, hoặc bằng phép tính trên chuỗi có dấu chấm
 > - ❌ TRÁNH: Không sắp xếp các phiên bản có thể mang hậu tố pre-release bằng `sort -V`: nó đặt `2.0.0-rc1` sau `2.0.0`
+>
+> Trình kiểm tra: `BSG097`
 
 So sánh chuỗi đi theo từng ký tự, nên `1.10.0` xếp trước `1.9.0`, và `2.0.0-rc1` xếp sau `2.0.0`. Phép tính số học hoàn toàn không dùng được trên chuỗi có dấu chấm. Một bước kiểm tra phiên bản làm sai chuyện này sẽ nâng cấp một bản cài mới hơn, hoặc từ chối một bản đã đủ mới.
 
@@ -2544,6 +2562,8 @@ fi
 > - ✔️ NÊN: Kết thúc mỗi bước bằng `|| return $?` trong một hàm có thể được gọi từ `if`, `while`, `!`, `&&` hay `||`
 > - ❌ TRÁNH: Không dựa vào `set -e` bên trong một hàm mà bên gọi kiểm tra mã thoát của nó: errexit bị tắt cho mọi thứ hàm đó chạy
 > - ❌ TRÁNH: Không mong `set -e` dừng tại một lệnh thất bại ở giữa `$(a; b)` khi không có `inherit_errexit`
+>
+> Trình kiểm tra: `BSG104`
 
 `set -e` bị tạm ngưng cho toàn bộ lệnh được kiểm tra bởi `if`, `while`, `until`, `!`, `&&` hay `||`, và điều đó bao gồm mọi dòng của một hàm được gọi ở đó. Vì vậy một hàm dựa vào errexit sẽ dừng ở lỗi đầu tiên khi được gọi riêng, nhưng chạy tới cuối khi bên gọi viết `if fn`. Mã thoát của nó khi đó là mã thoát của dòng cuối, rất có thể là `0`. Bên trong `$(...)` errexit cũng bị tắt, cho tới khi `inherit_errexit` (Bash 4.4) truyền nó xuống.
 
@@ -2660,6 +2680,8 @@ function __csv_require_text {
 > - ✔️ NÊN: Thoát với `128 + n` sau một handler cho tín hiệu `n` kết thúc script: `130` cho `INT`, `143` cho `TERM`
 > - ❌ TRÁNH: Không dùng `126`, `127` hay bất cứ số nào trên `128` cho ý nghĩa riêng: shell dùng chúng để báo "không thực thi được", "không tìm thấy" và tín hiệu
 > - ❌ TRÁNH: Không thoát với mã nằm ngoài `0`–`255`: nó bị lấy modulo 256, nên `256` là thành công
+>
+> Trình kiểm tra: `BSG105`
 
 Bên gọi chỉ xử lý được một mã thoát mà nó hiểu. `2` cho dùng sai cách là thứ các lệnh dựng sẵn của Bash và hầu hết các công cụ vẫn dùng, `126` và `127` là thứ shell đặt khi một lệnh không chạy được, và mọi số trên `128` được hiểu là "bị một tín hiệu kết liễu". Một mã riêng trùng với chúng đưa bên gọi vào nhánh sai, còn một mã không được ghi lại thì không thể xử lý được.
 
@@ -2708,6 +2730,8 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)`
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
+>
+> Trình kiểm tra: `BSG108`
 
 Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
 
@@ -2846,6 +2870,8 @@ kill "${pid}"
 >
 > - ✔️ NÊN: Đặt `--` trước các toán hạng lấy từ biến: `rm -- "${file}"`, `grep -- "${pattern}" "${file}"`
 > - ❌ TRÁNH: Không truyền một biến làm toán hạng đầu tiên của lệnh mà thiếu `--` khi giá trị của nó có thể bắt đầu bằng `-`
+>
+> Trình kiểm tra: `BSG057`
 
 Một lệnh đọc mọi tham số bắt đầu bằng `-` là tùy chọn cho tới khi gặp `--`. Khi đó một tệp tên `-rf`, một mẫu như `-v`, hay một đường dẫn do người dùng gõ vào sẽ bị hiểu là cờ: lệnh thất bại, hoặc làm một việc khác. Công cụ BSD trên macOS khắt khe về thứ tự hơn GNU, và đó thường là nơi việc thiếu `--` lộ ra.
 
@@ -2877,6 +2903,8 @@ grep "${pattern}" "${file}"
 > - ✔️ NÊN: Giới hạn thời gian của mọi lời gọi mạng: `curl --connect-timeout` và `--max-time`, hoặc `timeout` bao quanh một công cụ không có giới hạn riêng
 > - ✔️ NÊN: Chỉ thử lại những gì có thể thành công ở lần sau, với số lần có giới hạn: `curl --retry 3` thử lại khi hết thời gian hay gặp lỗi 5xx, không thử lại một lỗi 404
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh`
+>
+> Trình kiểm tra: `BSG056`, `BSG058`, `BSG107`
 
 Không có `--fail`, curl thoát với 0 khi gặp 404 hay 500 và trả trang lỗi về như thể đó là nội dung. Khi pipe vào `bash`, trang đó — hoặc một lần tải bị cắt giữa chừng, hoặc bất cứ thứ gì kẻ tấn công trả về — được chạy từng dòng trước khi có gì kiểm tra nó, và một dòng dở dang có thể làm điều mà không script hoàn chỉnh nào làm.
 
@@ -2908,6 +2936,8 @@ curl -sSL "${url}" | bash
 >
 > - ✔️ NÊN: Dùng lệnh thay thế hiện hành: keyring `signed-by` cho apt, `grep -E` và `grep -F`, `command -v`, `ip`, `mktemp`
 > - ❌ TRÁNH: Không dùng `apt-key`, `egrep`, `fgrep`, `which`, `ifconfig` hay `tempfile`
+>
+> Trình kiểm tra: `BSG059`
 
 Các lệnh này đã lỗi thời, không có trong các image tối giản, hoặc hoạt động khác nhau giữa các hệ thống. `apt-key` tin một khóa cho mọi repository; `egrep` và `fgrep` in cảnh báo trên grep hiện hành; `which` là một chương trình bên ngoài có output và mã thoát khác nhau tùy nơi, còn `command -v` là lệnh dựng sẵn; `ifconfig` và `tempfile` không có trên nhiều bản phân phối.
 
@@ -3035,7 +3065,7 @@ chmod +x "$output_path"
 > - ❌ TRÁNH: Không để một đường dẫn rỗng hay hỏng biến tệp staging thành một tệp trong thư mục làm việc
 > - ❌ TRÁNH: Không mở một tên trong thư mục dùng chung bằng `>` trơn: nó đi theo liên kết tượng trưng được đặt sẵn ở đó, kể cả khi tên có `$$` hay `$BASHPID`
 >
-> Trình kiểm tra: `BSG045`, `BSG046`, `BSG082`
+> Trình kiểm tra: `BSG045`, `BSG046`, `BSG082`, `BSG106`
 
 Một cái tên đoán trước được trong thư mục ai cũng ghi được vừa dễ đụng nhau vừa mở đường cho tấn công liên kết tượng trưng. Đăng ký việc dọn dẹp ngay lúc tạo là cách duy nhất để nó chạy trên những nhánh quan trọng: nhánh lỗi và nhánh bị ngắt.
 
@@ -3208,6 +3238,8 @@ sha256sum "${archive}" > "${archive}.sha256"
 > - ✔️ NÊN: Ưu tiên một helper có bảo vệ, kiểm tra đường dẫn và xác nhận trước khi hành động. (dybatpho)
 > - ❌ TRÁNH: Không chạy `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` hay `mv` đè lên một đích có sẵn với đường dẫn dựng từ các biến chưa từng được kiểm tra
 > - ❌ TRÁNH: Không kiểm tra một đường dẫn có nằm trong thư mục gốc hay không bằng cách so sánh chuỗi như được nhập vào
+>
+> Trình kiểm tra: `BSG089`
 
 Một biến chưa đặt hoặc rỗng biến `rm -rf "${BUILD_DIR}/cache"` thành `rm -rf /cache`, và `rm -rf "${prefix}"*` thành thư mục làm việc. `${var:?}` dừng script khi biến chưa đặt hoặc rỗng, trước khi lệnh chạy; kiểm tra thư mục gốc chặn được một giá trị đã đặt nhưng sai.
 

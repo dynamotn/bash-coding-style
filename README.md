@@ -207,6 +207,8 @@ fi
 > - ✔️ SHOULD: Check `BASH_VERSINFO` at the top of an entrypoint, before anything that needs a newer feature, and stop with a message that names the version found
 > - ✔️ SHOULD: Write the version that introduced a feature next to a rule that depends on it, when it is newer than the target
 > - ❌ AVOID: Do not assume the `bash` on `PATH` is new: macOS still ships Bash 3.2 as `/bin/bash`
+>
+> Linter: `BSG099`
 
 The guide relies on features that older releases do not have: namerefs (`local -n`, 4.3), `mapfile -d` and `local -` (4.4), and empty arrays that `set -u` accepts (4.4). On Bash 3.2 a script written this way does not fail where the feature is missing; it fails later, with `invalid option` or `unbound variable`, far from the cause. One check at the top turns that into a message the user can act on, such as installing a newer Bash with Homebrew, whose `bash` `#!/usr/bin/env bash` then finds first.
 
@@ -414,7 +416,7 @@ done
 > - ❌ AVOID: Do not perform a side effect directly in a script that offers dry-run, even a "harmless" download or a cache write
 > - ⚠️ CONSIDER: Make dry run the default for a script whose real run is destructive. (custom)
 >
-> Linter: `BSG034`
+> Linter: `BSG034`, `BSG095`
 
 A script that can be asked what it *would* do is a script people are willing to run on a machine they care about. Wrapping the state-changing command, rather than branching around it, keeps the dry-run path and the real path identical up to the last step, so the dry run exercises the same conditions and the same arguments.
 
@@ -559,7 +561,7 @@ archive="$(release::package)"
 > - ❌ AVOID: Do not use `$0` inside a library: it names the script that sourced it
 > - ❌ AVOID: Do not source a computed path unchecked
 >
-> Linter: `BSG032`, `BSG038`
+> Linter: `BSG032`, `BSG038`, `BSG039`, `BSG096`
 
 When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
 
@@ -675,6 +677,8 @@ dir="$(cd "${relative}" && pwd)"
 > - ❌ AVOID: Do not call `exit` in a library function: it ends the script that sourced the library
 > - ❌ AVOID: Do not `cd` in the caller's shell from a library function
 > - ❌ AVOID: Do not leave `set -e`/`+e`/`-C`/`-f`, a `shopt` option, `IFS` or `umask` changed when a library function returns
+>
+> Linter: `BSG090`, `BSG091`, `BSG092`
 
 A library runs in its caller's shell. `exit` there ends the whole script — skipping the caller's error handling, its cleanup decisions and the message that would have said why — and inside `$(...)` it ends only the subshell, so the caller cannot tell a failure from an empty answer.
 
@@ -773,6 +777,8 @@ function text::split_into {
 > - ✔️ SHOULD: Ask only when standard input is a terminal, or honour a non-interactive mode, and fall back to a safe default otherwise
 > - ✔️ SHOULD: Give a prompt a timeout and a default answer
 > - ❌ AVOID: Do not call `read` or a prompt unconditionally in a script that may run in CI, cron or a pipe
+>
+> Linter: `BSG098`
 
 With no terminal, `read` waits for input that never comes — a CI job hangs until its timeout — or reads the next line of a pipe meant for something else. Checking `[[ -t 0 ]]` and having a default makes the unattended run decide on its own, and a timeout bounds the interactive one.
 
@@ -1461,6 +1467,8 @@ function _main {
 > - ✔️ SHOULD: Point ShellCheck at a library sourced through a computed path with `# shellcheck source=<path>`, rather than disabling SC1091
 > - ⚠️ CONSIDER: Consider resolving all ShellCheck warnings with a severity level of info or higher. (custom)
 > - ⚠️ CONSIDER: If you cannot resolve ShellCheck warnings with a severity level of info, consider adding `# shellcheck disable=SCXXXX` comments to ignore them, with the reason on the same line. (custom)
+>
+> Linter: `BSG109`
 
 The [ShellCheck](https://www.shellcheck.net/) project detects common bugs and warnings in shell scripts. Apply it to all shell scripts, regardless of their size.
 
@@ -1748,6 +1756,8 @@ major="${BASH_REMATCH[1]}"
 > - ⚠️ CONSIDER: Use `compgen -G` when you need the matches as data and an empty result is acceptable. (custom)
 > - ❌ AVOID: Do not pass a bare `*` to a command
 > - ❌ AVOID: Do not assume a glob that matched nothing expands to nothing: it stays as the literal pattern
+>
+> Linter: `BSG093`
 
 A file named `-rf` in the directory turns `rm *` into `rm -rf`. `./*` expands to paths that begin with `./`, which no command can mistake for an option.
 
@@ -1962,6 +1972,8 @@ printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 > - ✔️ SHOULD: Put the variable parts in the arguments of `printf`, never in its format string
 > - ⚠️ CONSIDER: `echo` is fine for a fixed message that holds no variable and does not start with `-`
 > - ❌ AVOID: Do not use `echo -e` or `echo -n`, and do not `echo` a value that may start with `-` or hold a backslash
+>
+> Linter: `BSG100`
 
 `echo` reads its first arguments as options and, depending on the shell and `xpg_echo`, expands backslashes. `echo "${value}"` prints nothing when the value is `-n`, and turns `C:\temp` into a tab when the value goes through `echo -e`. `printf '%s\n'` prints its argument as it is, on every system. A value in the format string is just as unsafe: a `%` in it is read as a directive.
 
@@ -1995,6 +2007,8 @@ echo -n "${token}" | gpg --encrypt --recipient "${recipient}"
 > - ✔️ SHOULD: Write the body and the closing delimiter at the start of the line
 > - ❌ AVOID: Do not use `<<-` to indent a here document: it strips tabs only, which the guide does not allow
 > - ❌ AVOID: Do not escape every `$` of a text that expands nothing: quote the delimiter instead
+>
+> Linter: `BSG101`, `BSG102`
 
 An unquoted delimiter runs parameter expansion, command substitution and arithmetic on the whole body: a help text that mentions `$(date)` runs `date`, and a price of `$5` becomes the fifth argument. The quoted form makes the body literal. `<<-` removes leading tabs and nothing else, so with the two-space indentation of this guide it does nothing, and the closing `EOF` is not found.
 
@@ -2108,6 +2122,8 @@ done
 > - ✔️ SHOULD: Test whether a key exists with `[[ -v map["${key}"] ]]`, which tells a missing key from an empty value
 > - ✔️ SHOULD: Sort the keys before using their order: `"${!map[@]}"` comes out in no particular order
 > - ❌ AVOID: Do not rely on the order of `"${!map[@]}"`, and do not use `[[ -n "${map[key]}" ]]` as an existence test
+>
+> Linter: `BSG103`
 
 Without `-A`, `versions[jq]=1` assigns to an indexed array: `jq` is read as an arithmetic variable, worth `0`, so every key lands on index `0` and overwrites the last one. The keys of a map come out in hash order, which changes with the keys and between Bash versions, so output built from it is not reproducible until it is sorted.
 
@@ -2152,7 +2168,7 @@ done
 > - ❌ AVOID: Do not pipe into a `while` loop
 > - ❌ AVOID: Do not rely on `while read -r line` alone for input that may not end with a newline
 >
-> Linter: `BSG041`
+> Linter: `BSG041`, `BSG094`
 
 The right-hand side of a pipe runs in a subshell, so every variable the loop sets is discarded when the loop ends. Process substitution keeps the loop in the current shell.
 
@@ -2329,7 +2345,7 @@ function fs::count_lines {
 > - ❌ AVOID: Do not write `((count++))` or `((count--))` as a statement under `set -e`
 > - ⚠️ CONSIDER: Be careful with a bare `(( ... ))` under `set -e`: an expression whose value is `0` has exit status `1` and stops the script
 >
-> Linter: `BSG087`
+> Linter: `BSG087`, `BSG088`
 
 `(( ... ))` is a builtin, so it is faster than `expr` and does not need a subprocess, and it treats its operands as numbers rather than strings.
 
@@ -2455,6 +2471,8 @@ target="$(readlink -f "${link}")"
 > - ⚠️ CONSIDER: Use `sort -V` only for plain dotted numbers such as `1.10.2`, where it is available
 > - ❌ AVOID: Do not compare versions with string `<` or `>`, or with arithmetic on dotted strings
 > - ❌ AVOID: Do not order versions that may carry a pre-release suffix with `sort -V`: it puts `2.0.0-rc1` after `2.0.0`
+>
+> Linter: `BSG097`
 
 String comparison is character by character, so `1.10.0` sorts before `1.9.0`, and `2.0.0-rc1` after `2.0.0`. Arithmetic does not work on dotted strings at all. A version check that gets this wrong upgrades a newer install, or refuses one that is new enough.
 
@@ -2542,6 +2560,8 @@ fi
 > - ✔️ SHOULD: End each step with `|| return $?` in a function that may be called from `if`, `while`, `!`, `&&` or `||`
 > - ❌ AVOID: Do not rely on `set -e` inside a function whose caller tests its status: errexit is off for everything that function runs
 > - ❌ AVOID: Do not expect `set -e` to stop at a failing command in the middle of `$(a; b)` without `inherit_errexit`
+>
+> Linter: `BSG104`
 
 `set -e` is suspended for the whole command tested by `if`, `while`, `until`, `!`, `&&` or `||`, and that includes every line of a function called there. A function that relies on errexit therefore stops at its first failure when called on its own, and carries on to the end when the caller writes `if fn`. Its status is then the status of its last line, which may well be `0`. Inside `$(...)` errexit is off as well, until `inherit_errexit` (Bash 4.4) passes it down.
 
@@ -2658,6 +2678,8 @@ function __csv_require_text {
 > - ✔️ SHOULD: Exit with `128 + n` after a handler for signal `n` that ends the script: `130` for `INT`, `143` for `TERM`
 > - ❌ AVOID: Do not use `126`, `127` or anything above `128` for your own meaning: the shell reports "not executable", "not found" and signals with them
 > - ❌ AVOID: Do not exit with a status outside `0`–`255`: it is taken modulo 256, so `256` is success
+>
+> Linter: `BSG105`
 
 A caller can only act on a status it understands. `2` for usage is what Bash builtins and most tools already use, `126` and `127` are what the shell sets when a command cannot run, and anything above `128` reads as "killed by a signal". A status of your own that collides with them sends the caller down the wrong branch, and an undocumented one cannot be handled at all.
 
@@ -2706,6 +2728,8 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ SHOULD: Read a whole file with `$(< file)`, not `$(cat file)`
 > - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
+>
+> Linter: `BSG108`
 
 Builtins do not fork, so they are faster in a loop, and they behave the same on every machine. The exception is text transformation over many lines, where `sed` or `awk` say in one line what parameter expansion needs a loop for.
 
@@ -2844,6 +2868,8 @@ kill "${pid}"
 >
 > - ✔️ SHOULD: Put `--` before operands that come from variables: `rm -- "${file}"`, `grep -- "${pattern}" "${file}"`
 > - ❌ AVOID: Do not pass a variable as the first operand of a command without `--` when its value may start with `-`
+>
+> Linter: `BSG057`
 
 A command reads every argument that starts with `-` as an option until it sees `--`. A file called `-rf`, a pattern like `-v`, or a path a user typed is then taken as a flag: the command fails, or does something else. BSD tools on macOS are stricter about the order than GNU ones, which is where a missing `--` usually shows.
 
@@ -2875,6 +2901,8 @@ grep "${pattern}" "${file}"
 > - ✔️ SHOULD: Bound every network call: `curl --connect-timeout` and `--max-time`, or `timeout` around a tool that has no limit of its own
 > - ✔️ SHOULD: Retry only what may succeed on a second try, a bounded number of times: `curl --retry 3` retries timeouts and 5xx answers, not a 404
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh`
+>
+> Linter: `BSG056`, `BSG058`, `BSG107`
 
 Without `--fail`, curl exits 0 on a 404 or a 500 and hands over the error page as if it were the content. Piped into `bash`, that page — or a download cut off halfway, or whatever an attacker served — runs line by line before anything checked it, and a partial line can do something no complete script would.
 
@@ -2906,6 +2934,8 @@ curl -sSL "${url}" | bash
 >
 > - ✔️ SHOULD: Use the current replacement: `signed-by` keyrings for apt, `grep -E` and `grep -F`, `command -v`, `ip`, `mktemp`
 > - ❌ AVOID: Do not use `apt-key`, `egrep`, `fgrep`, `which`, `ifconfig` or `tempfile`
+>
+> Linter: `BSG059`
 
 These commands are deprecated, missing from minimal images, or behave differently between systems. `apt-key` trusts a key for every repository; `egrep` and `fgrep` print a warning on current grep; `which` is an external program whose output and exit status vary, while `command -v` is a builtin; `ifconfig` and `tempfile` are absent from many distributions.
 
@@ -3033,7 +3063,7 @@ chmod +x "$output_path"
 > - ❌ AVOID: Do not let an empty or failed path turn a staging file into one in the working directory
 > - ❌ AVOID: Do not open a name in a shared directory with a plain `>`: it follows a symlink planted there, even when the name carries `$$` or `$BASHPID`
 >
-> Linter: `BSG045`, `BSG046`, `BSG082`
+> Linter: `BSG045`, `BSG046`, `BSG082`, `BSG106`
 
 A predictable name in a world-writable directory is both a collision and a symlink attack. Registering the cleanup at creation time is the only way to have it run on the paths that matter: the error path and the interrupt.
 
@@ -3206,6 +3236,8 @@ sha256sum "${archive}" > "${archive}.sha256"
 > - ✔️ SHOULD: Prefer a guarded helper that validates the path and confirms before it acts. (dybatpho)
 > - ❌ AVOID: Do not run `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` or `mv` onto an existing target with a path built from variables that were never checked
 > - ❌ AVOID: Do not check that a path is inside a root by comparing the strings as typed
+>
+> Linter: `BSG089`
 
 An unset or empty variable turns `rm -rf "${BUILD_DIR}/cache"` into `rm -rf /cache`, and `rm -rf "${prefix}"*` into the working directory. `${var:?}` stops the script when the variable is unset or empty, before the command runs; a root check stops a value that is set but wrong.
 
