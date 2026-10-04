@@ -1267,9 +1267,12 @@ eval "pacman -S ${options} ${packages}"
 > - ✔️ SHOULD: Declare arrays explicitly: `local -a names=()` inside a function, `declare -a NAMES=()` at file scope
 > - ✔️ SHOULD: Append with `names+=("${value}")`
 > - ✔️ SHOULD: Expand with `"${names[@]}"`, and take the length with `"${#names[@]}"`
+> - ✔️ SHOULD: Expand an array that may be empty as `${names[@]+"${names[@]}"}` when the script supports Bash 4.3 under `set -u`
 > - ❌ AVOID: Do not keep several values in one string separated by spaces
 
 A space-separated string is only an array as long as no element contains a space. An array stays correct whatever the elements are, and `"${names[@]}"` passes exactly as many arguments as there are elements, including none.
+
+Before Bash 4.4, `set -u` treats an empty array as unset, so `"${names[@]}"` on an empty array stops the script with `unbound variable`. `${names[@]+"${names[@]}"}` expands to nothing when the array is empty and to every element otherwise, on every version.
 
 **Recommended**
 
@@ -1279,6 +1282,10 @@ SECRETS=()
 SECRETS+=(--secret "id=age_passphrases,env=AGE_PASSPHRASES")
 BUILD_ARGS+=(--build-arg IDENTITIES="personal")
 dybatpho::dry_run docker build "${BUILD_ARGS[@]}" "${SECRETS[@]}" .
+
+# May be empty, and the script still runs on Bash 4.3
+local -a extra=()
+docker run ${extra[@]+"${extra[@]}"} "${image}"
 ```
 
 **Discouraged**
@@ -1287,6 +1294,10 @@ dybatpho::dry_run docker build "${BUILD_ARGS[@]}" "${SECRETS[@]}" .
 # Breaks as soon as a value contains a space, and quoting cannot fix it
 BUILD_ARGS="--build-arg IDENTITIES=personal"
 docker build $BUILD_ARGS .
+
+# `unbound variable` on Bash 4.3 under `set -u` when no option was added
+local -a extra=()
+docker run "${extra[@]}" "${image}"
 ```
 
 ### Pipes to While

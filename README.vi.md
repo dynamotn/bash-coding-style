@@ -1263,9 +1263,12 @@ eval "pacman -S ${options} ${packages}"
 > - ✔️ NÊN: Khai báo mảng một cách tường minh: `local -a names=()` trong hàm, `declare -a NAMES=()` ở phạm vi tệp
 > - ✔️ NÊN: Thêm phần tử bằng `names+=("${value}")`
 > - ✔️ NÊN: Khai triển bằng `"${names[@]}"`, và lấy số phần tử bằng `"${#names[@]}"`
+> - ✔️ NÊN: Khai triển một mảng có thể rỗng bằng `${names[@]+"${names[@]}"}` khi script hỗ trợ Bash 4.3 dưới `set -u`
 > - ❌ TRÁNH: Không giữ nhiều giá trị trong một chuỗi ngăn cách bằng dấu cách
 
 Một chuỗi ngăn cách bằng dấu cách chỉ là mảng chừng nào chưa có phần tử nào chứa dấu cách. Mảng thì luôn đúng dù các phần tử là gì, và `"${names[@]}"` truyền đi đúng bằng số phần tử đang có, kể cả khi không có phần tử nào.
+
+Trước Bash 4.4, `set -u` coi một mảng rỗng là chưa được đặt, nên `"${names[@]}"` trên một mảng rỗng dừng script với lỗi `unbound variable`. `${names[@]+"${names[@]}"}` khai triển thành không gì cả khi mảng rỗng và thành mọi phần tử trong trường hợp còn lại, trên mọi phiên bản.
 
 **Nên dùng**
 
@@ -1275,6 +1278,10 @@ SECRETS=()
 SECRETS+=(--secret "id=age_passphrases,env=AGE_PASSPHRASES")
 BUILD_ARGS+=(--build-arg IDENTITIES="personal")
 dybatpho::dry_run docker build "${BUILD_ARGS[@]}" "${SECRETS[@]}" .
+
+# Có thể rỗng, và script vẫn chạy trên Bash 4.3
+local -a extra=()
+docker run ${extra[@]+"${extra[@]}"} "${image}"
 ```
 
 **Không nên dùng**
@@ -1283,6 +1290,10 @@ dybatpho::dry_run docker build "${BUILD_ARGS[@]}" "${SECRETS[@]}" .
 # Hỏng ngay khi một giá trị chứa dấu cách, và dấu nháy không cứu được
 BUILD_ARGS="--build-arg IDENTITIES=personal"
 docker build $BUILD_ARGS .
+
+# `unbound variable` trên Bash 4.3 dưới `set -u` khi không có tùy chọn nào được thêm
+local -a extra=()
+docker run "${extra[@]}" "${image}"
 ```
 
 ### Đường ống vào while
