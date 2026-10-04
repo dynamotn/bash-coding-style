@@ -3351,6 +3351,7 @@ grep "${pattern}" "${file}"
 > - ✔️ SHOULD: Download to a file, verify it against a checksum or signature, then run it
 > - ✔️ SHOULD: Bound every network call: `curl --connect-timeout` and `--max-time`, or `timeout` around a tool that has no limit of its own `BSG107`
 > - ✔️ SHOULD: Retry only what may succeed on a second try, a bounded number of times: `curl --retry 3` retries timeouts and 5xx answers, not a 404
+> - ✔️ SHOULD: Send a request with `dybatpho::curl_do`, which fails on an HTTP error and retries only what may succeed, and bound it with `dybatpho::curl_timeout`. (dybatpho)
 > - ✔️ SHOULD: Wait longer between each retry, with a random part and a cap: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
 > - ✔️ SHOULD: Bound `ssh` too, `-o ConnectTimeout=10 -o BatchMode=yes` under `timeout`, and tell a timeout (status 124) from a failure `BSG118`
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
@@ -3408,6 +3409,14 @@ esac
 until curl --fail -sS "${url}" -o "${target}"; do :; done
 # Waits for a password, or for an unreachable host, with no limit
 ssh "${host}" 'systemctl is-active app'
+```
+
+`dybatpho::curl_do` returns 3, 4 or 5 for a 3xx, 4xx or 5xx answer instead of 0, retries a transport error, a 5xx, a 408, a 425 or a 429 a bounded number of times with a growing delay that honours `Retry-After`, and logs the URL without the secrets in it. It sets no time limit unless one is configured: `dybatpho::curl_timeout` takes a connect and a total timeout, in seconds, for one request. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::curl_timeout "${url}" "${target}" 10 60 || dybatpho::die "Cannot download ${url}"
 ```
 
 ### Deprecated Commands
