@@ -1281,6 +1281,7 @@ command1 | command2 | command3 | command4
 > - ✔️ NÊN: Đặt `elif` và `else` trên dòng riêng của chúng
 > - ✔️ NÊN: Viết lựa chọn giữa hai hành động bằng `if`/`else`
 > - ✔️ NÊN: Chọn giá trị đầu tiên không rỗng bằng `dybatpho::coalesce`, và lệnh đầu tiên đã được cài bằng `dybatpho::coalesce_cmd`, thay vì `test && x=a || x=b`. (dybatpho)
+> - ✔️ NÊN: Chọn giá trị đầu tiên không rỗng bằng `dybatpho::coalesce`, và lệnh đầu tiên đã được cài bằng `dybatpho::coalesce_cmd`, thay vì `test && x=a || x=b`. (dybatpho)
 > - ❌ TRÁNH: Không viết `test && action || other` thay cho if/else: `other` cũng chạy khi `action` lỗi. ShellCheck báo lỗi này là SC2015
 > - ❌ TRÁNH: Không dùng `test && { ...; }` làm một `if` trải trên nhiều dòng
 > - ❌ TRÁNH: Không kết thúc câu lệnh bằng `;`: dấu chấm phẩy chỉ đứng trước `then` và `do`, hoặc giữa các câu lệnh trên cùng một dòng
@@ -1340,6 +1341,24 @@ fi
   load_config "${config}"
   validate_config
 }
+```
+
+Phần lớn các dòng `a && b || c` là để chọn một giá trị: một thiết lập hoặc giá trị mặc định của nó, công cụ đầu tiên đã được cài. `dybatpho::coalesce` in ra đối số đầu tiên không rỗng, còn `dybatpho::coalesce_cmd` in ra tên đầu tiên mà `command -v` tìm thấy. Cả hai đều thất bại khi không có giá trị nào, nên trường hợp thiếu được xử lý một lần, thay vì lọt vào nhánh `||`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local editor pager
+editor="$(dybatpho::coalesce "${VISUAL-}" "${EDITOR-}" vi)"
+pager="$(dybatpho::coalesce_cmd bat less more)" || dybatpho::die "No pager is installed"
+```
+
+**Không nên dùng**
+
+```sh
+[[ -n "${VISUAL-}" ]] && editor="${VISUAL}" || editor="${EDITOR:-vi}"
+# Chọn less ngay cả khi less cũng chưa được cài
+command -v bat > /dev/null && pager=bat || pager=less
 ```
 
 Phần lớn các dòng `a && b || c` là để chọn một giá trị: một thiết lập hoặc giá trị mặc định của nó, công cụ đầu tiên đã được cài. `dybatpho::coalesce` in ra đối số đầu tiên không rỗng, còn `dybatpho::coalesce_cmd` in ra tên đầu tiên mà `command -v` tìm thấy. Cả hai đều thất bại khi không có giá trị nào, nên trường hợp thiếu được xử lý một lần, thay vì lọt vào nhánh `||`. (dybatpho)
