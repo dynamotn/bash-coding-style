@@ -1344,9 +1344,10 @@ function _main {
 >
 > - ✔️ NÊN: Sử dụng ShellCheck để xác định lỗi trong các tập lệnh shell
 > - ✔️ NÊN: Giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "warning" trở lên. (tùy chỉnh)
-> - ✔️ NÊN: Thêm `enable=require-variable-braces` vào tệp `.shellcheckrc`. (tùy chỉnh)
+> - ✔️ NÊN: Sao chép [`.shellcheckrc`](.shellcheckrc) của hướng dẫn này vào dự án: nó bật các kiểm tra tùy chọn mà hướng dẫn yêu cầu theo tên, và cho phép ShellCheck đi theo các chỉ thị `source=`. (tùy chỉnh)
+> - ✔️ NÊN: Chỉ cho ShellCheck biết thư viện được source qua một đường dẫn tính ra bằng `# shellcheck source=<path>`, thay vì tắt SC1091
 > - ⚠️ CÂN NHẮC: Cân nhắc giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "info" trở lên. (tùy chỉnh)
-> - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng. (tùy chỉnh)
+> - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng, kèm lý do trên cùng dòng. (tùy chỉnh)
 
 Dự án [ShellCheck](https://www.shellcheck.net/) phát hiện các lỗi và cảnh báo phổ biến trong các tập lệnh shell. Hãy áp dụng nó cho tất cả các tập lệnh shell, bất kể kích thước của chúng.
 
@@ -1368,9 +1369,13 @@ scoop install shellcheck
 # Đặt các biến có khả năng chứa khoảng trắng vào trong dấu ngoặc kép.
 ls "/foo/bar/${file}"
 
-# Việc bỏ qua cảnh báo SC1091 cho đường dẫn nguồn chưa được giải quyết là chấp nhận được.
-# shellcheck disable=SC1091
-. "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+# Cho ShellCheck biết một đường dẫn tính ra trỏ tới tệp nào, tương đối với script này
+# shellcheck source=lib/functions.sh
+. "${SCRIPT_DIR}/lib/functions.sh"
+
+# Một phát hiện sai trong ngữ cảnh này, được tắt kèm lý do
+# shellcheck disable=SC2016 # expanded by the remote shell
+ssh "${host}" 'printf "%s\n" "$HOSTNAME"'
 ```
 
 ### Thay thế lệnh

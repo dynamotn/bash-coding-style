@@ -1348,9 +1348,10 @@ function _main {
 >
 > - ✔️ SHOULD: Use ShellCheck to identify bugs in shell scripts
 > - ✔️ SHOULD: Resolve all ShellCheck warnings with a severity level of warning or higher. (custom)
-> - ✔️ SHOULD: Put `enable=require-variable-braces` into `.shellcheckrc` file. (custom)
+> - ✔️ SHOULD: Copy the [`.shellcheckrc`](.shellcheckrc) of this guide into the project: it turns on the optional checks the guide asks for by name, and lets ShellCheck follow `source=` directives. (custom)
+> - ✔️ SHOULD: Point ShellCheck at a library sourced through a computed path with `# shellcheck source=<path>`, rather than disabling SC1091
 > - ⚠️ CONSIDER: Consider resolving all ShellCheck warnings with a severity level of info or higher. (custom)
-> - ⚠️ CONSIDER: If you cannot resolve ShellCheck warnings with a severity level of info, consider adding `# shellcheck disable=SCXXXX` comments to ignore them. (custom)
+> - ⚠️ CONSIDER: If you cannot resolve ShellCheck warnings with a severity level of info, consider adding `# shellcheck disable=SCXXXX` comments to ignore them, with the reason on the same line. (custom)
 
 The [ShellCheck](https://www.shellcheck.net/) project detects common bugs and warnings in shell scripts. Apply it to all shell scripts, regardless of their size.
 
@@ -1372,9 +1373,13 @@ scoop install shellcheck
 # Enclose variables with potential spaces in quotes.
 ls "/foo/bar/${file}"
 
-# Ignoring SC1091 warning for unresolved source path is acceptable.
-# shellcheck disable=SC1091
-. "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
+# Tell ShellCheck which file a computed path names, relative to this script
+# shellcheck source=lib/functions.sh
+. "${SCRIPT_DIR}/lib/functions.sh"
+
+# A finding that is wrong here, silenced with the reason
+# shellcheck disable=SC2016 # expanded by the remote shell
+ssh "${host}" 'printf "%s\n" "$HOSTNAME"'
 ```
 
 ### Command Substitution
