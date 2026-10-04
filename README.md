@@ -1279,6 +1279,7 @@ command1 | command2 | command3 | command4
 > - ✔️ SHOULD: Place `; do` and `; then` on the same line as `while`, `for`, and `if`
 > - ✔️ SHOULD: Place `elif` and `else` on their own lines
 > - ✔️ SHOULD: Write a choice between two actions as `if`/`else`
+> - ✔️ SHOULD: Pick the first value that is not empty with `dybatpho::coalesce`, and the first installed command with `dybatpho::coalesce_cmd`, rather than `test && x=a || x=b`. (dybatpho)
 > - ❌ AVOID: Do not write `test && action || other` for an if/else: `other` also runs when `action` fails. ShellCheck reports it as SC2015
 > - ❌ AVOID: Do not use `test && { ...; }` as an `if` that spans several lines
 > - ❌ AVOID: Do not end a statement with `;`: a semicolon belongs only before `then` and `do`, or between statements on one line
@@ -1338,6 +1339,24 @@ fi
   load_config "${config}"
   validate_config
 }
+```
+
+Most `a && b || c` lines choose a value: a setting or its default, the first tool that is installed. `dybatpho::coalesce` prints the first of its arguments that is not empty, and `dybatpho::coalesce_cmd` the first name that `command -v` finds. Both fail when there is none, so the missing case is handled once, instead of slipping into the `||` branch. (dybatpho)
+
+**Recommended**
+
+```sh
+local editor pager
+editor="$(dybatpho::coalesce "${VISUAL-}" "${EDITOR-}" vi)"
+pager="$(dybatpho::coalesce_cmd bat less more)" || dybatpho::die "No pager is installed"
+```
+
+**Discouraged**
+
+```sh
+[[ -n "${VISUAL-}" ]] && editor="${VISUAL}" || editor="${EDITOR:-vi}"
+# Picks less even when less is not installed either
+command -v bat > /dev/null && pager=bat || pager=less
 ```
 
 A newline ends a statement already, so a `;` at the end of a line is noise left over from other languages; shfmt removes it.
