@@ -2860,7 +2860,7 @@ target="$(readlink -f "${link}")"
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Compare versions with a semantic-version helper
+> - ✔️ SHOULD: Compare versions with a semantic-version helper: `dybatpho::semver_compare`, and `dybatpho::semver_sort` to order a list. (dybatpho)
 > - ⚠️ CONSIDER: Use `sort -V` only for plain dotted numbers such as `1.10.2`, where it is available
 > - ❌ AVOID: Do not compare versions with string `<` or `>`, or with arithmetic on dotted strings `BSG097`
 > - ❌ AVOID: Do not order versions that may carry a pre-release suffix with `sort -V`: it puts `2.0.0-rc1` after `2.0.0`
@@ -2894,6 +2894,18 @@ fi
 
 # Prints 2.0.0-rc1: the release candidate looks newer than the release
 newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
+```
+
+`dybatpho::semver_compare` prints `-1`, `0` or `1`, compares each numeric field as a number, and puts a pre-release before its release. `dybatpho::semver_sort` orders a list by the same rules, takes a leading `v`, and stops on a value that is not a version. (dybatpho)
+
+**Recommended**
+
+```sh
+local newest
+newest="$(dybatpho::semver_sort 2.0.0-rc.1 2.0.0 1.10.0 | tail -n 1)" || return 1
+if [[ "$(dybatpho::semver_compare "${installed}" "${newest}")" == -1 ]]; then
+  dybatpho::info "Upgrading to ${newest}"
+fi
 ```
 
 ## Calling Commands
