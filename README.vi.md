@@ -2661,6 +2661,7 @@ function fs::count_lines {
 > - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))`
 > - ✔️ NÊN: Tăng giá trị bằng `((count += 1))` hoặc `count=$((count + 1))`
 > - ✔️ NÊN: Tính toán với số thập phân trong `awk`, truyền giá trị qua `-v`: phép tính của Bash chỉ dùng số nguyên
+> - ✔️ NÊN: Tính và so sánh số thập phân bằng `dybatpho::math_add`, `dybatpho::math_compare`, `dybatpho::math_gt` và các helper `math_*` khác, các hàm giữ đủ mọi chữ số thập phân. (dybatpho)
 > - ❌ TRÁNH: Không dùng `let`, `expr` hay cú pháp `$[ ... ]` đã lỗi thời
 > - ❌ TRÁNH: Không đưa thẳng một số đọc từ đầu vào, tên tệp hay ngày tháng vào `(( ))`: số 0 ở đầu biến nó thành hệ bát phân `BSG087`
 > - ❌ TRÁNH: Không viết `((count++))` hay `((count--))` như một câu lệnh khi có `set -e` `BSG088`
@@ -2753,6 +2754,18 @@ fi
 [[ "${load}" > "1.5" ]]
 # syntax error: invalid arithmetic operator
 ((load > 1.5))
+```
+
+`awk` tính bằng số thực nhị phân, nơi `0.1 + 0.2` không bằng `0.3`. Các helper `math_*` làm việc trên chữ số thập phân, nên chúng cho ra `0.3`, xếp `1.10` nhỏ hơn `1.9`, và dừng script khi gặp một giá trị không phải số. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local total
+total="$(dybatpho::math_add "${price}" "${shipping}")" || return 1
+if dybatpho::math_gt "${load}" 1.5; then
+  dybatpho::warn "Load is ${load}"
+fi
 ```
 
 ### Tính di động
