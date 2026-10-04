@@ -549,7 +549,9 @@ Custom rule
 > [!TIP]
 >
 > - ✔️ SHOULD: Return a status from a library function, or stop through the library's die helper, which reports the failure. (dybatpho)
+> - ✔️ SHOULD: Change directory inside a subshell, `( cd -- "${dir}" && ... )`, or restore the previous directory before returning
 > - ❌ AVOID: Do not call `exit` in a library function: it ends the script that sourced the library
+> - ❌ AVOID: Do not `cd` in the caller's shell from a library function
 
 A library runs in its caller's shell. `exit` there ends the whole script — skipping the caller's error handling, its cleanup decisions and the message that would have said why — and inside `$(...)` it ends only the subshell, so the caller cannot tell a failure from an empty answer.
 
@@ -570,6 +572,27 @@ function net::fetch {
 function net::fetch {
   # Ends the caller's script with no message and no chance to recover
   curl --fail -sS "$1" || exit 1
+}
+```
+
+The working directory belongs to the caller. A library function that changes it leaves every relative path the caller uses afterwards pointing somewhere else, and an early `return` or an error skips any `cd -` meant to undo it.
+
+**Recommended**
+
+```sh
+function repo::files {
+  local root
+  dybatpho::expect_args root -- "$@"
+  (cd -- "${root}" && git ls-files)
+}
+```
+
+**Discouraged**
+
+```sh
+function repo::files {
+  # The caller is left in ${root} after this returns
+  cd "$1" && git ls-files
 }
 ```
 

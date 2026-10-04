@@ -551,7 +551,9 @@ Quy tắc tùy chỉnh
 > [!TIP]
 >
 > - ✔️ NÊN: Trả về một trạng thái từ hàm thư viện, hoặc dừng qua helper die của thư viện, thứ báo rõ lỗi. (dybatpho)
+> - ✔️ NÊN: Đổi thư mục bên trong một subshell, `( cd -- "${dir}" && ... )`, hoặc khôi phục thư mục cũ trước khi trả về
 > - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện
+> - ❌ TRÁNH: Không `cd` trong shell của bên gọi từ một hàm thư viện
 
 Một thư viện chạy trong shell của bên gọi. `exit` ở đó kết thúc cả script — bỏ qua phần xử lý lỗi của bên gọi, quyết định dọn dẹp của nó và thông báo lẽ ra phải nói lý do — còn bên trong `$(...)` thì nó chỉ kết thúc subshell, nên bên gọi không phân biệt được lỗi với một câu trả lời rỗng.
 
@@ -572,6 +574,27 @@ function net::fetch {
 function net::fetch {
   # Kết thúc script của bên gọi mà không có thông báo hay cơ hội phục hồi
   curl --fail -sS "$1" || exit 1
+}
+```
+
+Thư mục làm việc thuộc về bên gọi. Một hàm thư viện đổi nó sẽ khiến mọi đường dẫn tương đối mà bên gọi dùng sau đó trỏ sang nơi khác, và một lệnh `return` sớm hay một lỗi sẽ bỏ qua lệnh `cd -` dùng để hoàn tác.
+
+**Nên dùng**
+
+```sh
+function repo::files {
+  local root
+  dybatpho::expect_args root -- "$@"
+  (cd -- "${root}" && git ls-files)
+}
+```
+
+**Không nên dùng**
+
+```sh
+function repo::files {
+  # Bên gọi bị bỏ lại trong ${root} sau khi hàm này trả về
+  cd "$1" && git ls-files
 }
 ```
 
