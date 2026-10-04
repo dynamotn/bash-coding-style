@@ -67,6 +67,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Error Handling](#error-handling)
   - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
   - [Signal Handlers](#signal-handlers)
+  - [Child Processes](#child-processes)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
@@ -1981,6 +1982,49 @@ function lib::with_lock {
   lib::release
   trap - EXIT INT TERM
 }
+```
+
+### Child Processes
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Start each background job in its own process group, and signal the group, so grandchildren stop too
+> - ✔️ SHOULD: Repeat the signal until the group is empty, within a bounded grace period, then send `KILL`
+> - ✔️ SHOULD: End every job a function started before it returns, also when it returns because of a signal
+> - ❌ AVOID: Do not signal only the pid of a job, and do not assume one `TERM` is enough
+
+The pid of a job is often a subshell whose real work runs in a grandchild that a signal to the pid never reaches. Even a signal to the group can miss a process that has forked and not yet called `exec`: it still runs the parent shell's handlers, and a handler that catches `TERM` swallows the signal before `exec` resets it. Signalling until the group is empty, with `KILL` as the last step, is the only way to know nothing was left behind.
+
+**Recommended**
+
+```sh
+set -m
+worker "${item}" &
+local pgid=$!
+set +m
+...
+local tries=0
+while kill -0 -- "-${pgid}" 2> /dev/null; do
+  if ((tries++ < 50)); then
+    kill -TERM -- "-${pgid}" 2> /dev/null
+  else
+    kill -KILL -- "-${pgid}" 2> /dev/null
+  fi
+  sleep 0.1
+done
+```
+
+**Discouraged**
+
+```sh
+worker "${item}" &
+local pid=$!
+...
+# The worker's own children keep running
+kill "${pid}"
 ```
 
 ## Script Stabilization

@@ -68,6 +68,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Xử lý lỗi](#x%E1%BB%AD-ly-l%E1%BB%97i)
   - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-va-l%E1%BB%87nh-ben-ngoai)
   - [Trình xử lý tín hiệu](#trinh-x%E1%BB%AD-ly-tin-hi%E1%BB%87u)
+  - [Tiến trình con](#ti%E1%BA%BFn-trinh-con)
 - [Ổn định hóa script](#%E1%BB%95n-d%E1%BB%8Bnh-hoa-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-d%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
@@ -1977,6 +1978,49 @@ function lib::with_lock {
   lib::release
   trap - EXIT INT TERM
 }
+```
+
+### Tiến trình con
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Khởi chạy mỗi job nền trong process group riêng, và gửi tín hiệu tới cả group, để tiến trình cháu cũng dừng
+> - ✔️ NÊN: Lặp lại tín hiệu tới khi group rỗng, trong một khoảng ân hạn có giới hạn, rồi gửi `KILL`
+> - ✔️ NÊN: Kết thúc mọi job mà một hàm đã khởi chạy trước khi nó trả về, kể cả khi nó trả về vì một tín hiệu
+> - ❌ TRÁNH: Không chỉ gửi tín hiệu tới pid của job, và không cho rằng một lần `TERM` là đủ
+
+Pid của một job thường là một subshell, còn việc thật chạy trong một tiến trình cháu mà tín hiệu gửi tới pid không bao giờ chạm tới. Ngay cả tín hiệu gửi tới cả group cũng có thể trượt một tiến trình đã fork mà chưa gọi `exec`: nó vẫn chạy các handler của shell cha, và một handler bắt `TERM` sẽ nuốt tín hiệu trước khi `exec` đặt lại nó. Gửi tín hiệu tới khi group rỗng, với `KILL` là bước cuối, là cách duy nhất để biết không còn gì sót lại.
+
+**Nên dùng**
+
+```sh
+set -m
+worker "${item}" &
+local pgid=$!
+set +m
+...
+local tries=0
+while kill -0 -- "-${pgid}" 2> /dev/null; do
+  if ((tries++ < 50)); then
+    kill -TERM -- "-${pgid}" 2> /dev/null
+  else
+    kill -KILL -- "-${pgid}" 2> /dev/null
+  fi
+  sleep 0.1
+done
+```
+
+**Không nên dùng**
+
+```sh
+worker "${item}" &
+local pid=$!
+...
+# Các tiến trình con của worker vẫn chạy tiếp
+kill "${pid}"
 ```
 
 ## Ổn định hóa script
