@@ -3697,6 +3697,7 @@ staging="$(tempfile)"
 >
 > - ✔️ SHOULD: Make a script idempotent: running it twice with the same arguments leaves the same result
 > - ✔️ SHOULD: Check whether the work is already done before doing it
+> - ✔️ SHOULD: Add a line to a file once with `dybatpho::file_ensure_line`, and take it out with `dybatpho::file_remove_line`, instead of appending with `>>`. (dybatpho)
 > - ✔️ SHOULD: Prefer a command that is idempotent by nature, such as `chezmoi apply`, `pacman -S --needed` or `kubectl apply`, over one that fails on the second run
 > - ❌ AVOID: Do not assume the previous run finished
 
@@ -3722,6 +3723,14 @@ dytoy -t "$name"
 
 # Fails on the second run because the directory already exists
 mkdir "${config_dir}"
+```
+
+`dybatpho::file_ensure_line` looks for the exact line first and does nothing when it is there, so the second run changes nothing; otherwise it appends the line through a staging file, adding the newline a last line may lack. Both helpers honour `DRY_RUN`. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::file_ensure_line "${profile}" 'export EDITOR=nvim'
 ```
 
 ### Check State Before Changing
