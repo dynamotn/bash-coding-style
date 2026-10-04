@@ -342,6 +342,8 @@ Custom rule
 > - ✔️ SHOULD: Turn command tracing on with `dybatpho::start_trace` rather than writing `set -x` inline, and close it with `dybatpho::end_trace`. (dybatpho)
 > - ✔️ SHOULD: Run every command that changes state through `dybatpho::dry_run`, so a dry run reports the command instead of running it. (dybatpho)
 > - ✔️ SHOULD: Prefer the dry-run mode a tool provides itself, such as `chezmoi diff` or `kubectl --dry-run=server`, over echoing the command
+> - ✔️ SHOULD: Send every side effect through the dry-run wrapper in a script that offers dry-run: downloads, writes, deletes, package and service changes. (dybatpho)
+> - ❌ AVOID: Do not perform a side effect directly in a script that offers dry-run, even a "harmless" download or a cache write
 > - ⚠️ CONSIDER: Make dry run the default for a script whose real run is destructive. (custom)
 
 A script that can be asked what it *would* do is a script people are willing to run on a machine they care about. Wrapping the state-changing command, rather than branching around it, keeps the dry-run path and the real path identical up to the last step, so the dry run exercises the same conditions and the same arguments.
@@ -377,6 +379,24 @@ if [[ "$DRY_RUN" == "true" ]]; then
 else
   mv "$temp_file" "$output_path"
 fi
+```
+
+A dry run is only worth anything if it changes nothing. One direct `curl -o`, `rm` or `systemctl` among wrapped commands makes `--dry-run` a lie: the user trusts it, and the one side effect it did not report happens anyway.
+
+**Recommended**
+
+```sh
+dybatpho::dry_run curl --fail -sSL "${url}" -o "${target}"
+dybatpho::dry_run rm -f -- "${old_version}"
+dybatpho::dry_run systemctl --user restart app.service
+```
+
+**Discouraged**
+
+```sh
+# --dry-run still downloads and writes the file
+curl --fail -sSL "${url}" -o "${target}"
+dybatpho::dry_run systemctl --user restart app.service
 ```
 
 ### STDOUT and STDERR

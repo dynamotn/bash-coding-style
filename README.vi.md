@@ -344,6 +344,8 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Bật theo vết lệnh bằng `dybatpho::start_trace` thay vì viết `set -x` trực tiếp, và tắt bằng `dybatpho::end_trace`. (dybatpho)
 > - ✔️ NÊN: Chạy mọi lệnh làm thay đổi trạng thái qua `dybatpho::dry_run`, để chế độ chạy thử chỉ in ra lệnh thay vì thực thi nó. (dybatpho)
 > - ✔️ NÊN: Ưu tiên chế độ chạy thử do chính công cụ cung cấp, như `chezmoi diff` hay `kubectl --dry-run=server`, hơn là tự in lệnh ra
+> - ✔️ NÊN: Đưa mọi tác dụng phụ qua wrapper chạy thử trong một script có hỗ trợ chạy thử: tải về, ghi, xóa, thay đổi gói và dịch vụ. (dybatpho)
+> - ❌ TRÁNH: Không thực hiện trực tiếp một tác dụng phụ trong script có hỗ trợ chạy thử, kể cả một lần tải về hay ghi cache "vô hại"
 > - ⚠️ CÂN NHẮC: Đặt chạy thử làm mặc định cho script mà lần chạy thật có tính phá hủy. (tùy chỉnh)
 
 Một script có thể được hỏi rằng nó *sẽ* làm gì là một script mà người ta dám chạy trên máy họ quan tâm. Bọc lệnh thay đổi trạng thái, thay vì rẽ nhánh quanh nó, giúp đường chạy thử và đường chạy thật giống hệt nhau cho tới bước cuối, nên lần chạy thử đi qua đúng những điều kiện và đúng những tham số đó.
@@ -379,6 +381,24 @@ if [[ "$DRY_RUN" == "true" ]]; then
 else
   mv "$temp_file" "$output_path"
 fi
+```
+
+Chạy thử chỉ có giá trị khi nó không thay đổi gì. Chỉ một lệnh `curl -o`, `rm` hay `systemctl` chạy trực tiếp giữa những lệnh đã được bọc cũng khiến `--dry-run` nói dối: người dùng tin nó, và chính tác dụng phụ nó không báo vẫn xảy ra.
+
+**Nên dùng**
+
+```sh
+dybatpho::dry_run curl --fail -sSL "${url}" -o "${target}"
+dybatpho::dry_run rm -f -- "${old_version}"
+dybatpho::dry_run systemctl --user restart app.service
+```
+
+**Không nên dùng**
+
+```sh
+# --dry-run vẫn tải về và ghi tệp
+curl --fail -sSL "${url}" -o "${target}"
+dybatpho::dry_run systemctl --user restart app.service
 ```
 
 ### STDOUT và STDERR
