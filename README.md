@@ -63,6 +63,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Checking Return Values](#checking-return-values)
   - [Error Handling](#error-handling)
   - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
+  - [Signal Handlers](#signal-handlers)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
@@ -1726,6 +1727,49 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 # Unreadable, and it does the same as a two-line sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
 ```
+### Signal Handlers
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Compose a handler with the handlers already installed (`dybatpho::trap`) rather than replacing them. (dybatpho)
+> - ✔️ SHOULD: Save the caller's handlers before a scoped call and restore them after it
+> - ✔️ SHOULD: Run the cleanup of a scoped call before a caller's handler that exits, then re-raise the signal, so that handler and the default action still happen
+> - ❌ AVOID: Do not install a library handler with a plain `trap '…' SIG`, and do not clear one with `trap - EXIT`
+
+A library shares the trap table with the script that sourced it. `trap '…' INT` in a library silently removes the script's own Ctrl-C handling, and `trap - EXIT` removes cleanup someone else registered. Order matters as much: a caller's handler that calls `exit` ends the shell before a handler appended after it runs, so a lock is never released and child jobs keep running. A scoped call therefore installs its handler alone, puts the saved ones back when it ends, and re-raises the signal it caught.
+
+**Recommended**
+
+```sh
+function lib::with_lock {
+  local __lib_saved __lib_caught=""
+  __lib_saved="$(trap -p INT TERM)"
+  trap '__lib_caught=INT' INT
+  trap '__lib_caught=TERM' TERM
+  "$@" || true
+  lib::release
+  # Put back what the caller had, then let its handler and the default run
+  trap - INT TERM
+  eval "${__lib_saved}"
+  [[ -z "${__lib_caught}" ]] || kill -s "${__lib_caught}" "${BASHPID}"
+}
+```
+
+**Discouraged**
+
+```sh
+function lib::with_lock {
+  # Replaces the caller's handlers for the rest of the script
+  trap 'lib::release; exit 1' INT TERM
+  "$@"
+  lib::release
+  trap - EXIT INT TERM
+}
+```
+
 ## Script Stabilization
 
 ### Writing Rerunnable Scripts

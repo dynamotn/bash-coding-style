@@ -64,6 +64,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gia-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
   - [Xử lý lỗi](#x%E1%BB%AD-ly-l%E1%BB%97i)
   - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-va-l%E1%BB%87nh-ben-ngoai)
+  - [Trình xử lý tín hiệu](#trinh-x%E1%BB%AD-ly-tin-hi%E1%BB%87u)
 - [Ổn định hóa script](#%E1%BB%95n-d%E1%BB%8Bnh-hoa-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-d%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
@@ -1722,6 +1723,49 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 # Không đọc nổi, mà cũng chỉ làm đúng việc của hai dòng sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
 ```
+### Trình xử lý tín hiệu
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Ghép một handler với các handler đã cài sẵn (`dybatpho::trap`), thay vì thay thế chúng. (dybatpho)
+> - ✔️ NÊN: Lưu handler của bên gọi trước một lời gọi có phạm vi, và khôi phục chúng sau đó
+> - ✔️ NÊN: Chạy phần dọn dẹp của lời gọi có phạm vi trước handler của bên gọi có gọi `exit`, rồi phát lại tín hiệu, để handler đó và hành động mặc định vẫn diễn ra
+> - ❌ TRÁNH: Không cài handler của thư viện bằng `trap '…' SIG` trơn, và không xóa handler bằng `trap - EXIT`
+
+Một thư viện dùng chung bảng trap với script đã source nó. `trap '…' INT` trong thư viện âm thầm xóa phần xử lý Ctrl-C của chính script, còn `trap - EXIT` xóa phần dọn dẹp do người khác đăng ký. Thứ tự cũng quan trọng không kém: handler của bên gọi có gọi `exit` sẽ kết thúc shell trước khi handler nối sau nó kịp chạy, nên lock không bao giờ được giải phóng và các job con vẫn chạy. Vì vậy một lời gọi có phạm vi cài handler của riêng nó, đặt lại các handler đã lưu khi kết thúc, và phát lại tín hiệu nó đã bắt.
+
+**Nên dùng**
+
+```sh
+function lib::with_lock {
+  local __lib_saved __lib_caught=""
+  __lib_saved="$(trap -p INT TERM)"
+  trap '__lib_caught=INT' INT
+  trap '__lib_caught=TERM' TERM
+  "$@" || true
+  lib::release
+  # Đặt lại những gì bên gọi đã có, rồi để handler của nó và hành động mặc định chạy
+  trap - INT TERM
+  eval "${__lib_saved}"
+  [[ -z "${__lib_caught}" ]] || kill -s "${__lib_caught}" "${BASHPID}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+function lib::with_lock {
+  # Thay handler của bên gọi cho đến hết script
+  trap 'lib::release; exit 1' INT TERM
+  "$@"
+  lib::release
+  trap - EXIT INT TERM
+}
+```
+
 ## Ổn định hóa script
 
 ### Viết script chạy lại được
