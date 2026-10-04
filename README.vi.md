@@ -71,6 +71,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
   - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-toan)
   - [Lock](#lock)
+  - [Ghi nguyên tử](#ghi-nguyen-t%E1%BB%AD)
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
   - [Assertion output nghiêm ngặt](#assertion-output-nghiem-ng%E1%BA%B7t)
   - [Cô lập test](#co-l%E1%BA%ADp-test)
@@ -2108,6 +2109,45 @@ if ! kill -0 "$(cat "${lock}/pid")"; then
   rm -rf -- "${lock}"
   mkdir "${lock}"
 fi
+```
+
+### Ghi nguyên tử
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Ghi nội dung mới vào một tệp staging trong thư mục của đích, rồi `mv` nó đè lên đích
+> - ✔️ NÊN: Công bố các tệp mô tả một tệp — sidecar checksum, chỉ mục — trước chính tệp đó
+> - ❌ TRÁNH: Không ghi lại một tệp tại chỗ bằng `>` hay `>>` khi tiến trình khác có thể đang đọc nó
+> - ❌ TRÁNH: Không đặt tệp staging ở thư mục khác: `mv` giữa hai hệ thống tệp là sao chép, không phải đổi tên
+
+Người đọc mở một tệp đang bị ghi lại bằng `>` sẽ thấy nó rỗng hoặc ghi dở, và một lần sập sẽ để nó lại như vậy. `rename()` trong cùng một hệ thống tệp thay tên chỉ trong một bước, nên người đọc thấy hoặc tệp cũ hoặc tệp mới. Thứ tự giữa các tệp cũng quan trọng: một bản sao lưu được chuyển vào chỗ trước khi checksum của nó được ghi, trong chốc lát hoặc mãi mãi, là một bản sao lưu không qua được bước kiểm tra.
+
+**Nên dùng**
+
+```sh
+local staging
+staging="$(mktemp "$(dirname -- "${path}")/.staging.XXXXXXXX")"
+render_config > "${staging}"
+mv -f -- "${staging}" "${path}"
+
+# Sidecar trước, rồi mới tới archive mà nó mô tả
+sha256sum "${partial}" > "${archive}.sha256.tmp"
+mv -- "${archive}.sha256.tmp" "${archive}.sha256"
+mv -- "${partial}" "${archive}"
+```
+
+**Không nên dùng**
+
+```sh
+# Người đọc thấy tệp rỗng tới khi lệnh này xong, và mãi mãi nếu nó thất bại
+render_config > "${path}"
+
+# Hiện ra mà không có sidecar cho tới khi dòng sau chạy
+mv -- "${partial}" "${archive}"
+sha256sum "${archive}" > "${archive}.sha256"
 ```
 
 ## Kiểm thử

@@ -70,6 +70,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Check State Before Changing](#check-state-before-changing)
   - [Safely Creating Temporary Files](#safely-creating-temporary-files)
   - [Locks](#locks)
+  - [Atomic Writes](#atomic-writes)
 - [Testing](#testing)
   - [Strict Output Assertions](#strict-output-assertions)
   - [Test Isolation](#test-isolation)
@@ -2112,6 +2113,45 @@ if ! kill -0 "$(cat "${lock}/pid")"; then
   rm -rf -- "${lock}"
   mkdir "${lock}"
 fi
+```
+
+### Atomic Writes
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Write new content to a staging file in the destination's directory, then `mv` it onto the destination
+> - ✔️ SHOULD: Publish the files that describe a file — a checksum sidecar, an index — before the file itself
+> - ❌ AVOID: Do not rewrite a file in place with `>` or `>>` while other processes may read it
+> - ❌ AVOID: Do not stage in another directory: `mv` across filesystems is a copy, not a rename
+
+A reader that opens a file being rewritten with `>` sees it empty or half written, and a crash leaves it that way. `rename()` within one filesystem replaces the name in one step, so a reader sees the old file or the new one. Order matters across files too: a backup moved into place before its checksum is written is, for a moment or for good, a backup that fails verification.
+
+**Recommended**
+
+```sh
+local staging
+staging="$(mktemp "$(dirname -- "${path}")/.staging.XXXXXXXX")"
+render_config > "${staging}"
+mv -f -- "${staging}" "${path}"
+
+# The sidecar first, then the archive it describes
+sha256sum "${partial}" > "${archive}.sha256.tmp"
+mv -- "${archive}.sha256.tmp" "${archive}.sha256"
+mv -- "${partial}" "${archive}"
+```
+
+**Discouraged**
+
+```sh
+# Readers see an empty file until this finishes, and for good if it fails
+render_config > "${path}"
+
+# Visible with no sidecar until the next line runs
+mv -- "${partial}" "${archive}"
+sha256sum "${archive}" > "${archive}.sha256"
 ```
 
 ## Testing
