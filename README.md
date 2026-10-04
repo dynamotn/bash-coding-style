@@ -63,6 +63,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Local Variables](#local-variables)
   - [Arithmetic](#arithmetic)
   - [Portability](#portability)
+  - [Comparing Versions](#comparing-versions)
 - [Calling Commands](#calling-commands)
   - [Checking Return Values](#checking-return-values)
   - [Error Handling](#error-handling)
@@ -2073,6 +2074,38 @@ sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
 date -d "@${epoch}" +%F
 sed -i 's/old/new/' "${file}"
 target="$(readlink -f "${link}")"
+```
+
+### Comparing Versions
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Compare versions with a semantic-version helper, or with `sort -V` where it is available
+> - ❌ AVOID: Do not compare versions with string `<` or `>`, or with arithmetic on dotted strings
+
+String comparison is character by character, so `1.10.0` sorts before `1.9.0`, and `2.0.0-rc1` after `2.0.0`. Arithmetic does not work on dotted strings at all. A version check that gets this wrong upgrades a newer install, or refuses one that is new enough.
+
+**Recommended**
+
+```sh
+if dybatpho::semver_satisfies "${installed}" ">=1.10.0"; then
+  use_new_flag=true
+fi
+
+# Without a library, where sort -V exists
+newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
+```
+
+**Discouraged**
+
+```sh
+# "1.10.0" < "1.9.0" as strings, so a newer version looks older
+if [[ "${installed}" < "1.9.0" ]]; then
+  upgrade
+fi
 ```
 
 ## Calling Commands

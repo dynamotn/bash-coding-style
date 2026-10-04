@@ -64,6 +64,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Biến cục bộ](#bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99)
   - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
   - [Tính di động](#t%C3%ADnh-di-%C4%91%E1%BB%99ng)
+  - [So sánh phiên bản](#so-s%C3%A1nh-phi%C3%AAn-b%E1%BA%A3n)
 - [Gọi lệnh](#g%E1%BB%8Di-l%E1%BB%87nh)
   - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gi%C3%A1-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
   - [Xử lý lỗi](#x%E1%BB%AD-l%C3%BD-l%E1%BB%97i)
@@ -2069,6 +2070,38 @@ sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
 date -d "@${epoch}" +%F
 sed -i 's/old/new/' "${file}"
 target="$(readlink -f "${link}")"
+```
+
+### So sánh phiên bản
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: So sánh phiên bản bằng một helper semver, hoặc bằng `sort -V` ở nơi có lệnh này
+> - ❌ TRÁNH: Không so sánh phiên bản bằng `<` hay `>` trên chuỗi, hoặc bằng phép tính trên chuỗi có dấu chấm
+
+So sánh chuỗi đi theo từng ký tự, nên `1.10.0` xếp trước `1.9.0`, và `2.0.0-rc1` xếp sau `2.0.0`. Phép tính số học hoàn toàn không dùng được trên chuỗi có dấu chấm. Một bước kiểm tra phiên bản làm sai chuyện này sẽ nâng cấp một bản cài mới hơn, hoặc từ chối một bản đã đủ mới.
+
+**Nên dùng**
+
+```sh
+if dybatpho::semver_satisfies "${installed}" ">=1.10.0"; then
+  use_new_flag=true
+fi
+
+# Khi không có thư viện, ở nơi có sort -V
+newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
+```
+
+**Không nên dùng**
+
+```sh
+# Theo chuỗi "1.10.0" < "1.9.0", nên bản mới hơn lại trông như cũ hơn
+if [[ "${installed}" < "1.9.0" ]]; then
+  upgrade
+fi
 ```
 
 ## Gọi lệnh
