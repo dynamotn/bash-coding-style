@@ -3355,6 +3355,7 @@ grep "${pattern}" "${file}"
 > - ✔️ NÊN: Chỉ thử lại những gì có thể thành công ở lần sau, với số lần có giới hạn: `curl --retry 3` thử lại khi hết thời gian hay gặp lỗi 5xx, không thử lại một lỗi 404
 > - ✔️ NÊN: Gửi request bằng `dybatpho::curl_do`, hàm thất bại khi gặp lỗi HTTP và chỉ thử lại những gì có thể thành công, và giới hạn thời gian của nó bằng `dybatpho::curl_timeout`. (dybatpho)
 > - ✔️ NÊN: Chờ lâu hơn giữa mỗi lần thử lại, có thêm một phần ngẫu nhiên và một mức trần: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
+> - ⚠️ CÂN NHẮC: Thử lại một lệnh không phải `curl` bằng `dybatpho::retry`, hàm nhân đôi độ trễ tới `DYBATPHO_RETRY_MAX_DELAY`; đặt `DYBATPHO_RETRY_JITTER=true` để có phần ngẫu nhiên. (dybatpho)
 > - ✔️ NÊN: Giới hạn cả `ssh`, `-o ConnectTimeout=10 -o BatchMode=yes` dưới `timeout`, và phân biệt hết giờ (mã 124) với thất bại `BSG118`
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
 > - ❌ TRÁNH: Không thử lại trong một vòng lặp sát nút, `until curl ...; do :; done`, hay thử lại mãi mãi
@@ -3419,6 +3420,16 @@ ssh "${host}" 'systemctl is-active app'
 
 ```sh
 dybatpho::curl_timeout "${url}" "${target}" 10 60 || dybatpho::die "Cannot download ${url}"
+```
+
+`dybatpho::retry` chạy một chuỗi lệnh, nên mọi giá trị ghép vào chuỗi đó phải được quote bằng `printf %q`, như [Eval là xấu xa](#eval-l%C3%A0-x%E1%BA%A5u-xa) yêu cầu. Độ trễ của nó không có phần ngẫu nhiên trừ khi `DYBATPHO_RETRY_JITTER=true`, và khi đó nhiều client khởi động cùng lúc sẽ thử lại cùng lúc. (dybatpho)
+
+**Nên dùng**
+
+```sh
+DYBATPHO_RETRY_JITTER=true
+dybatpho::retry 5 "git fetch --quiet origin" "fetch origin"
+dybatpho::retry 3 "$(printf '%q ' rsync -a -- "${source}" "${target}")" "sync files"
 ```
 
 ### Lệnh đã lỗi thời

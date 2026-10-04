@@ -3353,6 +3353,7 @@ grep "${pattern}" "${file}"
 > - ✔️ SHOULD: Retry only what may succeed on a second try, a bounded number of times: `curl --retry 3` retries timeouts and 5xx answers, not a 404
 > - ✔️ SHOULD: Send a request with `dybatpho::curl_do`, which fails on an HTTP error and retries only what may succeed, and bound it with `dybatpho::curl_timeout`. (dybatpho)
 > - ✔️ SHOULD: Wait longer between each retry, with a random part and a cap: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
+> - ⚠️ CONSIDER: Retry a command other than `curl` with `dybatpho::retry`, which doubles the delay up to `DYBATPHO_RETRY_MAX_DELAY`; set `DYBATPHO_RETRY_JITTER=true` for the random part. (dybatpho)
 > - ✔️ SHOULD: Bound `ssh` too, `-o ConnectTimeout=10 -o BatchMode=yes` under `timeout`, and tell a timeout (status 124) from a failure `BSG118`
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
 > - ❌ AVOID: Do not retry in a tight loop, `until curl ...; do :; done`, or forever
@@ -3417,6 +3418,16 @@ ssh "${host}" 'systemctl is-active app'
 
 ```sh
 dybatpho::curl_timeout "${url}" "${target}" 10 60 || dybatpho::die "Cannot download ${url}"
+```
+
+`dybatpho::retry` runs a command string, so every value spliced into it is quoted with `printf %q`, as [Eval is Evil](#eval-is-evil) asks. Its delay has no random part unless `DYBATPHO_RETRY_JITTER=true`, and many clients that start together then retry together. (dybatpho)
+
+**Recommended**
+
+```sh
+DYBATPHO_RETRY_JITTER=true
+dybatpho::retry 5 "git fetch --quiet origin" "fetch origin"
+dybatpho::retry 3 "$(printf '%q ' rsync -a -- "${source}" "${target}")" "sync files"
 ```
 
 ### Deprecated Commands
