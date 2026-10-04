@@ -72,7 +72,9 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Comparing Versions](#comparing-versions)
 - [Calling Commands](#calling-commands)
   - [Checking Return Values](#checking-return-values)
+  - [Errexit in Conditions](#errexit-in-conditions)
   - [Error Handling](#error-handling)
+  - [Exit Codes](#exit-codes)
   - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
   - [Signal Handlers](#signal-handlers)
   - [Child Processes](#child-processes)
@@ -2442,6 +2444,54 @@ if [[ $? -ne 0 ]]; then
 fi
 ```
 
+### Errexit in Conditions
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Turn on `shopt -s inherit_errexit` next to `set -euo pipefail`, so a failure inside `$(...)` stops the substitution. (custom)
+> - ✔️ SHOULD: End each step with `|| return $?` in a function that may be called from `if`, `while`, `!`, `&&` or `||`
+> - ❌ AVOID: Do not rely on `set -e` inside a function whose caller tests its status: errexit is off for everything that function runs
+> - ❌ AVOID: Do not expect `set -e` to stop at a failing command in the middle of `$(a; b)` without `inherit_errexit`
+
+`set -e` is suspended for the whole command tested by `if`, `while`, `until`, `!`, `&&` or `||`, and that includes every line of a function called there. A function that relies on errexit therefore stops at its first failure when called on its own, and carries on to the end when the caller writes `if fn`. Its status is then the status of its last line, which may well be `0`. Inside `$(...)` errexit is off as well, until `inherit_errexit` (Bash 4.4) passes it down.
+
+dybatpho turns on the strict mode when it is sourced; `inherit_errexit` is still the script's to set. (dybatpho)
+
+**Recommended**
+
+```sh
+shopt -s inherit_errexit
+
+# Each step returns its own failure, whoever calls the function
+function deploy::upload {
+  local archive
+  dybatpho::expect_args archive -- "$@"
+  tar -czf "${archive}" -C "${BUILD_DIR}" . || return $?
+  scp -- "${archive}" "${HOST}:" || return $?
+}
+
+if ! deploy::upload "${archive}"; then
+  dybatpho::die "Upload of ${archive} failed"
+fi
+```
+
+**Discouraged**
+
+```sh
+function deploy::upload {
+  tar -czf "$1" -C "${BUILD_DIR}" .
+  # Uploads a broken archive when tar failed: errexit is off inside a function called by `if`
+  scp -- "$1" "${HOST}:"
+}
+
+if ! deploy::upload "${archive}"; then
+  dybatpho::die "Upload of ${archive} failed"
+fi
+```
+
 ### Error Handling
 
 > [!NOTE]
@@ -2505,6 +2555,53 @@ function get_dir {
 function __csv_require_text {
   [[ "$1" != *$'\x1f'* ]] || dybatpho::die "${FUNCNAME[2]}: The input contains the unit separator"
 }
+```
+
+### Exit Codes
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Exit with `0` on success, `1` on a general failure, and `2` on wrong usage, such as a missing or unknown option. (custom)
+> - ✔️ SHOULD: Document every other status a function or script returns with `@exitcode`, and keep its meaning stable
+> - ✔️ SHOULD: Exit with `128 + n` after a handler for signal `n` that ends the script: `130` for `INT`, `143` for `TERM`
+> - ❌ AVOID: Do not use `126`, `127` or anything above `128` for your own meaning: the shell reports "not executable", "not found" and signals with them
+> - ❌ AVOID: Do not exit with a status outside `0`–`255`: it is taken modulo 256, so `256` is success
+
+A caller can only act on a status it understands. `2` for usage is what Bash builtins and most tools already use, `126` and `127` are what the shell sets when a command cannot run, and anything above `128` reads as "killed by a signal". A status of your own that collides with them sends the caller down the wrong branch, and an undocumented one cannot be handled at all.
+
+**Recommended**
+
+```sh
+#######################################
+# @description Download a release asset
+# @arg $1 string Name of the asset
+# @exitcode 0 Downloaded
+# @exitcode 1 The download failed
+# @exitcode 2 Wrong usage: no asset name
+# @exitcode 3 The asset is not published for this platform
+#######################################
+function release::fetch {
+  (($# == 1)) || return 2
+  ...
+}
+
+# Ctrl-C: the status a parent shell expects
+trap 'exit 130' INT
+```
+
+**Discouraged**
+
+```sh
+# Reads as "command not found", as 44, and as 255
+exit 127
+exit 300
+exit -1
+
+# A status nobody documented, borrowed from another tool
+curl --fail -sS "${url}" || return 22
 ```
 
 ### Builtin Commands vs External Commands

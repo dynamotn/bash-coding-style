@@ -73,7 +73,9 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [So sánh phiên bản](#so-s%C3%A1nh-phi%C3%AAn-b%E1%BA%A3n)
 - [Gọi lệnh](#g%E1%BB%8Di-l%E1%BB%87nh)
   - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gi%C3%A1-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
+  - [Errexit trong điều kiện](#errexit-trong-%C4%91i%E1%BB%81u-ki%E1%BB%87n)
   - [Xử lý lỗi](#x%E1%BB%AD-l%C3%BD-l%E1%BB%97i)
+  - [Mã thoát](#m%C3%A3-tho%C3%A1t)
   - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-v%C3%A0-l%E1%BB%87nh-b%C3%AAn-ngo%C3%A0i)
   - [Trình xử lý tín hiệu](#tr%C3%ACnh-x%E1%BB%AD-l%C3%BD-t%C3%ADn-hi%E1%BB%87u)
   - [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con)
@@ -2444,6 +2446,54 @@ if [[ $? -ne 0 ]]; then
 fi
 ```
 
+### Errexit trong điều kiện
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Bật `shopt -s inherit_errexit` cạnh `set -euo pipefail`, để một lỗi bên trong `$(...)` dừng lệnh thay thế. (tùy chỉnh)
+> - ✔️ NÊN: Kết thúc mỗi bước bằng `|| return $?` trong một hàm có thể được gọi từ `if`, `while`, `!`, `&&` hay `||`
+> - ❌ TRÁNH: Không dựa vào `set -e` bên trong một hàm mà bên gọi kiểm tra mã thoát của nó: errexit bị tắt cho mọi thứ hàm đó chạy
+> - ❌ TRÁNH: Không mong `set -e` dừng tại một lệnh thất bại ở giữa `$(a; b)` khi không có `inherit_errexit`
+
+`set -e` bị tạm ngưng cho toàn bộ lệnh được kiểm tra bởi `if`, `while`, `until`, `!`, `&&` hay `||`, và điều đó bao gồm mọi dòng của một hàm được gọi ở đó. Vì vậy một hàm dựa vào errexit sẽ dừng ở lỗi đầu tiên khi được gọi riêng, nhưng chạy tới cuối khi bên gọi viết `if fn`. Mã thoát của nó khi đó là mã thoát của dòng cuối, rất có thể là `0`. Bên trong `$(...)` errexit cũng bị tắt, cho tới khi `inherit_errexit` (Bash 4.4) truyền nó xuống.
+
+dybatpho bật chế độ nghiêm ngặt khi được source; `inherit_errexit` vẫn do script tự đặt. (dybatpho)
+
+**Nên dùng**
+
+```sh
+shopt -s inherit_errexit
+
+# Mỗi bước trả về lỗi của chính nó, bất kể ai gọi hàm
+function deploy::upload {
+  local archive
+  dybatpho::expect_args archive -- "$@"
+  tar -czf "${archive}" -C "${BUILD_DIR}" . || return $?
+  scp -- "${archive}" "${HOST}:" || return $?
+}
+
+if ! deploy::upload "${archive}"; then
+  dybatpho::die "Upload of ${archive} failed"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+function deploy::upload {
+  tar -czf "$1" -C "${BUILD_DIR}" .
+  # Tải lên một archive hỏng khi tar thất bại: errexit bị tắt bên trong một hàm được `if` gọi
+  scp -- "$1" "${HOST}:"
+}
+
+if ! deploy::upload "${archive}"; then
+  dybatpho::die "Upload of ${archive} failed"
+fi
+```
+
 ### Xử lý lỗi
 
 > [!NOTE]
@@ -2507,6 +2557,53 @@ function get_dir {
 function __csv_require_text {
   [[ "$1" != *$'\x1f'* ]] || dybatpho::die "${FUNCNAME[2]}: The input contains the unit separator"
 }
+```
+
+### Mã thoát
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thoát với `0` khi thành công, `1` khi thất bại chung, và `2` khi dùng sai cách, như thiếu hoặc không rõ tùy chọn. (tùy chỉnh)
+> - ✔️ NÊN: Ghi lại mọi mã thoát khác mà một hàm hay script trả về bằng `@exitcode`, và giữ ý nghĩa của nó ổn định
+> - ✔️ NÊN: Thoát với `128 + n` sau một handler cho tín hiệu `n` kết thúc script: `130` cho `INT`, `143` cho `TERM`
+> - ❌ TRÁNH: Không dùng `126`, `127` hay bất cứ số nào trên `128` cho ý nghĩa riêng: shell dùng chúng để báo "không thực thi được", "không tìm thấy" và tín hiệu
+> - ❌ TRÁNH: Không thoát với mã nằm ngoài `0`–`255`: nó bị lấy modulo 256, nên `256` là thành công
+
+Bên gọi chỉ xử lý được một mã thoát mà nó hiểu. `2` cho dùng sai cách là thứ các lệnh dựng sẵn của Bash và hầu hết các công cụ vẫn dùng, `126` và `127` là thứ shell đặt khi một lệnh không chạy được, và mọi số trên `128` được hiểu là "bị một tín hiệu kết liễu". Một mã riêng trùng với chúng đưa bên gọi vào nhánh sai, còn một mã không được ghi lại thì không thể xử lý được.
+
+**Nên dùng**
+
+```sh
+#######################################
+# @description Download a release asset
+# @arg $1 string Name of the asset
+# @exitcode 0 Downloaded
+# @exitcode 1 The download failed
+# @exitcode 2 Wrong usage: no asset name
+# @exitcode 3 The asset is not published for this platform
+#######################################
+function release::fetch {
+  (($# == 1)) || return 2
+  ...
+}
+
+# Ctrl-C: mã thoát mà shell cha mong đợi
+trap 'exit 130' INT
+```
+
+**Không nên dùng**
+
+```sh
+# Được hiểu là "command not found", là 44, và là 255
+exit 127
+exit 300
+exit -1
+
+# Một mã thoát không ai ghi lại, mượn từ một công cụ khác
+curl --fail -sS "${url}" || return 22
 ```
 
 ### Lệnh dựng sẵn và lệnh bên ngoài
