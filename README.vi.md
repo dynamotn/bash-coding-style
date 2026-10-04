@@ -1621,7 +1621,7 @@ ls "/foo/bar/${file}"
 
 # Một phát hiện sai trong ngữ cảnh này, được tắt kèm lý do
 # shellcheck disable=SC2016 # do shell ở máy từ xa khai triển
-ssh "${host}" 'printf "%s\n" "$HOSTNAME"'
+ssh -o ConnectTimeout=10 "${host}" 'printf "%s\n" "$HOSTNAME"'
 ```
 
 ### Thay thế lệnh
@@ -2804,7 +2804,7 @@ function deploy::upload {
   local archive
   dybatpho::expect_args archive -- "$@"
   tar -czf "${archive}" -C "${BUILD_DIR}" . || return $?
-  scp -- "${archive}" "${HOST}:" || return $?
+  scp -o ConnectTimeout=10 -- "${archive}" "${HOST}:" || return $?
 }
 
 if ! deploy::upload "${archive}"; then
@@ -2818,7 +2818,7 @@ fi
 function deploy::upload {
   tar -czf "$1" -C "${BUILD_DIR}" .
   # Tải lên một archive hỏng khi tar thất bại: errexit bị tắt bên trong một hàm được `if` gọi
-  scp -- "$1" "${HOST}:"
+  scp -o ConnectTimeout=10 -- "$1" "${HOST}:"
 }
 
 if ! deploy::upload "${archive}"; then

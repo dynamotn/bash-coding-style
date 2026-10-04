@@ -1619,7 +1619,7 @@ ls "/foo/bar/${file}"
 
 # A finding that is wrong here, silenced with the reason
 # shellcheck disable=SC2016 # expanded by the remote shell
-ssh "${host}" 'printf "%s\n" "$HOSTNAME"'
+ssh -o ConnectTimeout=10 "${host}" 'printf "%s\n" "$HOSTNAME"'
 ```
 
 ### Command Substitution
@@ -2802,7 +2802,7 @@ function deploy::upload {
   local archive
   dybatpho::expect_args archive -- "$@"
   tar -czf "${archive}" -C "${BUILD_DIR}" . || return $?
-  scp -- "${archive}" "${HOST}:" || return $?
+  scp -o ConnectTimeout=10 -- "${archive}" "${HOST}:" || return $?
 }
 
 if ! deploy::upload "${archive}"; then
@@ -2816,7 +2816,7 @@ fi
 function deploy::upload {
   tar -czf "$1" -C "${BUILD_DIR}" .
   # Uploads a broken archive when tar failed: errexit is off inside a function called by `if`
-  scp -- "$1" "${HOST}:"
+  scp -o ConnectTimeout=10 -- "$1" "${HOST}:"
 }
 
 if ! deploy::upload "${archive}"; then
