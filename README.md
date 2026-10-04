@@ -133,7 +133,7 @@ dyshellint --list-rules
 cat script.sh | dyshellint --stdin-filename script.sh -
 ```
 
-Every rule carries a code: `BSG###` for a rule of this guide, `SC####` for a ShellCheck finding, and `FMT001` for a formatting difference. Any of them can be turned off for a run with `--exclude-rules`, and a ShellCheck finding can be silenced in place with a `# shellcheck disable=SCXXXX` comment that says why.
+Every rule carries a code: `BSG###` for a rule of this guide, `SC####` for a ShellCheck finding, and `FMT001` for a formatting difference. Any of them can be turned off for a run with `--exclude-rules`, and a ShellCheck finding can be silenced in place with a `# shellcheck disable=SCXXXX` comment that says why. The `BSG` codes that check a section are listed under its tips, after `Linter:`.
 
 The [`.shellcheckrc`](.shellcheckrc) and [`.editorconfig`](.editorconfig) of this repository are the configuration this guide asks for, and are meant to be copied into a project. `dyshellint` reads the `.shellcheckrc` of the project it checks, and also ships a [nvim-lint](https://github.com/mfussenegger/nvim-lint) definition for Neovim.
 
@@ -158,6 +158,8 @@ prek run --all-files
 > - ✔️ SHOULD: Use `set -euo pipefail` for shell option settings. (custom)
 > - ✔️ SHOULD: After source [dybatpho](https://github.com/dynamotn/dybatpho), can ignore to `set -euo pipefail`. (dybatpho)
 > - ⚠️ CONSIDER: If using other shells, explain the reason in comments. (custom)
+>
+> Linter: `BSG024`, `BSG030`, `BSG031`
 
 Use Bash. Restricting all executable shell scripts to `bash` ensures a consistent shell installed on all machines.
 
@@ -258,6 +260,8 @@ Use shell scripts for small utilities or simple wrapper scripts. In particular, 
 > - ✔️ SHOULD: Use the `.sh` extension for scripts that are library scripts. `chmod -x` for them
 > - ✔️ SHOULD: Do not use extensions for scripts that are in PATH. `chmod +x` for them
 > - ✔️ SHOULD: Use the `.sh` extension for scripts that aren't in PATH and are able to called from CLI.  `chmod +x` for them (custom)
+>
+> Linter: `BSG037`
 
 Executable files should either have a `.sh` extension (strongly recommended) or no extension. Scripts sourced from outside must have a `.sh` extension and should not be made executable.
 
@@ -271,6 +275,8 @@ Executable files should either have a `.sh` extension (strongly recommended) or 
 > - ✔️ SHOULD: Use `sudo` if you need to elevate privileges
 > - ❌ AVOID: SUID and SGID are prohibited
 > - ❌ AVOID: `sudo` is also prohibited in CI scripts. (custom)
+>
+> Linter: `BSG035`
 
 SUID and SGID are prohibited in shell scripts. Shell has many security issues, making it nearly impossible to ensure sufficient safety to allow SUID/SGID. Although bash makes SUID execution difficult, it is possible on some platforms, so it is explicitly prohibited. If privilege escalation is needed, use `sudo`.
 
@@ -337,6 +343,8 @@ bash ./scripts/docker.sh --log-level debug "${identity}"
 > - ✔️ SHOULD: Always offer `--help`, through `dybatpho::opts::disp` and `dybatpho::generate_help`. (dybatpho)
 > - ❌ AVOID: Do not take bare positional values such as `script.sh value1 value2` for anything but a list of the same kind of item
 > - ❌ AVOID: Do not define an option that only has a single-letter name
+>
+> Linter: `BSG050`, `BSG051`, `BSG052`
 
 A named option documents itself at the call site: `--dry-run false` says what it does, `false` on its own does not. Declaring the interface as a spec keeps parsing, defaulting, validation and the help text in one place, and gives every script in the repository the same command line behaviour.
 
@@ -401,6 +409,8 @@ done
 > - ✔️ SHOULD: Send every side effect through the dry-run wrapper in a script that offers dry-run: downloads, writes, deletes, package and service changes. (dybatpho)
 > - ❌ AVOID: Do not perform a side effect directly in a script that offers dry-run, even a "harmless" download or a cache write
 > - ⚠️ CONSIDER: Make dry run the default for a script whose real run is destructive. (custom)
+>
+> Linter: `BSG034`
 
 A script that can be asked what it *would* do is a script people are willing to run on a machine they care about. Wrapping the state-changing command, rather than branching around it, keeps the dry-run path and the real path identical up to the last step, so the dry run exercises the same conditions and the same arguments.
 
@@ -468,6 +478,8 @@ dybatpho::dry_run systemctl --user restart app.service
 > - ✔️ SHOULD: Use logging library from [dybatpho](https://github.com/dynamotn/dybatpho) to output messages for better logging. (dybatpho)
 > - ✔️ SHOULD: Keep the standard output of a function whose output is captured for its result alone: send progress, paths and notices to `STDERR` or `/dev/null`
 > - ❌ AVOID: Do not call a helper that prints to `STDOUT` from a function whose output a caller captures or pipes into a file
+>
+> Linter: `BSG036`
 
 **Recommended**
 
@@ -542,6 +554,8 @@ archive="$(release::package)"
 > - ❌ AVOID: Do not declare `readonly` at the top level of a library that may be sourced twice
 > - ❌ AVOID: Do not use `$0` inside a library: it names the script that sourced it
 > - ❌ AVOID: Do not source a computed path unchecked
+>
+> Linter: `BSG032`, `BSG038`
 
 When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
 
@@ -791,6 +805,8 @@ read -r -p "Overwrite ${file}? [y/N] " answer
 > - ✔️ SHOULD: Prefix a function that is private to its library with `__<namespace>_`, and a function that is private to an entrypoint script with `_`. (custom)
 > - ❌ AVOID: Do not write `()` after the function name when using the `function` keyword. (custom)
 > - ❌ AVOID: Do not use PascalCase or camelCase
+>
+> Linter: `BSG001`, `BSG002`, `BSG003`, `BSG004`
 
 The `function` keyword makes a declaration greppable, which matters in a language with no other way to list what a file defines. The `::` separator gives libraries a namespace that Bash itself does not have: two libraries can both have a `download` step without colliding, and a reader can tell where a function comes from without looking it up.
 
@@ -842,6 +858,8 @@ function verifySha256 {
 > - ✔️ SHOULD: Make constants read-only with `readonly` or `declare -r`, and declare them at the top of the file
 > - ✔️ SHOULD: Name a loop variable after the collection it walks: `for tool in "${tools[@]}"`
 > - ❌ AVOID: Do not declare and assign from a command substitution on the same line
+>
+> Linter: `BSG010`, `BSG011`, `BSG012`, `BSG013`
 
 `local name="$(some_command)"` throws away the exit status of `some_command`, because the status of the line is the status of `local`, which always succeeds. Under `set -e` that turns a failing command into a silent empty variable. Splitting the two lines keeps the failure visible. `readonly`, `export` and `declare` swallow the status in the same way, so a constant is assigned first and made read-only on the next line.
 
@@ -898,6 +916,8 @@ done
 > - ✔️ SHOULD: Prefix every other local of a function that binds `local -n` to a name its caller chose: `__<namespace>_<function>_<name>`
 > - ✔️ SHOULD: Prefix the locals of a function that runs caller code — `"$@"`, `eval`, a callback, handler or producer name — when they are live across that call
 > - ❌ AVOID: Do not give such a function plain locals like `status`, `name`, `path`, `count` or `result`
+>
+> Linter: `BSG014`, `BSG015`
 
 Bash scopes variables dynamically. `local -n ref="$1"` resolves the name the caller passed when it is used, so if the function has a local of that name, the nameref binds to the local and the caller's variable is never filled. Code a function runs on its caller's behalf sees the function's locals in the same way, and can read or overwrite them: a command that kept its own `count` once changed how often a retry helper retried.
 
@@ -949,6 +969,8 @@ function net::retry {
 >
 > - ✔️ SHOULD: Include a comment at the beginning of the file that concisely explains the purpose or content of the file. However, do not include comments before the shebang line
 > - ✔️ SHOULD: Use [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) format includes: `@file`, `@brief`, `@description` to explain the file. (custom)
+>
+> Linter: `BSG020`
 
 All files should include a top-level comment that briefly describes their content.
 
@@ -969,6 +991,8 @@ All files should include a top-level comment that briefly describes their conten
 > [!TIP]
 >
 > - ✔️ SHOULD: Use [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) format to explain the function. (custom)
+>
+> Linter: `BSG021`, `BSG022`
 
 It should be possible for someone else to learn how to use your program or to use a function in your library by reading the comments (and self-help, if provided) without reading the code.
 
@@ -1022,6 +1046,8 @@ Comment on parts of the code that are tricky, not immediately obvious, interesti
 >
 > - ✔️ SHOULD: Consider using TODO comments
 > - ❌ AVOID: Do not include the name of the person who wrote the TODO comment. (custom)
+>
+> Linter: `BSG023`
 
 Use TODO comments for temporary, short-term solutions, or code that is good enough but not perfect. TODO comments should include the uppercase string `TODO`. There is no need to include the individual's name, as it can be identified using `git blame`. The purpose of TODO comments is to provide a searchable and consistent `TODO` marker that can be looked up for more details as needed. Since the person referenced in the TODO is not necessarily committed to fixing the issue, it is helpful to include the expected resolution.
 
@@ -1043,6 +1069,8 @@ Use TODO comments for temporary, short-term solutions, or code that is good enou
 > - ✔️ SHOULD: Indent with two spaces. Do not use tabs
 > - ✔️ SHOULD: Include blank lines between blocks for readability
 > - ✔️ SHOULD: Do not include trailing spaces. (custom)
+>
+> Linter: `BSG071`, `BSG072`
 
 Indentation should be two spaces. Under no circumstances should tabs be used.
 
@@ -1058,6 +1086,8 @@ Many editors cannot switch between actual indentation and displayed spaces/tabs 
 > - ✔️ SHOULD: Maximum line length is 120 characters. (custom)
 > - ✔️ SHOULD: Consider using here documents or embedded newlines for excessively long strings. (custom)
 > - ⚠️ CONSIDER: Look for ways to shorten string literals
+>
+> Linter: `BSG070`
 
 Keep every line at 120 characters or fewer; `max_line_length` in [`.editorconfig`](.editorconfig) sets the limit for editors, and the linter checks it. Break a long command at its options with `\`, and a long string with a here document or embedded newlines. A literal that cannot be divided, such as a URL, is better moved into a variable of its own than left to run past the limit.
 
@@ -1195,6 +1225,8 @@ For simple commands, place the pattern and `;;` on the same line if readability 
 > - ✔️ SHOULD: Read an environment variable that may be unset with a default under `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}`
 > - ❌ AVOID: Avoid bracing shell special variables/positional parameters unless explicitly necessary or to avoid serious confusion
 > - ❌ AVOID: Do not read an optional environment variable bare under `set -u`
+>
+> Linter: `BSG043`, `BSG073`
 
 Variables should be quoted. Use `${var}` instead of `$var`, also when the variable is the whole quoted string: one form everywhere is easier to read and to check than a rule with an exception.
 This is a strongly recommended guideline but not an absolute regulation. However, even though it is not mandatory, do not disregard it.
@@ -1365,6 +1397,8 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 > - ✔️ SHOULD: Keep the call to the entrypoint as the last line of the file
 > - ⚠️ CONSIDER: Guard that call with `[[ "${BASH_SOURCE[0]}" == "$0" ]]` when a test sources the script for its functions
 > - ❌ AVOID: Do not place executable code between function declarations
+>
+> Linter: `BSG033`
 
 A file that is a list of declarations followed by one call can be read in any order, and sourcing it for a test runs nothing but that call — which a guard on `BASH_SOURCE` skips, since `${BASH_SOURCE[0]}` is `$0` only when the file is executed. Code scattered between functions runs at load time, which makes the script impossible to source and hard to reason about when it fails halfway.
 
@@ -1513,6 +1547,8 @@ mapfile -t lines <<< "${text}"
 > - ✔️ SHOULD: Call a function that changes state — a global, a cache or memo, a counter, a secret registration — in the caller's shell, and return its value through a nameref
 > - ❌ AVOID: Do not call a function that can stop the script, through `dybatpho::die` or `exit`, inside `$(...)` and carry on unconditionally
 > - ❌ AVOID: Do not call such a function inside `$(...)`: every change it makes is lost with the subshell
+>
+> Linter: `BSG047`, `BSG084`
 
 `$(...)` runs in a subshell, so `dybatpho::die` or `exit` inside it ends only that subshell. Under `set -e` the failed assignment still stops the script, but wherever errexit is suspended — inside `if`, after `||`, `&&` or `!`, or under bats' `run` — the caller carries on with an empty value, right after a fatal error that claimed the script was stopping. A helper that validates in the caller's shell stops the script where it should.
 
@@ -1791,6 +1827,8 @@ done
 > - ✔️ SHOULD: Quote every value spliced into a string for `eval`, or for a one-string `dybatpho::dry_run`, with `printf %q`; better, pass an argument list
 > - ❌ AVOID: Do not use `eval`
 > - ❌ AVOID: Do not build a command string for `eval` or `dybatpho::dry_run "<string>"` from data that is not escaped
+>
+> Linter: `BSG040`, `BSG080`
 
 `eval` makes it impossible to tell, by reading the script, what will run or which variables will be set. When a value has to be executed, use an array for the command and its arguments, or an indirect reference for the variable.
 
@@ -1847,6 +1885,8 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ SHOULD: Create a file that holds a secret under `umask 077`, in a subshell, or with `mktemp`, which creates it `0600`
 > - ❌ AVOID: Do not log a request URL or body whole when it may carry a token
 > - ❌ AVOID: Do not write a secret with a plain `>` under the default umask: the file is readable by every user, at least until a later `chmod`
+>
+> Linter: `BSG081`
 
 The arguments of a running process are public on the host, and a log outlives the run that wrote it. A webhook URL is often the credential itself, so printing the URL of a failed request leaks it as surely as printing a token. Secrets therefore travel out of band — a private config file curl reads, standard input, an inherited variable — and a message names a request by its host only.
 
@@ -1888,6 +1928,8 @@ dybatpho::error "Request to ${WEBHOOK_URL} failed"
 > - ✔️ SHOULD: Build JSON and YAML with `jq` or `yq` and `--arg`, or through one escaping helper that every module uses
 > - ✔️ SHOULD: Write CSV fields through one helper that doubles quotes and quotes a field holding the delimiter, a quote or a line break
 > - ❌ AVOID: Do not splice a value into structured text with `printf '{"key":"%s"}'`
+>
+> Linter: `BSG086`
 
 A value holding a quote, a backslash or a line break breaks a hand-built document, or changes what it means — the receiving end reads an extra key or a cut-off string. Every module that builds JSON by hand grows its own escaper, and each one misses a different control character.
 
@@ -2000,6 +2042,8 @@ EOF
 > - ✔️ SHOULD: Iterate the indexes an array really has with `"${!names[@]}"`
 > - ❌ AVOID: Do not keep several values in one string separated by spaces
 > - ❌ AVOID: Do not walk `0` to `${#names[@]} - 1` over an array the function did not build itself
+>
+> Linter: `BSG049`, `BSG085`
 
 A space-separated string is only an array as long as no element contains a space. An array stays correct whatever the elements are, and `"${names[@]}"` passes exactly as many arguments as there are elements, including none.
 
@@ -2103,6 +2147,8 @@ done
 > - ✔️ SHOULD: Read every line, including a last one without a newline: `while IFS= read -r line || [[ -n "${line}" ]]`
 > - ❌ AVOID: Do not pipe into a `while` loop
 > - ❌ AVOID: Do not rely on `while read -r line` alone for input that may not end with a newline
+>
+> Linter: `BSG041`
 
 The right-hand side of a pipe runs in a subshell, so every variable the loop sets is discarded when the loop ends. Process substitution keeps the loop in the current shell.
 
@@ -2164,6 +2210,8 @@ done < "${file}"
 > - ✔️ SHOULD: Validate what a producer is given before reading it through `< <(...)`, when only bad input can make it fail
 > - ✔️ SHOULD: Turn on `pipefail` when the left side of a pipe can fail and the result depends on it
 > - ❌ AVOID: Do not read `< <(cmd)` or `<(cmd)` from a command whose failure has to stop the work
+>
+> Linter: `BSG048`
 
 Nothing waits for the command inside `<(...)`: `mapfile`, `while read` and the function around them succeed whether it failed or not, so a failing producer reads as empty input. A corrupt archive then lists no entries and passes a safety check, and two documents that do not parse compare as identical. The left side of a pipe is lost the same way without `pipefail`. [Pipes to While](#pipes-to-while) is about keeping variables; this is about keeping the failure.
 
@@ -2191,6 +2239,8 @@ mapfile -t entries < <(tar -tzf "${archive}")
 > - ✔️ SHOULD: Iterate over an array with `for item in "${items[@]}"`
 > - ✔️ SHOULD: Read command output into an array first, then loop over it
 > - ❌ AVOID: Do not write `for item in $(command)` when the output may contain spaces
+>
+> Linter: `BSG042`
 
 `for item in $(command)` splits on every space, tab and newline, and then globs the result. It is correct only for output you control completely.
 
@@ -2224,6 +2274,8 @@ done
 > - ✔️ SHOULD: Declare `local` every variable a function assigns: loop variables, the targets of `read`, `mapfile`, `readarray` and `printf -v`, and plain assignments
 > - ✔️ SHOULD: Document a deliberate global with `@set` in the function comment, and name it in `UPPERCASE`
 > - ❌ AVOID: Do not let a loop variable or a `read` target leak out of a function
+>
+> Linter: `BSG016`
 
 A variable a function assigns without declaring it is global. It outlives the function, and it overwrites a variable of the same name in every caller: a helper that loops with `for i` silently moves the caller's own `i` loop. [Variable Names](#variable-names) asks for `local`; these are the assignments that are easiest to forget.
 
@@ -2272,6 +2324,8 @@ function fs::count_lines {
 > - ❌ AVOID: Do not feed a number read from input, a file name or a date straight into `(( ))`: a leading zero makes it octal
 > - ❌ AVOID: Do not write `((count++))` or `((count--))` as a statement under `set -e`
 > - ⚠️ CONSIDER: Be careful with a bare `(( ... ))` under `set -e`: an expression whose value is `0` has exit status `1` and stops the script
+>
+> Linter: `BSG087`
 
 `(( ... ))` is a builtin, so it is faster than `expr` and does not need a subprocess, and it treats its operands as numbers rather than strings.
 
@@ -2352,6 +2406,8 @@ local count=0
 > - ✔️ SHOULD: Detect a feature by trying the flag, not by the name of the tool or its `--version`
 > - ❌ AVOID: Do not assume GNU coreutils when the script runs on macOS, BSD or BusyBox
 > - ⚠️ CONSIDER: Prefer a Bash builtin or a POSIX form when one does the job: `printf '%(%s)T'`, parameter expansion
+>
+> Linter: `BSG083`
 
 macOS ships BSD tools and Alpine ships BusyBox, and the same flag means something else, or nothing, on each: `sed -i` wants a backup suffix on BSD, `stat -c` is `stat -f` there, and `date -d` does not exist. `date --version` failing does not make a system BSD — BusyBox fails it too — so test the behaviour itself, once, and keep the answer.
 
@@ -2442,6 +2498,8 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ✔️ SHOULD: Exit with a meaningful status: `0` on success, non-zero on failure
 > - ❌ AVOID: Do not inspect `$?` in a separate statement
 > - ❌ AVOID: Do not rely on `PIPESTATUS`
+>
+> Linter: `BSG044`
 
 Reading `$?` on the next line only works if nothing else ran in between, which is a condition nobody can keep while the script grows. Testing the command itself cannot go stale. An explicit `|| true` is also a marker: it tells the next reader that the failure was considered, rather than forgotten.
 
@@ -2531,6 +2589,8 @@ fi
 > - ✔️ SHOULD: Name the function the caller called in an error message: `FUNCNAME[1]` from a helper that function calls directly, a name it passes in, or the first public function on the stack
 > - ❌ AVOID: Do not return a bare non-zero status with no message
 > - ❌ AVOID: Do not reach a fixed deeper level such as `FUNCNAME[2]`, which names another function as soon as the call depth changes
+>
+> Linter: `BSG053`, `BSG054`
 
 The function that fails is the only place that still knows the file name, the URL and the option that produced the failure. A caller that receives only `1` can either report nothing useful or invent context.
 
@@ -2692,6 +2752,8 @@ done < "${file}"
 > - ✔️ SHOULD: Save the caller's handlers before a scoped call and restore them after it
 > - ✔️ SHOULD: Run the cleanup of a scoped call before a caller's handler that exits, then re-raise the signal, so that handler and the default action still happen
 > - ❌ AVOID: Do not install a library handler with a plain `trap '…' SIG`, and do not clear one with `trap - EXIT`
+>
+> Linter: `BSG055`
 
 A library shares the trap table with the script that sourced it. `trap '…' INT` in a library silently removes the script's own Ctrl-C handling, and `trap - EXIT` removes cleanup someone else registered. Order matters as much: a caller's handler that calls `exit` ends the shell before a handler appended after it runs, so a lock is never released and child jobs keep running. A scoped call therefore installs its handler alone, puts the saved ones back when it ends, and re-raises the signal it caught.
 
@@ -2966,6 +3028,8 @@ chmod +x "$output_path"
 > - ❌ AVOID: Do not trap `INT` or `TERM` with a cleanup that does not exit: the script carries on after Ctrl-C
 > - ❌ AVOID: Do not let an empty or failed path turn a staging file into one in the working directory
 > - ❌ AVOID: Do not open a name in a shared directory with a plain `>`: it follows a symlink planted there, even when the name carries `$$` or `$BASHPID`
+>
+> Linter: `BSG045`, `BSG046`, `BSG082`
 
 A predictable name in a world-writable directory is both a collision and a symlink attack. Registering the cleanup at creation time is the only way to have it run on the paths that matter: the error path and the interrupt.
 
@@ -3183,6 +3247,8 @@ chown -R "${owner}" "${target}"
 > - ✔️ SHOULD: Expose the whole suite behind one entrypoint, so that running the tests takes no arguments to remember
 > - ✔️ SHOULD: Run the linter and the formatter, `shellcheck` and `shfmt`, from the same place as the tests
 > - ❌ AVOID: Do not test a function by running the script that calls it
+>
+> Linter: `BSG060`
 
 A library function is only testable if it has no side effects of its own: it takes its arguments through `dybatpho::expect_args`, writes its result to `STDOUT` and its diagnostics to `STDERR`, and performs state changes through `dybatpho::dry_run`. Writing the test at the same time as the function is what keeps that shape honest.
 
@@ -3225,6 +3291,8 @@ assert_success
 >
 > - ✔️ SHOULD: Pass `-` when an assertion reads its expected value from a here-document: `assert_output - << EOF`
 > - ❌ AVOID: Do not write `assert_output << EOF`, `refute_output << EOF`, `assert_stderr << EOF` or `refute_stderr << EOF` without `-`
+>
+> Linter: `BSG061`
 
 bats-assert reads standard input only when the expected value is `-`. Without it the here-document is ignored, and `assert_output` with no argument only checks that there was some output, so the test passes whatever the output says. A suite that ran green for years can hold dozens of these, each one hiding a stale expectation or a real bug.
 
@@ -3264,6 +3332,8 @@ EOF
 > - ✔️ SHOULD: Create every fixture under the test's own temporary directory (`BATS_TEST_TMPDIR`)
 > - ✔️ SHOULD: Start a child shell from a script file rather than with `bash -c` when coverage is measured
 > - ❌ AVOID: Do not let a test act on the repository, the home directory or any path outside its temporary directory
+>
+> Linter: `BSG062`
 
 A suite inherits the environment of whatever runs it. A git hook exports `GIT_DIR` and `GIT_INDEX_FILE`, so a test that runs `git init` and `git commit` in a temporary directory writes into the real repository instead — one such run turned a repository bare and replaced its remote. A coverage tool that traces through `BASH_SOURCE` also sees nothing in a `bash -c` child, whose `BASH_SOURCE` is empty.
 
