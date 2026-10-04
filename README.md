@@ -2235,6 +2235,7 @@ dybatpho::curl_auth_bearer "${api}/v1/me" "${API_TOKEN}" "${response}" || dybatp
 > [!TIP]
 >
 > - ✔️ SHOULD: Build JSON and YAML with `jq` or `yq` and `--arg`, or through one escaping helper that every module uses
+> - ✔️ SHOULD: Build a JSON object with `dybatpho::json_object`, and quote one value with `dybatpho::json_string`. (dybatpho)
 > - ✔️ SHOULD: Write CSV fields through one helper that doubles quotes and quotes a field holding the delimiter, a quote or a line break
 > - ❌ AVOID: Do not splice a value into structured text with `printf '{"key":"%s"}'` `BSG086`
 
@@ -2252,6 +2253,15 @@ jq -n --arg text "${message}" --arg channel "${channel}" \
 ```sh
 # A message with a quote or a line break produces invalid JSON
 printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
+```
+
+`dybatpho::json_object` takes names and values in turn and passes every value to `jq` or `yq` as data, in one call; a name written `name:json` takes a JSON document instead of a string. `dybatpho::json_string` escapes one value in Bash, without a process. (dybatpho)
+
+**Recommended**
+
+```sh
+local payload
+payload="$(dybatpho::json_object text "${message}" channel "${channel}" tags:json '["deploy"]')" || return 1
 ```
 
 ### Printing Data

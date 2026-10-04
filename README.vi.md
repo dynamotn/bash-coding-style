@@ -2237,6 +2237,7 @@ dybatpho::curl_auth_bearer "${api}/v1/me" "${API_TOKEN}" "${response}" || dybatp
 > [!TIP]
 >
 > - ✔️ NÊN: Dựng JSON và YAML bằng `jq` hoặc `yq` với `--arg`, hoặc qua một helper escape duy nhất mà mọi module dùng chung
+> - ✔️ NÊN: Dựng một object JSON bằng `dybatpho::json_object`, và quote một giá trị bằng `dybatpho::json_string`. (dybatpho)
 > - ✔️ NÊN: Ghi các trường CSV qua một helper duy nhất, nhân đôi dấu nháy và đặt trong nháy những trường chứa dấu phân cách, dấu nháy hay ký tự xuống dòng
 > - ❌ TRÁNH: Không ghép một giá trị vào văn bản có cấu trúc bằng `printf '{"key":"%s"}'` `BSG086`
 
@@ -2254,6 +2255,15 @@ jq -n --arg text "${message}" --arg channel "${channel}" \
 ```sh
 # Một thông điệp có dấu nháy hay xuống dòng tạo ra JSON không hợp lệ
 printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
+```
+
+`dybatpho::json_object` nhận lần lượt tên và giá trị, rồi truyền mọi giá trị cho `jq` hoặc `yq` dưới dạng dữ liệu, trong một lần gọi; một tên viết `name:json` nhận một tài liệu JSON thay vì một chuỗi. `dybatpho::json_string` escape một giá trị ngay trong Bash, không cần tiến trình. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local payload
+payload="$(dybatpho::json_object text "${message}" channel "${channel}" tags:json '["deploy"]')" || return 1
 ```
 
 ### In dữ liệu
