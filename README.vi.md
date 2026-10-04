@@ -28,6 +28,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Hàm sử dụng chung](#h%C3%A0m-s%E1%BB%AD-d%E1%BB%A5ng-chung)
   - [Môi trường kế thừa](#m%C3%B4i-tr%C6%B0%E1%BB%9Dng-k%E1%BA%BF-th%E1%BB%ABa)
   - [Tác dụng phụ của thư viện](#t%C3%A1c-d%E1%BB%A5ng-ph%E1%BB%A5-c%E1%BB%A7a-th%C6%B0-vi%E1%BB%87n)
+  - [Nhập liệu tương tác](#nh%E1%BA%ADp-li%E1%BB%87u-t%C6%B0%C6%A1ng-t%C3%A1c)
 - [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-%C4%91%E1%BA%B7t-t%C3%AAn)
   - [Tên hàm](#t%C3%AAn-h%C3%A0m)
   - [Tên biến](#t%C3%AAn-bi%E1%BA%BFn)
@@ -681,6 +682,37 @@ function text::split {
   IFS=,
   read -r -a parts <<< "$1"
 }
+```
+
+### Nhập liệu tương tác
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Chỉ hỏi khi standard input là terminal, hoặc tôn trọng chế độ không tương tác, và nếu không thì dùng một mặc định an toàn
+> - ✔️ NÊN: Đặt timeout và câu trả lời mặc định cho một lời nhắc
+> - ❌ TRÁNH: Không gọi `read` hay một lời nhắc vô điều kiện trong script có thể chạy trong CI, cron hay một pipe
+
+Khi không có terminal, `read` chờ một đầu vào không bao giờ tới — một job CI treo cho tới khi hết thời gian — hoặc đọc dòng tiếp theo của một pipe vốn dành cho thứ khác. Kiểm tra `[[ -t 0 ]]` và có sẵn một mặc định giúp lần chạy không người trông tự quyết định, còn timeout giới hạn lần chạy có tương tác.
+
+**Nên dùng**
+
+```sh
+local answer="n"
+if [[ -t 0 ]] && ! dybatpho::is true "${CI-}"; then
+  read -r -t 30 -p "Overwrite ${file}? [y/N] " answer || answer="n"
+fi
+[[ "${answer}" == [yY] ]] || return 1
+```
+
+**Không nên dùng**
+
+```sh
+# Treo mãi trong CI, và đọc nhầm dòng từ một pipe
+read -r -p "Overwrite ${file}? [y/N] " answer
+[[ "${answer}" == [yY] ]] || return 1
 ```
 
 ## Quy ước đặt tên

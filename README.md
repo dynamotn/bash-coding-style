@@ -27,6 +27,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Common Function Scripts](#common-function-scripts)
   - [Ambient Environment](#ambient-environment)
   - [Library Side Effects](#library-side-effects)
+  - [Interactive Input](#interactive-input)
 - [Naming Conventions](#naming-conventions)
   - [Function Names](#function-names)
   - [Variable Names](#variable-names)
@@ -679,6 +680,37 @@ function text::split {
   IFS=,
   read -r -a parts <<< "$1"
 }
+```
+
+### Interactive Input
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Ask only when standard input is a terminal, or honour a non-interactive mode, and fall back to a safe default otherwise
+> - ✔️ SHOULD: Give a prompt a timeout and a default answer
+> - ❌ AVOID: Do not call `read` or a prompt unconditionally in a script that may run in CI, cron or a pipe
+
+With no terminal, `read` waits for input that never comes — a CI job hangs until its timeout — or reads the next line of a pipe meant for something else. Checking `[[ -t 0 ]]` and having a default makes the unattended run decide on its own, and a timeout bounds the interactive one.
+
+**Recommended**
+
+```sh
+local answer="n"
+if [[ -t 0 ]] && ! dybatpho::is true "${CI-}"; then
+  read -r -t 30 -p "Overwrite ${file}? [y/N] " answer || answer="n"
+fi
+[[ "${answer}" == [yY] ]] || return 1
+```
+
+**Discouraged**
+
+```sh
+# Hangs forever in CI, and reads the wrong line from a pipe
+read -r -p "Overwrite ${file}? [y/N] " answer
+[[ "${answer}" == [yY] ]] || return 1
 ```
 
 ## Naming Conventions
