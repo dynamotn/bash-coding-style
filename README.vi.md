@@ -3715,6 +3715,7 @@ printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
 > - ✔️ NÊN: Chiếm lock bằng một lời gọi nguyên tử đồng thời ghi lại người giữ: `ln -s "<pid>:<host>" "${lock}"`
 > - ✔️ NÊN: Thu hồi lock cũ bằng cách đổi tên nó sang chỗ khác rồi kiểm tra bản đã chuyển đúng là người giữ mà bạn đã xác định là chết
 > - ✔️ NÊN: Đánh giá người giữ mà bạn đã đọc được, không phải bất kỳ ai đang giữ tên đó vào lúc kiểm tra
+> - ✔️ NÊN: Lấy lock bằng `dybatpho::lock_acquire` và `dybatpho::lock_release`, hoặc chạy một lệnh dưới lock bằng `dybatpho::with_lock`, các hàm tuân theo mọi điều trên. (dybatpho)
 > - ❌ TRÁNH: Không xóa một lock cũ rồi mới chiếm nó: hai tiến trình có thể cùng làm vậy và cùng giữ lock
 > - ❌ TRÁNH: Không tạo lock trước rồi mới ghi chủ sở hữu sau
 
@@ -3749,6 +3750,17 @@ if ! kill -0 "$(cat "${lock}/pid")"; then
   rm -rf -- "${lock}"
   mkdir "${lock}"
 fi
+```
+
+`dybatpho::lock_acquire` chiếm lock bằng một `ln -s` có target ghi tên người giữ, thu hồi lock cũ bằng cách chuyển nó sang chỗ khác rồi kiểm tra người giữ đã chuyển, và chờ tối đa số giây được truyền vào. `dybatpho::lock_release` chỉ giải phóng lock mà tiến trình hiện tại đang giữ, còn `dybatpho::with_lock` giải phóng nó cả khi lệnh thất bại hay script bị ngắt. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::with_lock "deploy" 30 -- ./deploy.sh --env prod
+
+dybatpho::lock_acquire "sync" || dybatpho::die "Another sync is running"
+dybatpho::trap 'dybatpho::lock_release "sync"' EXIT
 ```
 
 ### Ghi nguyên tử
