@@ -2131,6 +2131,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell, with `dybatpho::secret_register`. (dybatpho)
 > - ❌ AVOID: Do not put a secret in the arguments of a command, where every user of the host reads it from `ps` and `/proc` `BSG081`
 > - ✔️ SHOULD: Create a file that holds a secret under `umask 077`, in a subshell, or with `mktemp`, which creates it `0600`
+> - ✔️ SHOULD: Write a secret to a file with `dybatpho::secret_write_file`, which creates it `0600` and moves it into place. (dybatpho)
 > - ❌ AVOID: Do not log a request URL or body whole when it may carry a token
 > - ❌ AVOID: Do not write a secret with a plain `>` under the default umask: the file is readable by every user, at least until a later `chmod`
 
@@ -2173,6 +2174,14 @@ API_TOKEN="$(< "${token_file}")"
 dybatpho::secret_register "${API_TOKEN}"
 # Logs "Request failed for ***"
 dybatpho::error "Request failed for ${API_TOKEN}"
+```
+
+`dybatpho::secret_write_file` takes the name of the variable that holds the secret, not its value, so the value never appears in an argument list. It writes under `umask 077` to a staging file that nobody else can have created, and renames it over the destination. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::secret_write_file "${XDG_CONFIG_HOME:-${HOME}/.config}/app/token" API_TOKEN
 ```
 
 ### Building Structured Output
