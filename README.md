@@ -1535,9 +1535,13 @@ Custom rule
 > - ✔️ SHOULD: Stop with `dybatpho::die` when the script cannot continue, and `return 1` when the caller can. (dybatpho)
 > - ✔️ SHOULD: Say what failed and what the user can do about it, in a message on `STDERR`
 > - ✔️ SHOULD: Install the common handlers once, at the top of an entrypoint, with `dybatpho::register_common_handlers`. (dybatpho)
+> - ✔️ SHOULD: Name the function the caller called in an error message: `FUNCNAME[1]` from a helper that function calls directly, a name it passes in, or the first public function on the stack
 > - ❌ AVOID: Do not return a bare non-zero status with no message
+> - ❌ AVOID: Do not reach a fixed deeper level such as `FUNCNAME[2]`, which names another function as soon as the call depth changes
 
 The function that fails is the only place that still knows the file name, the URL and the option that produced the failure. A caller that receives only `1` can either report nothing useful or invent context.
+
+The message also has to name the call the script made. `FUNCNAME[2]` is right only for as long as the helper sits exactly two calls below the public function; called directly, or through one more layer, it names the script's own caller or a test runner instead, and points away from the call at fault.
 
 **Recommended**
 
@@ -1555,6 +1559,15 @@ function get_dir {
   fi
   echo "${config_dir}"
 }
+
+# The caller passes its own name, so the message names it at any depth
+function __csv_require_text {
+  [[ "$2" != *$'\x1f'* ]] || dybatpho::die "$1: The input contains the unit separator"
+}
+
+function csv::read {
+  __csv_require_text "${FUNCNAME[0]}" "$1"
+}
 ```
 
 **Discouraged**
@@ -1564,6 +1577,11 @@ function get_dir {
 function get_dir {
   [[ -e "$1" ]] || return 1
   echo "$1"
+}
+
+# Names csv::read's caller, not csv::read, when csv::read calls this directly
+function __csv_require_text {
+  [[ "$1" != *$'\x1f'* ]] || dybatpho::die "${FUNCNAME[2]}: The input contains the unit separator"
 }
 ```
 

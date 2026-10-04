@@ -1531,9 +1531,13 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Dừng bằng `dybatpho::die` khi script không thể tiếp tục, và `return 1` khi bên gọi còn xử lý được. (dybatpho)
 > - ✔️ NÊN: Nói rõ cái gì hỏng và người dùng có thể làm gì, trong một thông báo trên `STDERR`
 > - ✔️ NÊN: Cài đặt các trình xử lý chung một lần, ở đầu script thực thi, bằng `dybatpho::register_common_handlers`. (dybatpho)
+> - ✔️ NÊN: Ghi trong thông báo lỗi tên hàm mà bên gọi đã gọi: `FUNCNAME[1]` từ một helper được hàm đó gọi trực tiếp, một tên do hàm đó truyền vào, hoặc hàm public đầu tiên trên stack
 > - ❌ TRÁNH: Không trả về mã khác `0` trần trụi mà không kèm thông báo
+> - ❌ TRÁNH: Không lấy một cấp cố định sâu hơn như `FUNCNAME[2]`, vì nó trỏ sang hàm khác ngay khi độ sâu lời gọi thay đổi
 
 Hàm bị lỗi là nơi duy nhất còn biết tên tệp, địa chỉ URL và tùy chọn nào đã dẫn tới lỗi đó. Bên gọi chỉ nhận được số `1` thì hoặc là không báo được gì hữu ích, hoặc là phải bịa ra bối cảnh.
+
+Thông báo cũng phải ghi đúng lời gọi mà script đã thực hiện. `FUNCNAME[2]` chỉ đúng chừng nào helper nằm đúng hai cấp dưới hàm public; khi được gọi trực tiếp, hoặc qua thêm một lớp, nó lại ghi tên bên gọi của script hay một trình chạy test, và chỉ sai chỗ gây lỗi.
 
 **Nên dùng**
 
@@ -1551,6 +1555,15 @@ function get_dir {
   fi
   echo "${config_dir}"
 }
+
+# Bên gọi truyền tên của chính nó, nên thông báo ghi đúng tên ở mọi độ sâu
+function __csv_require_text {
+  [[ "$2" != *$'\x1f'* ]] || dybatpho::die "$1: The input contains the unit separator"
+}
+
+function csv::read {
+  __csv_require_text "${FUNCNAME[0]}" "$1"
+}
 ```
 
 **Không nên dùng**
@@ -1560,6 +1573,11 @@ function get_dir {
 function get_dir {
   [[ -e "$1" ]] || return 1
   echo "$1"
+}
+
+# Ghi tên bên gọi của csv::read, không phải csv::read, khi csv::read gọi nó trực tiếp
+function __csv_require_text {
+  [[ "$1" != *$'\x1f'* ]] || dybatpho::die "${FUNCNAME[2]}: The input contains the unit separator"
 }
 ```
 
