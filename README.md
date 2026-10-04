@@ -287,6 +287,7 @@ Executable files should either have a `.sh` extension (strongly recommended) or 
 > [!TIP]
 >
 > - ✔️ SHOULD: Use `sudo` if you need to elevate privileges
+> - ⚠️ CONSIDER: Run one command as root with `dybatpho::privilege_run`, which uses `sudo` or `doas` only when the script is not root already. (dybatpho)
 > - ✔️ SHOULD: Clear the loader and interpreter variables before a privileged wrapper hands over with `exec`: `LD_PRELOAD`, `LD_LIBRARY_PATH`, `LD_AUDIT`, `BASH_ENV`, `ENV`, `PYTHONPATH`, `PERL5LIB`, `RUBYLIB`, `NODE_PATH`, or start the program under `env -i`
 > - ❌ AVOID: SUID and SGID are prohibited
 > - ❌ AVOID: `sudo` is also prohibited in CI scripts. (custom) `BSG035`
@@ -328,6 +329,14 @@ exec env -i HOME="${HOME}" PATH=/usr/bin:/bin /usr/libexec/app/helper "$@"
 ```sh
 # Run through sudo: LD_PRELOAD and BASH_ENV reach the helper
 exec /usr/libexec/app/helper "$@"
+```
+
+`dybatpho::privilege_run` runs the command directly when the script is already root, and otherwise through `sudo`, or `doas` where there is no `sudo`, honouring `DRY_RUN`. It neither refuses to run in CI nor clears `LD_PRELOAD` and the other loader variables, so the rules above still apply to it. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::privilege_run -- systemctl restart nginx
 ```
 
 ## Environment
