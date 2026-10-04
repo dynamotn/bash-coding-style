@@ -2164,7 +2164,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 >
 > - ✔️ NÊN: Truyền token, mật khẩu và URL bí mật cho một lệnh qua tệp cấu hình, standard input hoặc biến môi trường: `curl --config`, `-H @file`
 > - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
-> - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi. (dybatpho)
+> - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi, bằng `dybatpho::secret_register`. (dybatpho)
 > - ✔️ NÊN: Tạo tệp chứa bí mật dưới `umask 077`, trong một subshell, hoặc bằng `mktemp`, công cụ tạo tệp với quyền `0600`
 > - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc` `BSG081`
 > - ❌ TRÁNH: Không ghi nguyên vẹn URL hay body của request vào log khi nó có thể mang token
@@ -2198,6 +2198,17 @@ printf '%s\n' "${TOKEN}" > "${XDG_CONFIG_HOME}/app/token"
 
 # URL webhook chính là bí mật, và giờ nó nằm trong log
 dybatpho::error "Request to ${WEBHOOK_URL} failed"
+```
+
+`dybatpho::secret_register` thêm một giá trị, và từng dòng của giá trị nhiều dòng, vào danh sách che mà mọi hàm log của dybatpho áp dụng, nên một thông báo mang giá trị đó sẽ in ra `***`. Hàm chạy trong shell của bên gọi: nếu đăng ký bên trong `$(...)`, giá trị sẽ bị quên khi substitution kết thúc. (dybatpho)
+
+**Nên dùng**
+
+```sh
+API_TOKEN="$(< "${token_file}")"
+dybatpho::secret_register "${API_TOKEN}"
+# Ghi log "Request failed for ***"
+dybatpho::error "Request failed for ${API_TOKEN}"
 ```
 
 ### Dựng output có cấu trúc
