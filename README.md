@@ -1384,7 +1384,9 @@ dybatpho::error "Request to ${WEBHOOK_URL} failed"
 > - ✔️ SHOULD: Append with `names+=("${value}")`
 > - ✔️ SHOULD: Expand with `"${names[@]}"`, and take the length with `"${#names[@]}"`
 > - ✔️ SHOULD: Expand an array that may be empty as `${names[@]+"${names[@]}"}` when the script supports Bash 4.3 under `set -u`
+> - ✔️ SHOULD: Iterate the indexes an array really has with `"${!names[@]}"`
 > - ❌ AVOID: Do not keep several values in one string separated by spaces
+> - ❌ AVOID: Do not walk `0` to `${#names[@]} - 1` over an array the function did not build itself
 
 A space-separated string is only an array as long as no element contains a space. An array stays correct whatever the elements are, and `"${names[@]}"` passes exactly as many arguments as there are elements, including none.
 
@@ -1414,6 +1416,26 @@ docker build $BUILD_ARGS .
 # `unbound variable` on Bash 4.3 under `set -u` when no option was added
 local -a extra=()
 docker run "${extra[@]}" "${image}"
+```
+
+An array can be sparse: after `unset 'names[1]'` the indexes are `0` and `2`, and `${#names[@]}` is `2`. A counting loop then reads the missing index — empty, or `unbound variable` under `set -u` — and never reaches the last element.
+
+**Recommended**
+
+```sh
+local index
+for index in "${!names[@]}"; do
+  printf '%s=%s\n' "${index}" "${names[index]}"
+done
+```
+
+**Discouraged**
+
+```sh
+# Misses the last element of a sparse array, and stops on the gap under set -u
+for ((index = 0; index < ${#names[@]}; index++)); do
+  printf '%s\n' "${names[index]}"
+done
 ```
 
 ### Pipes to While

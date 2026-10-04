@@ -1380,7 +1380,9 @@ dybatpho::error "Request to ${WEBHOOK_URL} failed"
 > - ✔️ NÊN: Thêm phần tử bằng `names+=("${value}")`
 > - ✔️ NÊN: Khai triển bằng `"${names[@]}"`, và lấy số phần tử bằng `"${#names[@]}"`
 > - ✔️ NÊN: Khai triển một mảng có thể rỗng bằng `${names[@]+"${names[@]}"}` khi script hỗ trợ Bash 4.3 dưới `set -u`
+> - ✔️ NÊN: Duyệt các chỉ số mà mảng thật sự có bằng `"${!names[@]}"`
 > - ❌ TRÁNH: Không giữ nhiều giá trị trong một chuỗi ngăn cách bằng dấu cách
+> - ❌ TRÁNH: Không duyệt từ `0` đến `${#names[@]} - 1` trên một mảng mà hàm không tự dựng
 
 Một chuỗi ngăn cách bằng dấu cách chỉ là mảng chừng nào chưa có phần tử nào chứa dấu cách. Mảng thì luôn đúng dù các phần tử là gì, và `"${names[@]}"` truyền đi đúng bằng số phần tử đang có, kể cả khi không có phần tử nào.
 
@@ -1410,6 +1412,26 @@ docker build $BUILD_ARGS .
 # `unbound variable` trên Bash 4.3 dưới `set -u` khi không có tùy chọn nào được thêm
 local -a extra=()
 docker run "${extra[@]}" "${image}"
+```
+
+Một mảng có thể thưa: sau `unset 'names[1]'` các chỉ số là `0` và `2`, còn `${#names[@]}` là `2`. Khi đó một vòng lặp đếm sẽ đọc chỉ số bị thiếu — rỗng, hoặc `unbound variable` khi có `set -u` — và không bao giờ tới được phần tử cuối.
+
+**Nên dùng**
+
+```sh
+local index
+for index in "${!names[@]}"; do
+  printf '%s=%s\n' "${index}" "${names[index]}"
+done
+```
+
+**Không nên dùng**
+
+```sh
+# Bỏ sót phần tử cuối của mảng thưa, và dừng ở chỗ trống khi có set -u
+for ((index = 0; index < ${#names[@]}; index++)); do
+  printf '%s\n' "${names[index]}"
+done
 ```
 
 ### Đường ống vào while
