@@ -2161,6 +2161,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > [!TIP]
 >
 > - ✔️ SHOULD: Pass tokens, passwords and secret URLs to a command through a config file, standard input or the environment: `curl --config`, `-H @file`
+> - ✔️ SHOULD: Send a bearer token with `dybatpho::curl_auth_bearer`, which hands it to `curl` through a private config file. (dybatpho)
 > - ✔️ SHOULD: Redact a URL before it reaches a message or a log: keep the scheme and the host, drop the user info, the path and the query
 > - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell, with `dybatpho::secret_register`. (dybatpho)
 > - ✔️ SHOULD: Create a file that holds a secret under `umask 077`, in a subshell, or with `mktemp`, which creates it `0600`
@@ -2216,6 +2217,14 @@ dybatpho::error "Request failed for ${API_TOKEN}"
 
 ```sh
 dybatpho::secret_write_file "${XDG_CONFIG_HOME:-${HOME}/.config}/app/token" API_TOKEN
+```
+
+`dybatpho::curl_auth_bearer` puts the `Authorization` header in a configuration file only the script can read, and passes that file to `curl`, so the token is in no process's arguments. It retries and fails like `dybatpho::curl_do`. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::curl_auth_bearer "${api}/v1/me" "${API_TOKEN}" "${response}" || dybatpho::die "Cannot read the profile"
 ```
 
 ### Building Structured Output
