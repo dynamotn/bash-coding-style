@@ -45,6 +45,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Features and Bugs](#features-and-bugs)
   - [Use ShellCheck](#use-shellcheck)
   - [Command Substitution](#command-substitution)
+  - [Validation in Command Substitution](#validation-in-command-substitution)
   - [Test Expression](#test-expression)
   - [Testing Strings](#testing-strings)
   - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
@@ -1026,6 +1027,60 @@ SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 ```sh
 # Nesting requires escaping, and the two markers look alike
 SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
+```
+
+### Validation in Command Substitution
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Return a value that has to be validated through a nameref, with an `*_into` helper, or validate the input before the substitution
+> - ✔️ SHOULD: Check the status of a substitution whose function can stop the script: `value="$(fn)" || return $?`
+> - ❌ AVOID: Do not call a function that can stop the script, through `dybatpho::die` or `exit`, inside `$(...)` and carry on unconditionally
+
+`$(...)` runs in a subshell, so `dybatpho::die` or `exit` inside it ends only that subshell. Under `set -e` the failed assignment still stops the script, but wherever errexit is suspended — inside `if`, after `||`, `&&` or `!`, or under bats' `run` — the caller carries on with an empty value, right after a fatal error that claimed the script was stopping. A helper that validates in the caller's shell stops the script where it should.
+
+**Recommended**
+
+```sh
+# Validates in the caller's shell, then sets the variable the caller named
+function __net_port_into {
+  local -n __net_port_ref="$1"
+  [[ "$2" =~ ^[0-9]+$ ]] || dybatpho::die "Not a port: $2"
+  __net_port_ref="$2"
+}
+
+function net::connect {
+  local port
+  __net_port_into port "$1"
+  nc "${HOST}" "${port}"
+}
+
+# A substitution that cannot be avoided has its status checked
+local version
+version="$(pkg::read_version "${file}")" || return $?
+```
+
+**Discouraged**
+
+```sh
+function net::port {
+  [[ "$1" =~ ^[0-9]+$ ]] || dybatpho::die "Not a port: $1"
+  printf '%s\n' "$1"
+}
+
+function net::connect {
+  local port
+  port="$(net::port "$1")"
+  nc "${HOST}" "${port}"
+}
+
+# The refusal ends only the subshell: nc runs with an empty port
+if ! net::connect "${raw_port}"; then
+  dybatpho::warn "Could not connect"
+fi
 ```
 
 ### Test Expression

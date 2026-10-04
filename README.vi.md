@@ -46,6 +46,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Tính năng và lỗi](#tinh-nang-va-l%E1%BB%97i)
   - [Sử dụng ShellCheck](#s%E1%BB%AD-d%E1%BB%A5ng-shellcheck)
   - [Thay thế lệnh](#thay-th%E1%BA%BF-l%E1%BB%87nh)
+  - [Kiểm tra đầu vào trong thay thế lệnh](#ki%E1%BB%83m-tra-d%E1%BA%A7u-vao-trong-thay-th%E1%BA%BF-l%E1%BB%87nh)
   - [Biểu thức kiểm tra](#bi%E1%BB%83u-th%E1%BB%A9c-ki%E1%BB%83m-tra)
   - [Kiểm tra chuỗi](#ki%E1%BB%83m-tra-chu%E1%BB%97i)
   - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-ky-t%E1%BB%B1-d%E1%BA%A1i-di%E1%BB%87n-cho-ten-t%E1%BB%87p)
@@ -1022,6 +1023,60 @@ SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 ```sh
 # Lồng nhau thì phải thoát ký tự, và hai dấu trông giống hệt nhau
 SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
+```
+
+### Kiểm tra đầu vào trong thay thế lệnh
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Trả về một giá trị cần kiểm tra qua nameref, bằng một helper `*_into`, hoặc kiểm tra đầu vào trước khi thay thế lệnh
+> - ✔️ NÊN: Kiểm tra mã thoát của một lệnh thay thế mà hàm bên trong có thể dừng script: `value="$(fn)" || return $?`
+> - ❌ TRÁNH: Không gọi một hàm có thể dừng script, qua `dybatpho::die` hay `exit`, bên trong `$(...)` rồi chạy tiếp vô điều kiện
+
+`$(...)` chạy trong một subshell, nên `dybatpho::die` hay `exit` bên trong chỉ kết thúc subshell đó. Dưới `set -e`, phép gán thất bại vẫn dừng script, nhưng ở bất kỳ chỗ nào errexit bị tạm tắt — trong `if`, sau `||`, `&&` hay `!`, hoặc dưới `run` của bats — bên gọi vẫn chạy tiếp với một giá trị rỗng, ngay sau một thông báo lỗi nghiêm trọng nói rằng script sắp dừng. Một helper kiểm tra ngay trong shell của bên gọi sẽ dừng script đúng chỗ.
+
+**Nên dùng**
+
+```sh
+# Kiểm tra trong shell của bên gọi, rồi gán biến mà bên gọi đặt tên
+function __net_port_into {
+  local -n __net_port_ref="$1"
+  [[ "$2" =~ ^[0-9]+$ ]] || dybatpho::die "Not a port: $2"
+  __net_port_ref="$2"
+}
+
+function net::connect {
+  local port
+  __net_port_into port "$1"
+  nc "${HOST}" "${port}"
+}
+
+# Một lệnh thay thế không tránh được thì phải kiểm tra mã thoát của nó
+local version
+version="$(pkg::read_version "${file}")" || return $?
+```
+
+**Không nên dùng**
+
+```sh
+function net::port {
+  [[ "$1" =~ ^[0-9]+$ ]] || dybatpho::die "Not a port: $1"
+  printf '%s\n' "$1"
+}
+
+function net::connect {
+  local port
+  port="$(net::port "$1")"
+  nc "${HOST}" "${port}"
+}
+
+# Lỗi chỉ kết thúc subshell: nc chạy với port rỗng
+if ! net::connect "${raw_port}"; then
+  dybatpho::warn "Could not connect"
+fi
 ```
 
 ### Biểu thức kiểm tra
