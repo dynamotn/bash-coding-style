@@ -2693,6 +2693,7 @@ function fs::count_lines {
 > - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))`
 > - ✔️ SHOULD: Increment with `((count += 1))` or `count=$((count + 1))`
 > - ✔️ SHOULD: Compute with fractions in `awk`, passing the values with `-v`: Bash arithmetic is integer only
+> - ✔️ SHOULD: Compute and compare decimal numbers with `dybatpho::math_add`, `dybatpho::math_compare`, `dybatpho::math_gt` and the other `math_*` helpers, which keep every decimal digit. (dybatpho)
 > - ❌ AVOID: Do not use `let`, `expr` or the deprecated `$[ ... ]`
 > - ❌ AVOID: Do not feed a number read from input, a file name or a date straight into `(( ))`: a leading zero makes it octal `BSG087`
 > - ❌ AVOID: Do not write `((count++))` or `((count--))` as a statement under `set -e` `BSG088`
@@ -2785,6 +2786,18 @@ fi
 [[ "${load}" > "1.5" ]]
 # syntax error: invalid arithmetic operator
 ((load > 1.5))
+```
+
+`awk` computes in binary floating point, where `0.1 + 0.2` is not `0.3`. The `math_*` helpers work on the decimal digits, so they give `0.3`, compare `1.10` below `1.9`, and stop the script on a value that is not a number. (dybatpho)
+
+**Recommended**
+
+```sh
+local total
+total="$(dybatpho::math_add "${price}" "${shipping}")" || return 1
+if dybatpho::math_gt "${load}" 1.5; then
+  dybatpho::warn "Load is ${load}"
+fi
 ```
 
 ### Portability
