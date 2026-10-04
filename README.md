@@ -1760,8 +1760,10 @@ function fs::count_lines {
 > - ✔️ SHOULD: Omit the `$` on variables inside `(( ... ))`
 > - ✔️ SHOULD: Declare counters with `local -i` when the variable only ever holds an integer
 > - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))`
+> - ✔️ SHOULD: Increment with `((count += 1))` or `count=$((count + 1))`
 > - ❌ AVOID: Do not use `let`, `expr` or the deprecated `$[ ... ]`
 > - ❌ AVOID: Do not feed a number read from input, a file name or a date straight into `(( ))`: a leading zero makes it octal
+> - ❌ AVOID: Do not write `((count++))` or `((count--))` as a statement under `set -e`
 > - ⚠️ CONSIDER: Be careful with a bare `(( ... ))` under `set -e`: an expression whose value is `0` has exit status `1` and stops the script
 
 `(( ... ))` is a builtin, so it is faster than `expr` and does not need a subprocess, and it treats its operands as numbers rather than strings.
@@ -1812,6 +1814,24 @@ minute="$(date +%M)"
 if ((minute >= 30)); then
   half=second
 fi
+```
+
+`(( ))` returns the status of its value, and `count++` evaluates to the value *before* the increment. When that value is `0`, the statement returns 1 and `set -e` ends the script — on the very first pass of a loop that counts from zero.
+
+**Recommended**
+
+```sh
+local count=0
+((count += 1))
+count=$((count + 1))
+```
+
+**Discouraged**
+
+```sh
+local count=0
+# Evaluates to 0, returns 1, and set -e ends the script here
+((count++))
 ```
 
 ### Portability

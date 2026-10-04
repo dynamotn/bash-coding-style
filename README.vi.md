@@ -1756,8 +1756,10 @@ function fs::count_lines {
 > - ✔️ NÊN: Bỏ dấu `$` trước tên biến bên trong `(( ... ))`
 > - ✔️ NÊN: Khai báo biến đếm bằng `local -i` khi biến đó chỉ chứa số nguyên
 > - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))`
+> - ✔️ NÊN: Tăng giá trị bằng `((count += 1))` hoặc `count=$((count + 1))`
 > - ❌ TRÁNH: Không dùng `let`, `expr` hay cú pháp `$[ ... ]` đã lỗi thời
 > - ❌ TRÁNH: Không đưa thẳng một số đọc từ đầu vào, tên tệp hay ngày tháng vào `(( ))`: số 0 ở đầu biến nó thành hệ bát phân
+> - ❌ TRÁNH: Không viết `((count++))` hay `((count--))` như một câu lệnh khi có `set -e`
 > - ⚠️ CÂN NHẮC: Cẩn thận với `(( ... ))` đứng một mình dưới `set -e`: biểu thức có giá trị `0` sẽ trả về mã thoát `1` và làm dừng script
 
 `(( ... ))` là lệnh dựng sẵn, nên nhanh hơn `expr` và không cần tạo tiến trình con, đồng thời coi các toán hạng là số chứ không phải chuỗi.
@@ -1808,6 +1810,24 @@ minute="$(date +%M)"
 if ((minute >= 30)); then
   half=second
 fi
+```
+
+`(( ))` trả về trạng thái theo giá trị của nó, và `count++` cho ra giá trị *trước* khi tăng. Khi giá trị đó là `0`, câu lệnh trả về 1 và `set -e` kết thúc script — ngay ở vòng đầu tiên của một vòng lặp đếm từ không.
+
+**Nên dùng**
+
+```sh
+local count=0
+((count += 1))
+count=$((count + 1))
+```
+
+**Không nên dùng**
+
+```sh
+local count=0
+# Cho ra 0, trả về 1, và set -e kết thúc script tại đây
+((count++))
 ```
 
 ### Tính di động
