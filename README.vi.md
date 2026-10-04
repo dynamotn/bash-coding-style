@@ -1356,9 +1356,10 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 >
 > - ✔️ NÊN: Đặt shebang và chú thích đầu tệp trước, rồi tới hằng số, rồi tới các khai báo hàm, và cuối cùng là dòng duy nhất khởi động script
 > - ✔️ NÊN: Giữ lời gọi hàm vào (entrypoint) ở dòng cuối cùng của tệp
+> - ⚠️ CÂN NHẮC: Bảo vệ lời gọi đó bằng `[[ "${BASH_SOURCE[0]}" == "$0" ]]` khi một bài kiểm thử source script để lấy các hàm của nó
 > - ❌ TRÁNH: Không đặt mã thực thi xen giữa các khai báo hàm
 
-Một tệp chỉ gồm các khai báo và kết thúc bằng một lời gọi thì có thể đọc theo thứ tự bất kỳ, và việc `source` nó để kiểm thử không gây tác dụng phụ nào. Mã nằm rải rác giữa các hàm sẽ chạy ngay lúc nạp tệp, khiến script không thể `source` được và rất khó lần ra khi nó hỏng giữa chừng.
+Một tệp chỉ gồm các khai báo và kết thúc bằng một lời gọi thì có thể đọc theo thứ tự bất kỳ, và việc `source` nó để kiểm thử không chạy gì ngoài lời gọi đó — thứ mà một điều kiện trên `BASH_SOURCE` bỏ qua, vì `${BASH_SOURCE[0]}` chỉ bằng `$0` khi tệp được thực thi. Mã nằm rải rác giữa các hàm sẽ chạy ngay lúc nạp tệp, khiến script không thể `source` được và rất khó lần ra khi nó hỏng giữa chừng.
 
 **Nên dùng**
 
@@ -1379,7 +1380,10 @@ function _main {
   ...
 }
 
-dybatpho::generate_from_spec _spec_main "$@"
+# Chỉ chạy khi được thực thi, để bài kiểm thử có thể source tệp lấy các hàm
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  dybatpho::generate_from_spec _spec_main "$@"
+fi
 ```
 
 **Không nên dùng**
@@ -1717,6 +1721,8 @@ mapfile -t matches < <(compgen -G "${search_pattern}" || true)
 rm -f *.tmp
 ```
 
+dybatpho bật `nullglob`, `globstar` và `extglob` cho script source nó, nên ở đó một glob không khớp gì sẽ khai triển thành rỗng; bước kiểm tra bên dưới không tốn gì và giữ cho một hàm vẫn đúng khi được source mà không có thư viện. (dybatpho)
+
 Khi không có `nullglob`, một mẫu không khớp tệp nào được giữ nguyên, nên vòng lặp chạy một lần với `file` là `/etc/app/*.conf` và lệnh thất bại trên một cái tên không tồn tại — hoặc, với thao tác ghi, sẽ tạo ra nó.
 
 **Nên dùng**
@@ -1830,7 +1836,9 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
 > - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi. (dybatpho)
 > - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc`
+> - ✔️ NÊN: Tạo tệp chứa bí mật dưới `umask 077`, trong một subshell, hoặc bằng `mktemp`, công cụ tạo tệp với quyền `0600`
 > - ❌ TRÁNH: Không ghi nguyên vẹn URL hay body của request vào log khi nó có thể mang token
+> - ❌ TRÁNH: Không ghi bí mật bằng một `>` trơn dưới umask mặc định: tệp đọc được bởi mọi người dùng, ít nhất cho tới một lệnh `chmod` sau đó
 
 Tham số của một tiến trình đang chạy là công khai trên máy, và log sống lâu hơn lần chạy đã ghi ra nó. Một URL webhook thường chính là thông tin xác thực, nên in URL của một request thất bại cũng làm lộ nó y như in một token. Vì vậy bí mật đi theo đường khác — một tệp cấu hình riêng mà curl đọc, standard input, một biến được kế thừa — và một thông báo chỉ gọi tên request bằng host của nó.
 
@@ -1842,6 +1850,9 @@ dybatpho::create_temp config ".curl"
 printf 'header = "Authorization: Bearer %s"\n' "${TOKEN}" > "${config}"
 curl --config "${config}" --fail-with-body "${url}"
 
+# Một tệp tồn tại lâu hơn lần chạy: được tạo ở chế độ riêng tư
+(umask 077 && printf '%s\n' "${TOKEN}" > "${XDG_CONFIG_HOME}/app/token")
+
 # Chỉ có scheme và host vào log: https://hooks.slack.com/[redacted]
 dybatpho::error "Request to ${redacted_url} failed"
 ```
@@ -1851,6 +1862,9 @@ dybatpho::error "Request to ${redacted_url} failed"
 ```sh
 # Token nằm trong `ps` suốt thời gian request chạy
 curl -H "Authorization: Bearer ${TOKEN}" "${url}"
+
+# Ai cũng đọc được ngay khi nó vừa tồn tại, kể cả khi có chmod theo sau
+printf '%s\n' "${TOKEN}" > "${XDG_CONFIG_HOME}/app/token"
 
 # URL webhook chính là bí mật, và giờ nó nằm trong log
 dybatpho::error "Request to ${WEBHOOK_URL} failed"
@@ -2616,6 +2630,8 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Ưu tiên lệnh dựng sẵn hơn lệnh bên ngoài cho cùng một việc: khai triển tham số thay cho `sed`, `(( ... ))` thay cho `expr`, `[[ ... ]]` thay cho `test`
 > - ✔️ NÊN: Dùng công cụ bên ngoài như `sed`, `awk` hay `yq` khi nó làm mã ngắn gọn và rõ ràng hơn hẳn
 > - ✔️ NÊN: Gọi công cụ bên ngoài qua `command <tool>` khi có thể đang tồn tại một alias hay một hàm cùng tên. (tùy chỉnh)
+> - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)`
+> - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
 
 Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
@@ -2636,6 +2652,9 @@ function misc::replace_version {
 
 # Đúng tệp nhị phân, không phải alias của người dùng hay một hàm bọc
 mapfile -d '' -t files < <(command find "${root}" -type f -print0)
+
+# Không cần tiến trình nào để đọc một tệp
+version="$(< "${version_file}")"
 ```
 
 **Không nên dùng**
@@ -2646,6 +2665,11 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 
 # Không đọc nổi, mà cũng chỉ làm đúng việc của hai dòng sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
+
+# Một tiến trình cho mỗi dòng, cho việc mà một lệnh sed làm một lần
+while IFS= read -r line; do
+  printf '%s\n' "$(echo "${line}" | sed 's/old/new/')"
+done < "${file}"
 ```
 
 ### Trình xử lý tín hiệu
@@ -2772,16 +2796,20 @@ grep "${pattern}" "${file}"
 >
 > - ✔️ NÊN: Dùng `curl --fail` (hoặc kiểm tra HTTP status) trước khi dùng một response
 > - ✔️ NÊN: Tải về thành tệp, kiểm tra nó với checksum hoặc chữ ký, rồi mới chạy
+> - ✔️ NÊN: Giới hạn thời gian của mọi lời gọi mạng: `curl --connect-timeout` và `--max-time`, hoặc `timeout` bao quanh một công cụ không có giới hạn riêng
+> - ✔️ NÊN: Chỉ thử lại những gì có thể thành công ở lần sau, với số lần có giới hạn: `curl --retry 3` thử lại khi hết thời gian hay gặp lỗi 5xx, không thử lại một lỗi 404
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh`
 
 Không có `--fail`, curl thoát với 0 khi gặp 404 hay 500 và trả trang lỗi về như thể đó là nội dung. Khi pipe vào `bash`, trang đó — hoặc một lần tải bị cắt giữa chừng, hoặc bất cứ thứ gì kẻ tấn công trả về — được chạy từng dòng trước khi có gì kiểm tra nó, và một dòng dở dang có thể làm điều mà không script hoàn chỉnh nào làm.
+
+Một request không có giới hạn thời gian sẽ chờ chừng nào server còn giữ kết nối: một job CI khi đó treo cho tới khi runner kết liễu nó, mà không có thông báo nào cho biết lời gọi nào bị kẹt. Một vòng thử lại quanh một request thất bại vĩnh viễn — sai URL, thiếu quyền — chỉ làm thất bại đến chậm hơn.
 
 **Nên dùng**
 
 ```sh
 local installer
 dybatpho::create_temp installer ".sh"
-curl --fail -sSL "${url}" -o "${installer}"
+curl --fail -sSL --connect-timeout 10 --max-time 300 --retry 3 "${url}" -o "${installer}"
 dybatpho::verify_checksum "${installer}" "sha256:${expected_sha256}"
 bash "${installer}"
 ```
@@ -3048,16 +3076,22 @@ fi
 >
 > - ✔️ NÊN: Ghi nội dung mới vào một tệp staging trong thư mục của đích, rồi `mv` nó đè lên đích
 > - ✔️ NÊN: Công bố các tệp mô tả một tệp — sidecar checksum, chỉ mục — trước chính tệp đó
+> - ✔️ NÊN: Cho tệp staging quyền truy cập, và khi có thể cả chủ sở hữu, của tệp mà nó thay thế: `cp -p` tệp cũ đè lên nó trước khi ghi, hoặc dùng `dybatpho::file_write_atomic`. (dybatpho)
 > - ❌ TRÁNH: Không ghi lại một tệp tại chỗ bằng `>` hay `>>` khi tiến trình khác có thể đang đọc nó
 > - ❌ TRÁNH: Không đặt tệp staging ở thư mục khác: `mv` giữa hai hệ thống tệp là sao chép, không phải đổi tên
+> - ❌ TRÁNH: Không chuyển một tệp vừa tạo bằng `mktemp` đè lên một tệp mà người dùng hay dịch vụ khác đọc: nó được tạo với quyền `0600`
 
 Người đọc mở một tệp đang bị ghi lại bằng `>` sẽ thấy nó rỗng hoặc ghi dở, và một lần sập sẽ để nó lại như vậy. `rename()` trong cùng một hệ thống tệp thay tên chỉ trong một bước, nên người đọc thấy hoặc tệp cũ hoặc tệp mới. Thứ tự giữa các tệp cũng quan trọng: một bản sao lưu được chuyển vào chỗ trước khi checksum của nó được ghi, trong chốc lát hoặc mãi mãi, là một bản sao lưu không qua được bước kiểm tra.
+
+Phép đổi tên cũng thay luôn inode, và cùng với nó là quyền truy cập và chủ sở hữu. `mktemp` tạo tệp với quyền `0600` và thuộc người dùng của script, nên một tệp cấu hình vốn là `0644` và được một dịch vụ đọc, sau khi ghi lại, trở thành một tệp mà dịch vụ đó không mở được nữa.
 
 **Nên dùng**
 
 ```sh
 local staging
 staging="$(mktemp "$(dirname -- "${path}")/.staging.XXXXXXXX")"
+# Nhận lại quyền truy cập, và chủ sở hữu khi được phép, của tệp bị thay thế
+[[ ! -e "${path}" ]] || cp -p -- "${path}" "${staging}"
 render_config > "${staging}"
 mv -f -- "${staging}" "${path}"
 

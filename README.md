@@ -1354,9 +1354,10 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 >
 > - ✔️ SHOULD: Put the shebang and the file header comment first, then constants, then function declarations, then the single line that starts the script
 > - ✔️ SHOULD: Keep the call to the entrypoint as the last line of the file
+> - ⚠️ CONSIDER: Guard that call with `[[ "${BASH_SOURCE[0]}" == "$0" ]]` when a test sources the script for its functions
 > - ❌ AVOID: Do not place executable code between function declarations
 
-A file that is a list of declarations followed by one call can be read in any order, and sourcing it for a test has no side effects. Code scattered between functions runs at load time, which makes the script impossible to source and hard to reason about when it fails halfway.
+A file that is a list of declarations followed by one call can be read in any order, and sourcing it for a test runs nothing but that call — which a guard on `BASH_SOURCE` skips, since `${BASH_SOURCE[0]}` is `$0` only when the file is executed. Code scattered between functions runs at load time, which makes the script impossible to source and hard to reason about when it fails halfway.
 
 **Recommended**
 
@@ -1377,7 +1378,10 @@ function _main {
   ...
 }
 
-dybatpho::generate_from_spec _spec_main "$@"
+# Runs only when executed, so a test can source the file for its functions
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  dybatpho::generate_from_spec _spec_main "$@"
+fi
 ```
 
 **Discouraged**
@@ -1715,6 +1719,8 @@ mapfile -t matches < <(compgen -G "${search_pattern}" || true)
 rm -f *.tmp
 ```
 
+dybatpho turns on `nullglob`, `globstar` and `extglob` for the script that sources it, so there an unmatched glob expands to nothing; the check below costs nothing and keeps a function correct when it is sourced without the library. (dybatpho)
+
 Without `nullglob`, a pattern that matches no file is left as it is, so the loop runs once with `file` set to `/etc/app/*.conf` and the command fails on a name that does not exist — or, for a write, creates it.
 
 **Recommended**
@@ -1828,7 +1834,9 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ SHOULD: Redact a URL before it reaches a message or a log: keep the scheme and the host, drop the user info, the path and the query
 > - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell. (dybatpho)
 > - ❌ AVOID: Do not put a secret in the arguments of a command, where every user of the host reads it from `ps` and `/proc`
+> - ✔️ SHOULD: Create a file that holds a secret under `umask 077`, in a subshell, or with `mktemp`, which creates it `0600`
 > - ❌ AVOID: Do not log a request URL or body whole when it may carry a token
+> - ❌ AVOID: Do not write a secret with a plain `>` under the default umask: the file is readable by every user, at least until a later `chmod`
 
 The arguments of a running process are public on the host, and a log outlives the run that wrote it. A webhook URL is often the credential itself, so printing the URL of a failed request leaks it as surely as printing a token. Secrets therefore travel out of band — a private config file curl reads, standard input, an inherited variable — and a message names a request by its host only.
 
@@ -1840,6 +1848,9 @@ dybatpho::create_temp config ".curl"
 printf 'header = "Authorization: Bearer %s"\n' "${TOKEN}" > "${config}"
 curl --config "${config}" --fail-with-body "${url}"
 
+# A file that outlives the run: created private
+(umask 077 && printf '%s\n' "${TOKEN}" > "${XDG_CONFIG_HOME}/app/token")
+
 # Only the scheme and the host reach the log: https://hooks.slack.com/[redacted]
 dybatpho::error "Request to ${redacted_url} failed"
 ```
@@ -1849,6 +1860,9 @@ dybatpho::error "Request to ${redacted_url} failed"
 ```sh
 # The token is in `ps` for as long as the request runs
 curl -H "Authorization: Bearer ${TOKEN}" "${url}"
+
+# Readable by everyone the moment it exists, even if a chmod follows
+printf '%s\n' "${TOKEN}" > "${XDG_CONFIG_HOME}/app/token"
 
 # The webhook URL is the secret, and now it is in the log
 dybatpho::error "Request to ${WEBHOOK_URL} failed"
@@ -2614,6 +2628,8 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ SHOULD: Prefer a builtin to an external command for the same job: parameter expansion over `sed`, `(( ... ))` over `expr`, `[[ ... ]]` over `test`
 > - ✔️ SHOULD: Use an external tool such as `sed`, `awk` or `yq` when it makes the code clearly shorter and clearer
 > - ✔️ SHOULD: Call an external tool through `command <tool>` when an alias or a function of the same name may be in scope. (custom)
+> - ✔️ SHOULD: Read a whole file with `$(< file)`, not `$(cat file)`
+> - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
 
 Builtins do not fork, so they are faster in a loop, and they behave the same on every machine. The exception is text transformation over many lines, where `sed` or `awk` say in one line what parameter expansion needs a loop for.
@@ -2634,6 +2650,9 @@ function misc::replace_version {
 
 # The real binary, not a user alias or a wrapper function
 mapfile -d '' -t files < <(command find "${root}" -type f -print0)
+
+# No process for reading a file
+version="$(< "${version_file}")"
 ```
 
 **Discouraged**
@@ -2644,6 +2663,11 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 
 # Unreadable, and it does the same as a two-line sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
+
+# A process per line, for what one sed does once
+while IFS= read -r line; do
+  printf '%s\n' "$(echo "${line}" | sed 's/old/new/')"
+done < "${file}"
 ```
 
 ### Signal Handlers
@@ -2770,16 +2794,20 @@ grep "${pattern}" "${file}"
 >
 > - ✔️ SHOULD: Use `curl --fail` (or check the HTTP status) before using a response
 > - ✔️ SHOULD: Download to a file, verify it against a checksum or signature, then run it
+> - ✔️ SHOULD: Bound every network call: `curl --connect-timeout` and `--max-time`, or `timeout` around a tool that has no limit of its own
+> - ✔️ SHOULD: Retry only what may succeed on a second try, a bounded number of times: `curl --retry 3` retries timeouts and 5xx answers, not a 404
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh`
 
 Without `--fail`, curl exits 0 on a 404 or a 500 and hands over the error page as if it were the content. Piped into `bash`, that page — or a download cut off halfway, or whatever an attacker served — runs line by line before anything checked it, and a partial line can do something no complete script would.
+
+A request with no time limit waits as long as the server keeps the connection open: a CI job then hangs until the runner kills it, with no message saying which call stalled. A retry loop around a request that fails for good — a wrong URL, a missing permission — only makes the failure slower.
 
 **Recommended**
 
 ```sh
 local installer
 dybatpho::create_temp installer ".sh"
-curl --fail -sSL "${url}" -o "${installer}"
+curl --fail -sSL --connect-timeout 10 --max-time 300 --retry 3 "${url}" -o "${installer}"
 dybatpho::verify_checksum "${installer}" "sha256:${expected_sha256}"
 bash "${installer}"
 ```
@@ -3046,16 +3074,22 @@ fi
 >
 > - ✔️ SHOULD: Write new content to a staging file in the destination's directory, then `mv` it onto the destination
 > - ✔️ SHOULD: Publish the files that describe a file — a checksum sidecar, an index — before the file itself
+> - ✔️ SHOULD: Give the staging file the mode, and where possible the owner, of the file it replaces: `cp -p` the old file onto it before writing, or use `dybatpho::file_write_atomic`. (dybatpho)
 > - ❌ AVOID: Do not rewrite a file in place with `>` or `>>` while other processes may read it
 > - ❌ AVOID: Do not stage in another directory: `mv` across filesystems is a copy, not a rename
+> - ❌ AVOID: Do not move a fresh `mktemp` file over a file other users or services read: it is created `0600`
 
 A reader that opens a file being rewritten with `>` sees it empty or half written, and a crash leaves it that way. `rename()` within one filesystem replaces the name in one step, so a reader sees the old file or the new one. Order matters across files too: a backup moved into place before its checksum is written is, for a moment or for good, a backup that fails verification.
+
+The rename replaces the inode too, and with it the mode and the owner. `mktemp` creates its file `0600` and owned by the script's user, so a config that was `0644` and read by a service is, after the rewrite, a file the service can no longer open.
 
 **Recommended**
 
 ```sh
 local staging
 staging="$(mktemp "$(dirname -- "${path}")/.staging.XXXXXXXX")"
+# Take over the mode, and the owner when allowed, of the file being replaced
+[[ ! -e "${path}" ]] || cp -p -- "${path}" "${staging}"
 render_config > "${staging}"
 mv -f -- "${staging}" "${path}"
 
