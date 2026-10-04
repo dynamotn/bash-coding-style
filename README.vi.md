@@ -59,6 +59,8 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Eval là xấu xa](#eval-l%C3%A0-x%E1%BA%A5u-xa)
   - [Bí mật và thông tin xác thực](#b%C3%AD-m%E1%BA%ADt-v%C3%A0-th%C3%B4ng-tin-x%C3%A1c-th%E1%BB%B1c)
   - [Dựng output có cấu trúc](#d%E1%BB%B1ng-output-c%C3%B3-c%E1%BA%A5u-tr%C3%BAc)
+  - [In dữ liệu](#in-d%E1%BB%AF-li%E1%BB%87u)
+  - [Here document](#here-document)
   - [Mảng](#m%E1%BA%A3ng)
   - [Đường ống vào while](#%C4%91%C6%B0%E1%BB%9Dng-%E1%BB%91ng-v%C3%A0o-while)
   - [Thay thế tiến trình](#thay-th%E1%BA%BF-ti%E1%BA%BFn-tr%C3%ACnh)
@@ -1837,6 +1839,89 @@ jq -n --arg text "${message}" --arg channel "${channel}" \
 ```sh
 # Một thông điệp có dấu nháy hay xuống dòng tạo ra JSON không hợp lệ
 printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
+```
+
+### In dữ liệu
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: In dữ liệu — một biến, một đường dẫn, bất cứ thứ gì đến từ bên ngoài — bằng `printf '%s\n' "${value}"`
+> - ✔️ NÊN: Đặt các phần thay đổi vào đối số của `printf`, không bao giờ đặt vào chuỗi định dạng
+> - ⚠️ CÂN NHẮC: `echo` vẫn ổn cho một thông báo cố định không chứa biến và không bắt đầu bằng `-`
+> - ❌ TRÁNH: Không dùng `echo -e` hay `echo -n`, và không `echo` một giá trị có thể bắt đầu bằng `-` hoặc chứa dấu gạch chéo ngược
+
+`echo` đọc các đối số đầu tiên như tùy chọn và, tùy shell và `xpg_echo`, khai triển dấu gạch chéo ngược. `echo "${value}"` không in gì khi giá trị là `-n`, và biến `C:\temp` thành một ký tự tab khi giá trị đi qua `echo -e`. `printf '%s\n'` in đối số đúng như nó là, trên mọi hệ thống. Một giá trị trong chuỗi định dạng cũng không an toàn: dấu `%` trong đó bị đọc như một chỉ thị.
+
+**Nên dùng**
+
+```sh
+printf '%s\n' "${value}"
+printf 'Processed: %s\n' "${count}" >&2
+printf '%s' "${token}" | gpg --encrypt --recipient "${recipient}"
+
+# Một thông báo cố định không chứa biến
+echo "Installing tools"
+```
+
+**Không nên dùng**
+
+```sh
+# Không in gì khi value là -n
+echo "${value}"
+# Khai triển dấu gạch chéo ngược trong dữ liệu, và -n không di động
+echo -e "${message}"
+echo -n "${token}" | gpg --encrypt --recipient "${recipient}"
+```
+
+### Here document
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đặt dấu phân cách trong dấu nháy, `<< 'EOF'`, khi văn bản không cần khai triển, để `$`, dấu backtick và dấu gạch chéo ngược giữ nguyên như đã viết
+> - ✔️ NÊN: Chỉ để dấu phân cách không có nháy khi văn bản cố ý khai triển biến
+> - ✔️ NÊN: Viết phần thân và dấu phân cách đóng ở đầu dòng
+> - ❌ TRÁNH: Không dùng `<<-` để thụt lề một here document: nó chỉ bỏ ký tự tab, thứ mà hướng dẫn này không cho phép
+> - ❌ TRÁNH: Không escape từng dấu `$` của một văn bản không khai triển gì: hãy đặt dấu phân cách trong nháy
+
+Một dấu phân cách không có nháy chạy khai triển tham số, thay thế lệnh và phép tính số học trên toàn bộ phần thân: một văn bản trợ giúp nhắc tới `$(date)` sẽ chạy `date`, và một mức giá `$5` trở thành đối số thứ năm. Dạng có nháy khiến phần thân được giữ nguyên. `<<-` chỉ bỏ các tab ở đầu dòng, nên với thụt lề hai khoảng trắng của hướng dẫn này nó không làm gì cả, và `EOF` đóng không được tìm thấy.
+
+**Nên dùng**
+
+```sh
+# Văn bản nguyên văn: không có gì trong đó được khai triển
+cat << 'EOF'
+Run: ${HOME}/bin/tool --all
+EOF
+
+# Cố ý khai triển
+cat << EOF > "${config}"
+user = ${user}
+cache = ${cache_dir}
+EOF
+
+# Bên trong một khối, phần thân và EOF vẫn bắt đầu ở đầu dòng
+if [[ -n "${verbose}" ]]; then
+  cat << EOF
+Using ${config}
+EOF
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Escape bằng tay: sót một chỗ là nó bị khai triển
+cat << EOF
+Run: \$HOME/bin/tool, cost: \$5
+EOF
+
+# Thụt lề bằng tab với <<-, hỏng ngay khi trình soạn thảo đổi tab thành khoảng trắng
+	cat <<- EOF
+	Using ${config}
+	EOF
 ```
 
 ### Mảng

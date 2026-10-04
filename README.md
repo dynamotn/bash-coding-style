@@ -58,6 +58,8 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Eval is Evil](#eval-is-evil)
   - [Secrets and Credentials](#secrets-and-credentials)
   - [Building Structured Output](#building-structured-output)
+  - [Printing Data](#printing-data)
+  - [Here Documents](#here-documents)
   - [Arrays](#arrays)
   - [Pipes to While](#pipes-to-while)
   - [Process Substitution](#process-substitution)
@@ -1835,6 +1837,89 @@ jq -n --arg text "${message}" --arg channel "${channel}" \
 ```sh
 # A message with a quote or a line break produces invalid JSON
 printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
+```
+
+### Printing Data
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Print data — a variable, a path, anything that came from outside — with `printf '%s\n' "${value}"`
+> - ✔️ SHOULD: Put the variable parts in the arguments of `printf`, never in its format string
+> - ⚠️ CONSIDER: `echo` is fine for a fixed message that holds no variable and does not start with `-`
+> - ❌ AVOID: Do not use `echo -e` or `echo -n`, and do not `echo` a value that may start with `-` or hold a backslash
+
+`echo` reads its first arguments as options and, depending on the shell and `xpg_echo`, expands backslashes. `echo "${value}"` prints nothing when the value is `-n`, and turns `C:\temp` into a tab when the value goes through `echo -e`. `printf '%s\n'` prints its argument as it is, on every system. A value in the format string is just as unsafe: a `%` in it is read as a directive.
+
+**Recommended**
+
+```sh
+printf '%s\n' "${value}"
+printf 'Processed: %s\n' "${count}" >&2
+printf '%s' "${token}" | gpg --encrypt --recipient "${recipient}"
+
+# A fixed message with no variable
+echo "Installing tools"
+```
+
+**Discouraged**
+
+```sh
+# Prints nothing when value is -n
+echo "${value}"
+# Expands backslashes in the data, and -n is not portable
+echo -e "${message}"
+echo -n "${token}" | gpg --encrypt --recipient "${recipient}"
+```
+
+### Here Documents
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Quote the delimiter, `<< 'EOF'`, when the text holds no expansion, so `$`, backticks and backslashes stay as written
+> - ✔️ SHOULD: Leave the delimiter unquoted only when the text expands variables on purpose
+> - ✔️ SHOULD: Write the body and the closing delimiter at the start of the line
+> - ❌ AVOID: Do not use `<<-` to indent a here document: it strips tabs only, which the guide does not allow
+> - ❌ AVOID: Do not escape every `$` of a text that expands nothing: quote the delimiter instead
+
+An unquoted delimiter runs parameter expansion, command substitution and arithmetic on the whole body: a help text that mentions `$(date)` runs `date`, and a price of `$5` becomes the fifth argument. The quoted form makes the body literal. `<<-` removes leading tabs and nothing else, so with the two-space indentation of this guide it does nothing, and the closing `EOF` is not found.
+
+**Recommended**
+
+```sh
+# Literal text: nothing in it is expanded
+cat << 'EOF'
+Run: ${HOME}/bin/tool --all
+EOF
+
+# Expansion on purpose
+cat << EOF > "${config}"
+user = ${user}
+cache = ${cache_dir}
+EOF
+
+# Inside a block, the body and EOF still start the line
+if [[ -n "${verbose}" ]]; then
+  cat << EOF
+Using ${config}
+EOF
+fi
+```
+
+**Discouraged**
+
+```sh
+# Escaping by hand: miss one and it expands
+cat << EOF
+Run: \$HOME/bin/tool, cost: \$5
+EOF
+
+# Tab-indented with <<-, which breaks as soon as an editor turns the tabs into spaces
+	cat <<- EOF
+	Using ${config}
+	EOF
 ```
 
 ### Arrays
