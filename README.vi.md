@@ -1236,7 +1236,9 @@ rm -f *.tmp
 
 > [!TIP]
 >
+> - ✔️ NÊN: Đặt mọi giá trị ghép vào một chuỗi cho `eval`, hay cho `dybatpho::dry_run` một chuỗi, trong `printf %q`; tốt hơn nữa là truyền một danh sách tham số
 > - ❌ TRÁNH: Không dùng `eval`
+> - ❌ TRÁNH: Không dựng chuỗi lệnh cho `eval` hay `dybatpho::dry_run "<string>"` từ dữ liệu chưa được escape
 
 `eval` khiến ta không thể biết, chỉ bằng cách đọc script, lệnh nào sẽ chạy hay biến nào sẽ được gán. Khi cần thực thi một giá trị, hãy dùng mảng cho lệnh và tham số của nó, hoặc tham chiếu gián tiếp cho biến.
 
@@ -1254,6 +1256,28 @@ dybatpho::dry_run pacman -S "${options[@]}" "${packages[@]}"
 ```sh
 # Người đọc không biết nó khai triển thành gì, và một dấu cách trong $name sẽ làm hỏng nó
 eval "pacman -S ${options} ${packages}"
+```
+
+Khi một chuỗi buộc phải được đánh giá — code parser được sinh ra, một mẫu lệnh cấu hình sẵn, một dòng chạy thử — mọi mẩu dữ liệu ghép vào đều trở thành code. Một đường dẫn có dấu cách bị tách làm hai tham số, và một giá trị chứa `$(...)` hay `;` sẽ được chạy. `printf %q` escape một giá trị để shell đọc lại đúng thành một từ, còn một danh sách tham số thì không bao giờ đi qua parser.
+
+**Nên dùng**
+
+```sh
+# Danh sách tham số: không có gì bị parse lại lần nữa
+dybatpho::dry_run gpg --detach-sign --output "${signature}" "${path}"
+
+# Một mẫu buộc phải là chuỗi: mọi giá trị đều được quote cho shell
+local command
+printf -v command '%s %q %q' "${SIGN_CMD}" "${signature}" "${path}"
+eval "${command}"
+```
+
+**Không nên dùng**
+
+```sh
+# Đường dẫn có dấu cách bị tách, và đường dẫn chứa $(...) sẽ chạy nó
+dybatpho::dry_run "${SIGN_CMD} ${signature} ${path}"
+eval "${SIGN_CMD} ${signature} ${path}"
 ```
 
 ### Mảng

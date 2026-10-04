@@ -1240,7 +1240,9 @@ rm -f *.tmp
 
 > [!TIP]
 >
+> - ✔️ SHOULD: Quote every value spliced into a string for `eval`, or for a one-string `dybatpho::dry_run`, with `printf %q`; better, pass an argument list
 > - ❌ AVOID: Do not use `eval`
+> - ❌ AVOID: Do not build a command string for `eval` or `dybatpho::dry_run "<string>"` from data that is not escaped
 
 `eval` makes it impossible to tell, by reading the script, what will run or which variables will be set. When a value has to be executed, use an array for the command and its arguments, or an indirect reference for the variable.
 
@@ -1258,6 +1260,28 @@ dybatpho::dry_run pacman -S "${options[@]}" "${packages[@]}"
 ```sh
 # The reader cannot tell what this expands to, and a space in $name breaks it
 eval "pacman -S ${options} ${packages}"
+```
+
+When a string has to be evaluated — generated parser code, a configured command template, a dry-run line — every piece of data spliced into it is code. A path with a space splits into two arguments, and a value holding `$(...)` or `;` runs. `printf %q` escapes a value so the shell reads it back as exactly one word, and an argument list never goes through the parser at all.
+
+**Recommended**
+
+```sh
+# An argument list: nothing is parsed a second time
+dybatpho::dry_run gpg --detach-sign --output "${signature}" "${path}"
+
+# A template that has to stay a string: every value quoted for the shell
+local command
+printf -v command '%s %q %q' "${SIGN_CMD}" "${signature}" "${path}"
+eval "${command}"
+```
+
+**Discouraged**
+
+```sh
+# A path with a space splits, and a path holding $(...) runs it
+dybatpho::dry_run "${SIGN_CMD} ${signature} ${path}"
+eval "${SIGN_CMD} ${signature} ${path}"
 ```
 
 ### Arrays
