@@ -2991,8 +2991,10 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ SHOULD: Call an external tool through `command <tool>` when an alias or a function of the same name may be in scope. (custom)
 > - ✔️ SHOULD: Read a whole file with `$(< file)`, not `$(cat file)` `BSG108`
 > - ✔️ SHOULD: End `find -exec` with `+`, which runs the command once for many files, unless the command takes exactly one `BSG119`
+> - ✔️ SHOULD: Split a string into fields with `read`, `IFS=: read -r user _ uid _ <<< "${record}"`, naming each field you discard `_` `BSG126`
 > - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
+> - ❌ AVOID: Do not pipe a string into `cut` or `awk '{print $2}'` to take one field of it
 
 Builtins do not fork, so they are faster in a loop, and they behave the same on every machine. The exception is text transformation over many lines, where `sed` or `awk` say in one line what parameter expansion needs a loop for.
 
@@ -3045,6 +3047,24 @@ command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} +
 ```sh
 # One gzip per file
 command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
+```
+
+`read` splits a string on the characters of `IFS` and puts each field in a name, so a record is taken apart in the shell, and every field gets a name the code below can read. `_` takes a field that is not needed, and the last name takes the rest of the line.
+
+**Recommended**
+
+```sh
+local user uid home
+IFS=: read -r user _ uid _ _ home _ <<< "${record}"
+```
+
+**Discouraged**
+
+```sh
+# Three processes, and each field read from a separate pass
+user="$(echo "${record}" | cut -d: -f1)"
+uid="$(echo "${record}" | cut -d: -f3)"
+home="$(echo "${record}" | awk -F: '{print $6}')"
 ```
 
 ### Signal Handlers

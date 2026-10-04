@@ -2993,8 +2993,10 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Gọi công cụ bên ngoài qua `command <tool>` khi có thể đang tồn tại một alias hay một hàm cùng tên. (tùy chỉnh)
 > - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)` `BSG108`
 > - ✔️ NÊN: Kết thúc `find -exec` bằng `+`, cách này chạy lệnh một lần cho nhiều tệp, trừ khi lệnh chỉ nhận đúng một tệp `BSG119`
+> - ✔️ NÊN: Tách một chuỗi thành các trường bằng `read`, `IFS=: read -r user _ uid _ <<< "${record}"`, đặt tên `_` cho mỗi trường bỏ đi `BSG126`
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
+> - ❌ TRÁNH: Không pipe một chuỗi vào `cut` hay `awk '{print $2}'` chỉ để lấy một trường của nó
 
 Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
 
@@ -3047,6 +3049,24 @@ command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} +
 ```sh
 # Mỗi tệp một lần chạy gzip
 command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
+```
+
+`read` tách một chuỗi theo các ký tự của `IFS` và đặt mỗi trường vào một tên, nên một bản ghi được tách ngay trong shell, và mỗi trường có một tên để phần mã bên dưới đọc. `_` nhận một trường không cần dùng, còn tên cuối cùng nhận phần còn lại của dòng.
+
+**Nên dùng**
+
+```sh
+local user uid home
+IFS=: read -r user _ uid _ _ home _ <<< "${record}"
+```
+
+**Không nên dùng**
+
+```sh
+# Ba tiến trình, và mỗi trường được đọc trong một lượt riêng
+user="$(echo "${record}" | cut -d: -f1)"
+uid="$(echo "${record}" | cut -d: -f3)"
+home="$(echo "${record}" | awk -F: '{print $6}')"
 ```
 
 ### Trình xử lý tín hiệu
