@@ -67,6 +67,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
   - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-toan)
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
+  - [Assertion output nghiêm ngặt](#assertion-output-nghiem-ng%E1%BA%B7t)
 
 <!-- tocstop -->
 
@@ -1779,4 +1780,41 @@ bash ./scripts/test.sh --all
 # nên không biết được cái nào hỏng
 run bash ./scripts/setup.sh --all
 assert_success
+```
+
+### Assertion output nghiêm ngặt
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Truyền `-` khi một assertion đọc giá trị mong đợi từ here-document: `assert_output - << EOF`
+> - ❌ TRÁNH: Không viết `assert_output << EOF`, `refute_output << EOF`, `assert_stderr << EOF` hay `refute_stderr << EOF` mà thiếu `-`
+
+bats-assert chỉ đọc standard input khi giá trị mong đợi là `-`. Thiếu nó thì here-document bị bỏ qua, và `assert_output` không có tham số chỉ kiểm tra rằng đã có output, nên test qua dù output nói gì đi nữa. Một bộ test xanh suốt nhiều năm có thể chứa hàng chục chỗ như vậy, mỗi chỗ che đi một kỳ vọng đã lỗi thời hoặc một lỗi thật.
+
+**Nên dùng**
+
+```sh
+@test "table::print aligns the columns" {
+  run table::print "name,count" "apples,3"
+  assert_output - << 'EOF'
+name    count
+apples  3
+EOF
+}
+```
+
+**Không nên dùng**
+
+```sh
+@test "table::print aligns the columns" {
+  run table::print "name,count" "apples,3"
+  # Qua với mọi output không rỗng: here-document không bao giờ được đọc
+  assert_output << 'EOF'
+name    count
+apples  3
+EOF
+}
 ```

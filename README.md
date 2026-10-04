@@ -66,6 +66,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Check State Before Changing](#check-state-before-changing)
   - [Safely Creating Temporary Files](#safely-creating-temporary-files)
 - [Testing](#testing)
+  - [Strict Output Assertions](#strict-output-assertions)
 
 <!-- tocstop -->
 
@@ -1783,4 +1784,41 @@ bash ./scripts/test.sh --all
 # and cannot say which of them broke
 run bash ./scripts/setup.sh --all
 assert_success
+```
+
+### Strict Output Assertions
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Pass `-` when an assertion reads its expected value from a here-document: `assert_output - << EOF`
+> - ❌ AVOID: Do not write `assert_output << EOF`, `refute_output << EOF`, `assert_stderr << EOF` or `refute_stderr << EOF` without `-`
+
+bats-assert reads standard input only when the expected value is `-`. Without it the here-document is ignored, and `assert_output` with no argument only checks that there was some output, so the test passes whatever the output says. A suite that ran green for years can hold dozens of these, each one hiding a stale expectation or a real bug.
+
+**Recommended**
+
+```sh
+@test "table::print aligns the columns" {
+  run table::print "name,count" "apples,3"
+  assert_output - << 'EOF'
+name    count
+apples  3
+EOF
+}
+```
+
+**Discouraged**
+
+```sh
+@test "table::print aligns the columns" {
+  run table::print "name,count" "apples,3"
+  # Passes for any non-empty output: the here-document is never read
+  assert_output << 'EOF'
+name    count
+apples  3
+EOF
+}
 ```
