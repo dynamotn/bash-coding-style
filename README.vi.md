@@ -2788,6 +2788,7 @@ dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
 > - ✔️ NÊN: Dò tính năng trước khi dùng một cờ chỉ GNU có, và giữ một nhánh di động: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix` `BSG083`
 > - ✔️ NÊN: Phát hiện tính năng bằng cách thử chính cờ đó, không dựa vào tên công cụ hay `--version` của nó
 > - ✔️ NÊN: Đọc thời điểm sửa đổi và kích thước của tệp bằng `dybatpho::file_mtime` và `dybatpho::file_size`, và sửa tệp tại chỗ bằng `dybatpho::file_replace`. (dybatpho)
+> - ✔️ NÊN: Phân tích và định dạng ngày tháng bằng `dybatpho::date_parse` và `dybatpho::date_format`. (dybatpho)
 > - ❌ TRÁNH: Không mặc định có GNU coreutils khi script chạy trên macOS, BSD hay BusyBox
 > - ⚠️ CÂN NHẮC: Ưu tiên lệnh dựng sẵn của Bash hoặc dạng POSIX khi chúng làm được việc: `printf '%(%s)T'`, khai triển tham số
 
@@ -2830,6 +2831,15 @@ target="$(readlink -f "${link}")"
 local mtime
 mtime="$(dybatpho::file_mtime "${file}")" || return 1
 dybatpho::file_replace "${config}" '^debug = true$' 'debug = false'
+```
+
+`dybatpho::date_parse` và `dybatpho::date_format` hỏi `date` về đúng cờ mà chúng sắp dùng, `-D` cho BusyBox và `-d` cho GNU, rồi quay về `-j -f` và `-r` của BSD, nên cùng một lời gọi chạy được trên cả ba. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local day
+day="$(dybatpho::date_format "${epoch}" '%F')" || return 1
 ```
 
 ### So sánh phiên bản

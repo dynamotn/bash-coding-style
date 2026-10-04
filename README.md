@@ -2786,6 +2786,7 @@ dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
 > - ✔️ SHOULD: Probe for a feature before using a GNU-only flag, and keep a portable branch: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix` `BSG083`
 > - ✔️ SHOULD: Detect a feature by trying the flag, not by the name of the tool or its `--version`
 > - ✔️ SHOULD: Read a file's modification time and size with `dybatpho::file_mtime` and `dybatpho::file_size`, and edit a file in place with `dybatpho::file_replace`. (dybatpho)
+> - ✔️ SHOULD: Parse and format dates with `dybatpho::date_parse` and `dybatpho::date_format`. (dybatpho)
 > - ❌ AVOID: Do not assume GNU coreutils when the script runs on macOS, BSD or BusyBox
 > - ⚠️ CONSIDER: Prefer a Bash builtin or a POSIX form when one does the job: `printf '%(%s)T'`, parameter expansion
 
@@ -2828,6 +2829,15 @@ target="$(readlink -f "${link}")"
 local mtime
 mtime="$(dybatpho::file_mtime "${file}")" || return 1
 dybatpho::file_replace "${config}" '^debug = true$' 'debug = false'
+```
+
+`dybatpho::date_parse` and `dybatpho::date_format` ask `date` for the flag they are about to use, `-D` for BusyBox and `-d` for GNU, and fall back to the BSD `-j -f` and `-r`, so the same call works on all three. (dybatpho)
+
+**Recommended**
+
+```sh
+local day
+day="$(dybatpho::date_format "${epoch}" '%F')" || return 1
 ```
 
 ### Comparing Versions
