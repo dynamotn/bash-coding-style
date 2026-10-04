@@ -3980,6 +3980,7 @@ sha256sum "${archive}" > "${archive}.sha256"
 >
 > - ✔️ SHOULD: Expand a variable that builds the path of a destructive command with `${var:?}`, or check first that it is non-empty and inside an allowed root
 > - ✔️ SHOULD: Resolve the root and the target with `cd -P` before comparing them, and stop when the root is empty
+> - ✔️ SHOULD: Check a path built from variables with `dybatpho::assert_safe_path`, which follows all of the above. (dybatpho)
 > - ✔️ SHOULD: Prefer a guarded helper that validates the path and confirms before it acts. (dybatpho)
 > - ❌ AVOID: Do not run `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` or `mv` onto an existing target with a path built from variables that were never checked `BSG089`
 > - ❌ AVOID: Do not check that a path is inside a root by comparing the strings as typed
@@ -4013,6 +4014,15 @@ chown -R "${owner}" "${target}"
 
 # WORK_ROOT empty matches any absolute path, and work/../etc matches too
 [[ "${target}" == "${WORK_ROOT}"/* ]] && rm -rf -- "${target}"
+```
+
+`dybatpho::assert_safe_path` refuses an empty path, `/`, the first-level system directories, `${HOME}` and every entry of `DYBATPHO_PROTECTED_PATHS`, and, when `DYBATPHO_SAFE_ROOTS` is set, a path outside those roots. It resolves the directories of the path through their links before it compares, so a link inside a root cannot lead out of it, and prints the path as written. (dybatpho)
+
+**Recommended**
+
+```sh
+local target
+target="$(DYBATPHO_SAFE_ROOTS="${WORK_ROOT:?}" dybatpho::assert_safe_path "${WORK_ROOT}/${name}")" || return 1
 ```
 
 ## Testing
