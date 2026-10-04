@@ -1712,10 +1712,14 @@ Custom rule
 > - ✔️ SHOULD: Create temporary files with `dybatpho::create_temp <var> <suffix>` and directories with `dybatpho::create_temp_dir <var>`, which register their own cleanup. (dybatpho)
 > - ✔️ SHOULD: Use `mktemp` when the library is not available, and remove the file with `trap 'rm -f "${temp_file}"' EXIT`
 > - ✔️ SHOULD: Give the temporary file the suffix the content needs, so tools that dispatch on extension still work
+> - ✔️ SHOULD: Derive a staging file next to its destination only from a path checked to be non-empty and not a directory, and create it exclusively: `set -C`, or `mktemp` in the destination's directory
 > - ❌ AVOID: Do not build a temporary path yourself from `$$`, a timestamp or a fixed name
 > - ❌ AVOID: Do not leave cleanup to the last line of the script, which an error never reaches
+> - ❌ AVOID: Do not let an empty or failed path turn a staging file into one in the working directory
 
 A predictable name in a world-writable directory is both a collision and a symlink attack. Registering the cleanup at creation time is the only way to have it run on the paths that matter: the error path and the interrupt.
+
+A staging file built as `"$(dirname "${path}")/.staging.$$"` lands in the working directory when `path` is empty or came out of a substitution that failed, and a `>` onto a name someone planted follows their symlink. Check the destination first, then create the staging file so that an existing name is refused.
 
 **Recommended**
 
@@ -1729,6 +1733,10 @@ tar -xf "${archive}" -C "${temp_dir}"
 # Without the library
 temp_file="$(mktemp --suffix=.json)"
 trap 'rm -f "${temp_file}"' EXIT INT TERM
+
+# A staging file for an atomic rewrite: checked destination, exclusive creation
+[[ -n "${path}" && ! -d "${path}" ]] || dybatpho::die "Not a file path: ${path}"
+staging="$(mktemp "$(dirname -- "${path}")/.staging.XXXXXXXX")"
 ```
 
 **Discouraged**
@@ -1739,6 +1747,10 @@ temp_file="/tmp/download-$$.tar.gz"
 curl -fsSL "$url" -o "$temp_file"
 ...
 rm -f "$temp_file"
+
+# An empty path stages into the working directory, and `>` follows a planted link
+staging="$(dirname "${path}")/.staging.$$"
+printf '%s\n' "${content}" > "${staging}"
 ```
 ## Testing
 

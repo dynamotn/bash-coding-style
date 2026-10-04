@@ -1708,10 +1708,14 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Tạo tệp tạm bằng `dybatpho::create_temp <var> <suffix>` và thư mục tạm bằng `dybatpho::create_temp_dir <var>`, chúng tự đăng ký việc dọn dẹp. (dybatpho)
 > - ✔️ NÊN: Dùng `mktemp` khi không có thư viện, và xóa tệp bằng `trap 'rm -f "${temp_file}"' EXIT`
 > - ✔️ NÊN: Đặt cho tệp tạm đúng phần mở rộng mà nội dung cần, để các công cụ phân loại theo đuôi tệp vẫn hoạt động
+> - ✔️ NÊN: Chỉ dựng tệp staging cạnh đích từ một đường dẫn đã kiểm tra là không rỗng và không phải thư mục, và tạo nó độc quyền: `set -C`, hoặc `mktemp` trong thư mục của đích
 > - ❌ TRÁNH: Không tự dựng đường dẫn tạm từ `$$`, từ dấu thời gian hay từ một tên cố định
 > - ❌ TRÁNH: Không để việc dọn dẹp ở dòng cuối script, nơi mà một lỗi sẽ không bao giờ chạy tới
+> - ❌ TRÁNH: Không để một đường dẫn rỗng hay hỏng biến tệp staging thành một tệp trong thư mục làm việc
 
 Một cái tên đoán trước được trong thư mục ai cũng ghi được vừa dễ đụng nhau vừa mở đường cho tấn công liên kết tượng trưng. Đăng ký việc dọn dẹp ngay lúc tạo là cách duy nhất để nó chạy trên những nhánh quan trọng: nhánh lỗi và nhánh bị ngắt.
+
+Một tệp staging dựng theo kiểu `"$(dirname "${path}")/.staging.$$"` sẽ nằm trong thư mục làm việc khi `path` rỗng hoặc đến từ một lệnh thay thế đã thất bại, và một `>` lên cái tên do ai đó đặt sẵn sẽ đi theo liên kết tượng trưng của họ. Hãy kiểm tra đích trước, rồi tạo tệp staging sao cho một tên đã tồn tại bị từ chối.
 
 **Nên dùng**
 
@@ -1725,6 +1729,10 @@ tar -xf "${archive}" -C "${temp_dir}"
 # Khi không có thư viện
 temp_file="$(mktemp --suffix=.json)"
 trap 'rm -f "${temp_file}"' EXIT INT TERM
+
+# Tệp staging cho một lần ghi lại nguyên tử: đích đã kiểm tra, tạo độc quyền
+[[ -n "${path}" && ! -d "${path}" ]] || dybatpho::die "Not a file path: ${path}"
+staging="$(mktemp "$(dirname -- "${path}")/.staging.XXXXXXXX")"
 ```
 
 **Không nên dùng**
@@ -1735,6 +1743,10 @@ temp_file="/tmp/download-$$.tar.gz"
 curl -fsSL "$url" -o "$temp_file"
 ...
 rm -f "$temp_file"
+
+# Đường dẫn rỗng làm tệp staging nằm trong thư mục làm việc, và `>` đi theo liên kết đặt sẵn
+staging="$(dirname "${path}")/.staging.$$"
+printf '%s\n' "${content}" > "${staging}"
 ```
 ## Kiểm thử
 
