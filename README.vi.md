@@ -71,6 +71,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Trình xử lý tín hiệu](#tr%C3%ACnh-x%E1%BB%AD-l%C3%BD-t%C3%ADn-hi%E1%BB%87u)
   - [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con)
   - [Kết thúc tùy chọn](#k%E1%BA%BFt-th%C3%BAc-t%C3%B9y-ch%E1%BB%8Dn)
+  - [Request mạng](#request-m%E1%BA%A1ng)
 - [Ổn định hóa script](#%E1%BB%95n-%C4%91%E1%BB%8Bnh-h%C3%B3a-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-%C4%91%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-th%C3%A1i-tr%C6%B0%E1%BB%9Bc-khi-thay-%C4%91%E1%BB%95i)
@@ -2283,6 +2284,36 @@ chmod 600 -- "${path}"
 # Một tệp tên -rf, hay một mẫu bắt đầu bằng -, bị đọc là tùy chọn
 rm -f "${file}"
 grep "${pattern}" "${file}"
+```
+
+### Request mạng
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng `curl --fail` (hoặc kiểm tra HTTP status) trước khi dùng một response
+> - ✔️ NÊN: Tải về thành tệp, kiểm tra nó với checksum hoặc chữ ký, rồi mới chạy
+> - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh`
+
+Không có `--fail`, curl thoát với 0 khi gặp 404 hay 500 và trả trang lỗi về như thể đó là nội dung. Khi pipe vào `bash`, trang đó — hoặc một lần tải bị cắt giữa chừng, hoặc bất cứ thứ gì kẻ tấn công trả về — được chạy từng dòng trước khi có gì kiểm tra nó, và một dòng dở dang có thể làm điều mà không script hoàn chỉnh nào làm.
+
+**Nên dùng**
+
+```sh
+local installer
+dybatpho::create_temp installer ".sh"
+curl --fail -sSL "${url}" -o "${installer}"
+dybatpho::verify_checksum "${installer}" "${expected_sha256}"
+bash "${installer}"
+```
+
+**Không nên dùng**
+
+```sh
+# Một trang 404, hay một script bị cắt cụt, được chạy ngay khi nó tới
+curl -sSL "${url}" | bash
 ```
 
 ## Ổn định hóa script

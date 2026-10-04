@@ -70,6 +70,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Signal Handlers](#signal-handlers)
   - [Child Processes](#child-processes)
   - [End of Options](#end-of-options)
+  - [Network Requests](#network-requests)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
@@ -2287,6 +2288,36 @@ chmod 600 -- "${path}"
 # A file named -rf, or a pattern starting with -, is read as an option
 rm -f "${file}"
 grep "${pattern}" "${file}"
+```
+
+### Network Requests
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use `curl --fail` (or check the HTTP status) before using a response
+> - ✔️ SHOULD: Download to a file, verify it against a checksum or signature, then run it
+> - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh`
+
+Without `--fail`, curl exits 0 on a 404 or a 500 and hands over the error page as if it were the content. Piped into `bash`, that page — or a download cut off halfway, or whatever an attacker served — runs line by line before anything checked it, and a partial line can do something no complete script would.
+
+**Recommended**
+
+```sh
+local installer
+dybatpho::create_temp installer ".sh"
+curl --fail -sSL "${url}" -o "${installer}"
+dybatpho::verify_checksum "${installer}" "${expected_sha256}"
+bash "${installer}"
+```
+
+**Discouraged**
+
+```sh
+# A 404 page, or a truncated script, runs as it arrives
+curl -sSL "${url}" | bash
 ```
 
 ## Script Stabilization
