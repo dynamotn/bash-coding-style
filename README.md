@@ -1617,7 +1617,9 @@ function fs::count_lines {
 > - ✔️ SHOULD: Use `(( ... ))` for arithmetic conditions and `$(( ... ))` for arithmetic values
 > - ✔️ SHOULD: Omit the `$` on variables inside `(( ... ))`
 > - ✔️ SHOULD: Declare counters with `local -i` when the variable only ever holds an integer
+> - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))`
 > - ❌ AVOID: Do not use `let`, `expr` or the deprecated `$[ ... ]`
+> - ❌ AVOID: Do not feed a number read from input, a file name or a date straight into `(( ))`: a leading zero makes it octal
 > - ⚠️ CONSIDER: Be careful with a bare `(( ... ))` under `set -e`: an expression whose value is `0` has exit status `1` and stops the script
 
 `(( ... ))` is a builtin, so it is faster than `expr` and does not need a subprocess, and it treats its operands as numbers rather than strings.
@@ -1648,6 +1650,28 @@ retries=$[retries + 1]
 # Under set -e this stops the script the first time count goes from 0 to 1
 ((count++))
 ```
+
+Bash reads `010` as eight, and refuses `08` and `09` outright with `value too great for base`. Numbers with leading zeros are everywhere in input — dates, times, zero-padded counters, file suffixes — so arithmetic on them works in testing and fails on the eighth of the month.
+
+**Recommended**
+
+```sh
+[[ "${minute}" =~ ^[0-9]+$ ]] || dybatpho::die "Not a minute: ${minute}"
+if ((10#${minute} >= 30)); then
+  half=second
+fi
+```
+
+**Discouraged**
+
+```sh
+minute="$(date +%M)"
+# At eight past the hour: `08: value too great for base`
+if ((minute >= 30)); then
+  half=second
+fi
+```
+
 ### Portability
 
 > [!NOTE]

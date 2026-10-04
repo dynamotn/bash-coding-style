@@ -1613,7 +1613,9 @@ function fs::count_lines {
 > - ✔️ NÊN: Dùng `(( ... ))` cho điều kiện số học và `$(( ... ))` cho giá trị số học
 > - ✔️ NÊN: Bỏ dấu `$` trước tên biến bên trong `(( ... ))`
 > - ✔️ NÊN: Khai báo biến đếm bằng `local -i` khi biến đó chỉ chứa số nguyên
+> - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))`
 > - ❌ TRÁNH: Không dùng `let`, `expr` hay cú pháp `$[ ... ]` đã lỗi thời
+> - ❌ TRÁNH: Không đưa thẳng một số đọc từ đầu vào, tên tệp hay ngày tháng vào `(( ))`: số 0 ở đầu biến nó thành hệ bát phân
 > - ⚠️ CÂN NHẮC: Cẩn thận với `(( ... ))` đứng một mình dưới `set -e`: biểu thức có giá trị `0` sẽ trả về mã thoát `1` và làm dừng script
 
 `(( ... ))` là lệnh dựng sẵn, nên nhanh hơn `expr` và không cần tạo tiến trình con, đồng thời coi các toán hạng là số chứ không phải chuỗi.
@@ -1644,6 +1646,28 @@ retries=$[retries + 1]
 # Dưới set -e, dòng này dừng script ngay lần count đi từ 0 lên 1
 ((count++))
 ```
+
+Bash đọc `010` thành tám, và từ chối thẳng `08`, `09` với lỗi `value too great for base`. Số có số 0 ở đầu xuất hiện khắp nơi trong đầu vào — ngày, giờ, bộ đếm có đệm số 0, hậu tố tên tệp — nên phép tính trên chúng chạy được khi thử nghiệm và hỏng vào ngày mùng tám.
+
+**Nên dùng**
+
+```sh
+[[ "${minute}" =~ ^[0-9]+$ ]] || dybatpho::die "Not a minute: ${minute}"
+if ((10#${minute} >= 30)); then
+  half=second
+fi
+```
+
+**Không nên dùng**
+
+```sh
+minute="$(date +%M)"
+# Lúc tám phút: `08: value too great for base`
+if ((minute >= 30)); then
+  half=second
+fi
+```
+
 ### Tính di động
 
 > [!NOTE]
