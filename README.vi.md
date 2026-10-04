@@ -457,7 +457,9 @@ Quy tắc mới
 > - ✔️ NÊN: Sử dụng `.` để gọi các hàm chung
 > - ✔️ NÊN: Các hàm chung nên được để chung dưới dạng library trong thư mục con `lib`
 > - ✔️ NÊN: Chặn việc một thư viện bị source lần thứ hai trước khi nó khai báo các hằng `readonly`
+> - ✔️ NÊN: Xác định vị trí một thư viện từ bên trong nó bằng `${BASH_SOURCE[0]}`
 > - ❌ TRÁNH: Không khai báo `readonly` ở cấp cao nhất của một thư viện có thể bị source hai lần
+> - ❌ TRÁNH: Không dùng `$0` trong thư viện: nó là tên của script đã source thư viện
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
@@ -490,6 +492,24 @@ readonly NET_TIMEOUT=10
 ```sh
 # scripts/lib/net.sh: lần `.` thứ hai dừng script
 readonly NET_TIMEOUT=10
+```
+
+`$0` là tên của script đang chạy, nên trong một thư viện nó trỏ tới bên đã source thư viện, và mọi đường dẫn dựng từ nó đều tính từ sai thư mục. `${BASH_SOURCE[0]}` là tệp mà đoạn code hiện tại được đọc ra.
+
+**Nên dùng**
+
+```sh
+# scripts/lib/net.sh
+NET_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "${NET_LIB_DIR}/http.sh"
+```
+
+**Không nên dùng**
+
+```sh
+# scripts/lib/net.sh: $0 là bên gọi, nên câu này tìm http.sh cạnh bên gọi
+NET_LIB_DIR="$(dirname "$0")"
+. "${NET_LIB_DIR}/http.sh"
 ```
 
 ### Môi trường kế thừa

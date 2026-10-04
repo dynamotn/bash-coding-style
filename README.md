@@ -455,7 +455,9 @@ New rule
 > - ✔️ SHOULD: Use `.` to invoke common functions
 > - ✔️ SHOULD: Put common functions as libraries in `lib` sub-folder
 > - ✔️ SHOULD: Guard a library against being sourced a second time before it declares `readonly` constants
+> - ✔️ SHOULD: Locate a library from inside it with `${BASH_SOURCE[0]}`
 > - ❌ AVOID: Do not declare `readonly` at the top level of a library that may be sourced twice
+> - ❌ AVOID: Do not use `$0` inside a library: it names the script that sourced it
 
 When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
 
@@ -488,6 +490,24 @@ readonly NET_TIMEOUT=10
 ```sh
 # scripts/lib/net.sh: a second `.` stops the script
 readonly NET_TIMEOUT=10
+```
+
+`$0` is the name of the running script, so in a library it points at whoever sourced it, and every path built from it is relative to the wrong directory. `${BASH_SOURCE[0]}` is the file the current code was read from.
+
+**Recommended**
+
+```sh
+# scripts/lib/net.sh
+NET_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+. "${NET_LIB_DIR}/http.sh"
+```
+
+**Discouraged**
+
+```sh
+# scripts/lib/net.sh: $0 is the caller, so this looks for http.sh next to it
+NET_LIB_DIR="$(dirname "$0")"
+. "${NET_LIB_DIR}/http.sh"
 ```
 
 ### Ambient Environment
