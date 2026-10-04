@@ -82,6 +82,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con)
   - [Kết thúc tùy chọn](#k%E1%BA%BFt-th%C3%BAc-t%C3%B9y-ch%E1%BB%8Dn)
   - [Request mạng](#request-m%E1%BA%A1ng)
+  - [Lệnh trên máy remote](#l%E1%BB%87nh-tr%C3%AAn-m%C3%A1y-remote)
   - [Lệnh đã lỗi thời](#l%E1%BB%87nh-%C4%91%C3%A3-l%E1%BB%97i-th%E1%BB%9Di)
 - [Ổn định hóa script](#%E1%BB%95n-%C4%91%E1%BB%8Bnh-h%C3%B3a-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-%C4%91%C6%B0%E1%BB%A3c)
@@ -3409,6 +3410,49 @@ esac
 until curl --fail -sS "${url}" -o "${target}"; do :; done
 # Chờ mật khẩu, hay chờ một host không tới được, mà không có giới hạn
 ssh "${host}" 'systemctl is-active app'
+```
+
+### Lệnh trên máy remote
+
+> [!TIP]
+>
+> - ✔️ NÊN: Chạy một hàm cục bộ trên máy remote bằng cách gửi định nghĩa của nó, do `declare -f` in ra, rồi đến lời gọi hàm, cho `bash -s` qua standard input
+> - ✔️ NÊN: Đặt mọi giá trị cục bộ đưa vào lệnh remote trong dấu nháy bằng `${value@Q}`, hoặc `printf %q`
+> - ✔️ NÊN: Gửi kèm mọi hàm mà phía remote gọi tới, và chỉ dùng những lệnh có trên máy remote
+> - ❌ TRÁNH: Không truyền lệnh remote thành các từ rời, như `ssh "${host}" du -sh -- "${dir}"`: ssh nối chúng lại bằng dấu cách, và shell bên remote tách chúng ra lần nữa
+> - ❌ TRÁNH: Không chép tay thân của một hàm vào một chuỗi lệnh
+
+`ssh` không trao từng đối số cho lệnh remote. Nó nối chúng bằng dấu cách thành một chuỗi, rồi login shell của người dùng bên remote tách chuỗi đó ra lần nữa, nên một giá trị có dấu cách, dấu `;` hay `$(...)` sẽ thành nhiều từ hơn, hoặc thành một lệnh, ở phía bên kia, kể cả khi nó đã được đặt trong dấu nháy ở máy cục bộ. Một chuỗi lệnh viết tay cũng gặp đúng vấn đề đó, và còn lệch dần khỏi hàm mà nó được chép từ đó.
+
+Hãy gửi một script thay vào đó. `declare -f` in một hàm đúng như nó đã được nạp, nên máy remote chạy đúng đoạn code mà script đã kiểm thử, còn `${value@Q}` viết mỗi đối số ở dạng mà Bash đọc lại ra đúng giá trị đó. Chỉ có `bash -s` đi qua login shell bên remote, nên shell đó là Bash, `sh` hay fish cũng không quan trọng.
+
+`declare -f` chỉ gửi những hàm được nêu tên. Hãy liệt kê mọi hàm mà phía remote gọi tới, và không gọi một thư viện, như dybatpho, mà máy remote không có. Script tới qua standard input, nên phía remote không đọc được gì từ người dùng: hãy truyền những gì nó cần dưới dạng đối số.
+
+**Nên dùng**
+
+```sh
+#######################################
+# @description Print the disk usage of a directory
+# @arg $1 string Directory
+#######################################
+function report::disk_usage {
+  local dir="$1"
+  du -sh -- "${dir}"
+}
+
+{
+  declare -f report::disk_usage
+  printf 'report::disk_usage %s\n' "${dir@Q}"
+} | timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" bash -s
+```
+
+**Không nên dùng**
+
+```sh
+# "/srv/my app" tới shell bên remote thành hai từ
+timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" du -sh -- "${dir}"
+# Một bản sao của hàm, sẽ bị bỏ sót ở lần sửa hàm tiếp theo
+timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" "du -sh -- ${dir}"
 ```
 
 ### Lệnh đã lỗi thời

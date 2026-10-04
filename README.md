@@ -81,6 +81,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Child Processes](#child-processes)
   - [End of Options](#end-of-options)
   - [Network Requests](#network-requests)
+  - [Remote Commands](#remote-commands)
   - [Deprecated Commands](#deprecated-commands)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
@@ -3407,6 +3408,49 @@ esac
 until curl --fail -sS "${url}" -o "${target}"; do :; done
 # Waits for a password, or for an unreachable host, with no limit
 ssh "${host}" 'systemctl is-active app'
+```
+
+### Remote Commands
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Run a local function on a remote host by sending its definition, printed by `declare -f`, and then the call to `bash -s` on standard input
+> - ✔️ SHOULD: Quote every local value that goes into a remote command with `${value@Q}`, or `printf %q`
+> - ✔️ SHOULD: Send every function the remote side calls, and use only commands the remote host has
+> - ❌ AVOID: Do not pass a remote command as separate words, as in `ssh "${host}" du -sh -- "${dir}"`: ssh joins them with spaces, and the remote shell splits them again
+> - ❌ AVOID: Do not copy the body of a function into a command string by hand
+
+`ssh` does not hand its arguments to the remote command one by one. It joins them with spaces into one string, and the login shell of the remote user splits that string again, so a value with a space, a `;` or a `$(...)` becomes more words, or a command, on the other side, even when it was quoted locally. A command string written by hand has the same problem, and drifts from the function it was copied from.
+
+Send a script instead. `declare -f` prints a function as it is loaded, so the remote host runs the code the script tested, and `${value@Q}` writes each argument in a form that Bash reads back as the same value. Only `bash -s` goes through the remote login shell, so it does not matter whether that shell is Bash, `sh` or fish.
+
+`declare -f` sends only the functions it is named. List every function the remote side calls, and do not call a library, such as dybatpho, that the remote host does not have. The script arrives on standard input, so the remote side cannot read from the user: pass what it needs as arguments.
+
+**Recommended**
+
+```sh
+#######################################
+# @description Print the disk usage of a directory
+# @arg $1 string Directory
+#######################################
+function report::disk_usage {
+  local dir="$1"
+  du -sh -- "${dir}"
+}
+
+{
+  declare -f report::disk_usage
+  printf 'report::disk_usage %s\n' "${dir@Q}"
+} | timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" bash -s
+```
+
+**Discouraged**
+
+```sh
+# "/srv/my app" reaches the remote shell as two words
+timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" du -sh -- "${dir}"
+# A copy of the function that the next change to it will miss
+timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" "du -sh -- ${dir}"
 ```
 
 ### Deprecated Commands
