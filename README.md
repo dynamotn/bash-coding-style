@@ -314,7 +314,7 @@ dybatpho::generate_from_spec _spec_main "$@"
 function misc::install_tool {
   local name
   dybatpho::expect_args name -- "$@"
-  dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+  dybatpho::is command "${name}" || dybatpho::dry_run dytoy -t "${name}"
 }
 ```
 
@@ -355,8 +355,8 @@ A script that can be asked what it *would* do is a script people are willing to 
 
 ```sh
 # The wrapper decides whether to run or to report
-dybatpho::dry_run mv -- "$temp_file" "$output_path"
-dybatpho::dry_run chmod +x -- "$output_path"
+dybatpho::dry_run mv -- "${temp_file}" "${output_path}"
+dybatpho::dry_run chmod +x -- "${output_path}"
 
 # Reading DRY_RUN directly is fine when a whole block must be skipped
 if dybatpho::is true "${DRY_RUN}"; then
@@ -426,7 +426,7 @@ echo "Error: Unable to do_something" >&2
 LOG_LEVEL=info
 
 # suppress unnecessary messages
-curl -fsSL "$url" 2> /dev/null
+curl -fsSL "${url}" 2> /dev/null
 
 # use dybatpho
 dybatpho::error "Unable to do_something"
@@ -804,13 +804,13 @@ function dytoy::install {
 
   # Declare, then assign, so a failure is not swallowed
   local version
-  version="$(dytoy::get_yaml "$name" "version")"
+  version="$(dytoy::get_yaml "${name}" "version")"
 
   local -a dependencies=()
-  readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+  readarray -t dependencies < <(dytoy::get_yaml "${name}" "dependencies")
   local dependency
   for dependency in "${dependencies[@]}"; do
-    dytoy::install "$dependency"
+    dytoy::install "${dependency}"
   done
 }
 ```
@@ -938,8 +938,8 @@ All function header comments should describe the intended API behaviour using:
 # @exitcode 1 If configuration directory is not exist
 #######################################
 function get_dir() {
-  local config_dir=${1:-"$HOME/.config/abc"}
-  if [ -e "$config_dir" ]; then
+  local config_dir=${1:-"${HOME}/.config/abc"}
+  if [ -e "${config_dir}" ]; then
     echo "${config_dir}"
   else
     echo "Not have configuration directory" >&2 && return 1
@@ -1133,13 +1133,13 @@ Custom rule
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Use consistent variable expansion
+> - ✔️ SHOULD: Brace every named variable, `${var}`, even when it stands alone in quotes. `require-variable-braces` in [`.shellcheckrc`](.shellcheckrc) checks it
 > - ✔️ SHOULD: Enclose variable expansions in double quotes. Single quotes do not expand variables
 > - ✔️ SHOULD: Read an environment variable that may be unset with a default under `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}`
 > - ❌ AVOID: Avoid bracing shell special variables/positional parameters unless explicitly necessary or to avoid serious confusion
 > - ❌ AVOID: Do not read an optional environment variable bare under `set -u`
 
-Variables should be quoted. Use `${var}` instead of `$var`, except variable is entire string in quotes.
+Variables should be quoted. Use `${var}` instead of `$var`, also when the variable is the whole quoted string: one form everywhere is easier to read and to check than a rule with an exception.
 This is a strongly recommended guideline but not an absolute regulation. However, even though it is not mandatory, do not disregard it.
 
 All other variables should preferably be enclosed in braces.
@@ -1161,7 +1161,7 @@ echo "${1}0${2}0${3}0"
 
 # Preferred style for other variables:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
-echo "$PATH"
+echo "${PATH}"
 while IFS= read -r f || [[ -n "${f}" ]]; do
   echo "file=${f}"
 done < <(find /tmp)
@@ -1307,7 +1307,7 @@ A file that is a list of declarations followed by one call can be read in any or
 # @brief Run tests for the dotfiles setup
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 # shellcheck source=lib/dybatpho/init.sh
-. "$SCRIPT_DIR/lib/dybatpho/init.sh" --modules cli
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh" --modules cli
 dybatpho::register_common_handlers
 
 function _spec_main {
@@ -1525,12 +1525,12 @@ token="$(secret::read API_TOKEN)"
 **Recommended**
 
 ```sh
-if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
-  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+if [[ ! -f "${SCRIPT_DIR}/lib/dybatpho/init.sh" ]]; then
+  git -C "${REPO_DIR}" submodule update --init "${SCRIPT_DIR}/lib/dybatpho"
 fi
 
 # A named check reads better than the flag it wraps
-dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+dybatpho::is command "${name}" || dybatpho::dry_run dytoy -t "${name}"
 ```
 
 **Discouraged**
@@ -1558,7 +1558,7 @@ Inside `[[ ... ]]` the operators `<` and `>` compare lexicographically, so `[[ 1
 **Recommended**
 
 ```sh
-if [[ "$identity" == "personal" ]]; then
+if [[ "${identity}" == "personal" ]]; then
   passphrase="$(rbw get 'Age Dotfiles')"
 fi
 
@@ -1682,7 +1682,7 @@ done
 ```sh
 local -a options=() packages=()
 options+=(--noconfirm)
-packages+=("$name")
+packages+=("${name}")
 dybatpho::dry_run pacman -S "${options[@]}" "${packages[@]}"
 ```
 
@@ -1862,7 +1862,7 @@ local -a files=()
 mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
 
 local -a tools=()
-readarray -t tools < <(dytoy::get_yaml "$name" "tools")
+readarray -t tools < <(dytoy::get_yaml "${name}" "tools")
 
 local count=0 line
 while IFS= read -r line || [[ -n "${line}" ]]; do
@@ -1947,10 +1947,10 @@ mapfile -t entries < <(tar -tzf "${archive}")
 
 ```sh
 local -a dependencies=()
-readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+readarray -t dependencies < <(dytoy::get_yaml "${name}" "dependencies")
 local dependency
 for dependency in "${dependencies[@]}"; do
-  dybatpho::dry_run dytoy "${method}" -i -t "$dependency"
+  dybatpho::dry_run dytoy "${method}" -i -t "${dependency}"
 done
 ```
 
@@ -2244,7 +2244,7 @@ fi
 function get_dir {
   local config_dir
   dybatpho::expect_args config_dir -- "$@"
-  if [[ ! -e "$config_dir" ]]; then
+  if [[ ! -e "${config_dir}" ]]; then
     dybatpho::error "Configuration directory ${config_dir} does not exist"
     return 1
   fi
@@ -2529,11 +2529,11 @@ Setup scripts are interrupted: a network drops, a package mirror fails, the user
 
 ```sh
 # Installs only if it is not already there
-dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+dybatpho::is command "${name}" || dybatpho::dry_run dytoy -t "${name}"
 
 # Fetches the submodule only when it is missing
-if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
-  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+if [[ ! -f "${SCRIPT_DIR}/lib/dybatpho/init.sh" ]]; then
+  git -C "${REPO_DIR}" submodule update --init "${SCRIPT_DIR}/lib/dybatpho"
 fi
 ```
 
@@ -2570,7 +2570,7 @@ dybatpho::dry_run rm -rf -- "${profile_dir}"
 
 # Check the download before it is put in place
 binary::verify_sha256 "${name}" "${temp_file}" "${url}" "${sha256_asset}"
-dybatpho::dry_run mv -- "$temp_file" "$output_path"
+dybatpho::dry_run mv -- "${temp_file}" "${output_path}"
 ```
 
 **Discouraged**

@@ -316,7 +316,7 @@ dybatpho::generate_from_spec _spec_main "$@"
 function misc::install_tool {
   local name
   dybatpho::expect_args name -- "$@"
-  dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+  dybatpho::is command "${name}" || dybatpho::dry_run dytoy -t "${name}"
 }
 ```
 
@@ -357,8 +357,8 @@ Một script có thể được hỏi rằng nó *sẽ* làm gì là một scrip
 
 ```sh
 # Hàm bọc tự quyết định là chạy hay chỉ báo cáo
-dybatpho::dry_run mv -- "$temp_file" "$output_path"
-dybatpho::dry_run chmod +x -- "$output_path"
+dybatpho::dry_run mv -- "${temp_file}" "${output_path}"
+dybatpho::dry_run chmod +x -- "${output_path}"
 
 # Đọc thẳng DRY_RUN cũng được khi cần bỏ qua cả một khối lệnh
 if dybatpho::is true "${DRY_RUN}"; then
@@ -428,7 +428,7 @@ echo "Error: Không thể thực hiện do_something" >&2
 LOG_LEVEL=info
 
 # triệt tiêu các thông báo không cần thiết
-curl -fsSL "$url" 2> /dev/null
+curl -fsSL "${url}" 2> /dev/null
 
 # sử dụng dybatpho
 dybatpho::error "Không thể thực hiện do_something"
@@ -806,13 +806,13 @@ function dytoy::install {
 
   # Khai báo trước, gán sau, để lỗi không bị nuốt mất
   local version
-  version="$(dytoy::get_yaml "$name" "version")"
+  version="$(dytoy::get_yaml "${name}" "version")"
 
   local -a dependencies=()
-  readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+  readarray -t dependencies < <(dytoy::get_yaml "${name}" "dependencies")
   local dependency
   for dependency in "${dependencies[@]}"; do
-    dytoy::install "$dependency"
+    dytoy::install "${dependency}"
   done
 }
 ```
@@ -940,8 +940,8 @@ Tất cả các comment header của hàm nên mô tả hành vi API dự kiến
 # @exitcode 1 Nếu thư mục cấu hình không tồn tại
 #######################################
 function get_dir() {
-  local config_dir=${1:-"$HOME/.config/abc"}
-  if [ -e "$config_dir" ]; then
+  local config_dir=${1:-"${HOME}/.config/abc"}
+  if [ -e "${config_dir}" ]; then
     echo "${config_dir}"
   else
     echo "Không có thư mục cấu hình" >&2 && return 1
@@ -1132,13 +1132,13 @@ esac
 
 > [!TIP]
 >
-> - ✔️ NÊN: Sử dụng kiểu khai triển biến nhất quán
+> - ✔️ NÊN: Đặt mọi biến có tên trong dấu ngoặc nhọn, `${var}`, kể cả khi nó đứng một mình trong dấu nháy. `require-variable-braces` trong [`.shellcheckrc`](.shellcheckrc) kiểm tra điều này
 > - ✔️ NÊN: Đặt các khai triển biến trong dấu nháy kép. Dấu nháy đơn không khai triển biến
 > - ✔️ NÊN: Đọc một biến môi trường có thể chưa được đặt kèm giá trị mặc định khi có `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}`
 > - ❌ TRÁNH: Tránh đặt các biến đặc biệt/tham số vị trí của shell trong dấu ngoặc nhọn trừ khi thực sự cần thiết hoặc để tránh nhầm lẫn nghiêm trọng
 > - ❌ TRÁNH: Không đọc trơn một biến môi trường tùy chọn khi có `set -u`
 
-Các biến nên được đặt trong dấu nháy kép. Sử dụng `${var}` thay vì `$var`, trừ khi biến là toàn bộ chuỗi trong dấu nháy kép.
+Các biến nên được đặt trong dấu nháy kép. Sử dụng `${var}` thay vì `$var`, kể cả khi biến là toàn bộ chuỗi trong dấu nháy kép: một dạng duy nhất ở mọi nơi dễ đọc và dễ kiểm tra hơn một quy tắc có ngoại lệ.
 Đây là một hướng dẫn được khuyến nghị mạnh mẽ nhưng không phải là một quy định tuyệt đối. Tuy nhiên, mặc dù nó không bắt buộc, đừng bỏ qua nó.
 
 Tất cả các biến khác nên được đặt trong dấu ngoặc nhọn.
@@ -1160,7 +1160,7 @@ echo "${1}0${2}0${3}0"
 
 # Kiểu ưu tiên cho các biến khác:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
-echo "$PATH"
+echo "${PATH}"
 while IFS= read -r f || [[ -n "${f}" ]]; do
   echo "file=${f}"
 done < <(find /tmp)
@@ -1303,7 +1303,7 @@ Một tệp chỉ gồm các khai báo và kết thúc bằng một lời gọi 
 # @brief Run tests for the dotfiles setup
 SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 # shellcheck source=lib/dybatpho/init.sh
-. "$SCRIPT_DIR/lib/dybatpho/init.sh" --modules cli
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh" --modules cli
 dybatpho::register_common_handlers
 
 function _spec_main {
@@ -1521,12 +1521,12 @@ token="$(secret::read API_TOKEN)"
 **Nên dùng**
 
 ```sh
-if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
-  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+if [[ ! -f "${SCRIPT_DIR}/lib/dybatpho/init.sh" ]]; then
+  git -C "${REPO_DIR}" submodule update --init "${SCRIPT_DIR}/lib/dybatpho"
 fi
 
 # Một phép kiểm tra có tên dễ đọc hơn là cờ mà nó bọc lại
-dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+dybatpho::is command "${name}" || dybatpho::dry_run dytoy -t "${name}"
 ```
 
 **Không nên dùng**
@@ -1554,7 +1554,7 @@ Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ đi�
 **Nên dùng**
 
 ```sh
-if [[ "$identity" == "personal" ]]; then
+if [[ "${identity}" == "personal" ]]; then
   passphrase="$(rbw get 'Age Dotfiles')"
 fi
 
@@ -1678,7 +1678,7 @@ done
 ```sh
 local -a options=() packages=()
 options+=(--noconfirm)
-packages+=("$name")
+packages+=("${name}")
 dybatpho::dry_run pacman -S "${options[@]}" "${packages[@]}"
 ```
 
@@ -1858,7 +1858,7 @@ local -a files=()
 mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
 
 local -a tools=()
-readarray -t tools < <(dytoy::get_yaml "$name" "tools")
+readarray -t tools < <(dytoy::get_yaml "${name}" "tools")
 
 local count=0 line
 while IFS= read -r line || [[ -n "${line}" ]]; do
@@ -1943,10 +1943,10 @@ mapfile -t entries < <(tar -tzf "${archive}")
 
 ```sh
 local -a dependencies=()
-readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+readarray -t dependencies < <(dytoy::get_yaml "${name}" "dependencies")
 local dependency
 for dependency in "${dependencies[@]}"; do
-  dybatpho::dry_run dytoy "${method}" -i -t "$dependency"
+  dybatpho::dry_run dytoy "${method}" -i -t "${dependency}"
 done
 ```
 
@@ -2240,7 +2240,7 @@ fi
 function get_dir {
   local config_dir
   dybatpho::expect_args config_dir -- "$@"
-  if [[ ! -e "$config_dir" ]]; then
+  if [[ ! -e "${config_dir}" ]]; then
     dybatpho::error "Configuration directory ${config_dir} does not exist"
     return 1
   fi
@@ -2525,11 +2525,11 @@ Script cài đặt luôn bị ngắt giữa chừng: mạng rớt, máy chủ g�
 
 ```sh
 # Chỉ cài khi chưa có
-dybatpho::is command "$name" || dybatpho::dry_run dytoy -t "$name"
+dybatpho::is command "${name}" || dybatpho::dry_run dytoy -t "${name}"
 
 # Chỉ tải submodule khi nó còn thiếu
-if [[ ! -f "$SCRIPT_DIR/lib/dybatpho/init.sh" ]]; then
-  git -C "$REPO_DIR" submodule update --init "$SCRIPT_DIR/lib/dybatpho"
+if [[ ! -f "${SCRIPT_DIR}/lib/dybatpho/init.sh" ]]; then
+  git -C "${REPO_DIR}" submodule update --init "${SCRIPT_DIR}/lib/dybatpho"
 fi
 ```
 
@@ -2566,7 +2566,7 @@ dybatpho::dry_run rm -rf -- "${profile_dir}"
 
 # Kiểm tra tệp tải về trước khi đặt nó vào chỗ
 binary::verify_sha256 "${name}" "${temp_file}" "${url}" "${sha256_asset}"
-dybatpho::dry_run mv -- "$temp_file" "$output_path"
+dybatpho::dry_run mv -- "${temp_file}" "${output_path}"
 ```
 
 **Không nên dùng**
