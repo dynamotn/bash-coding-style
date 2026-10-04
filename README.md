@@ -3405,6 +3405,7 @@ trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
 > - ✔️ SHOULD: Repeat the signal until the group is empty, within a bounded grace period, then send `KILL`
 > - ✔️ SHOULD: End every job a function started before it returns, also when it returns because of a signal
 > - ✔️ SHOULD: Keep the pid of every background job, and wait for each of them, counting the failures: `wait "${pid}" || failed=$((failed + 1))`
+> - ✔️ SHOULD: Start jobs with `dybatpho::background_run`, wait for them with `dybatpho::wait_all`, and end them with `dybatpho::kill_children`, which follow all of the above. (dybatpho)
 > - ❌ AVOID: Do not signal only the pid of a job, and do not assume one `TERM` is enough
 > - ❌ AVOID: Do not `wait` for jobs one after another under `set -e` without checking the status: the first failure stops the script and the other jobs are left behind `BSG112`
 
@@ -3467,6 +3468,17 @@ done
 for pid in $(jobs -p); do
   wait "${pid}"
 done
+```
+
+`dybatpho::background_run` starts each job in its own process group under a name, `dybatpho::wait_all` waits for every job, records each status and fails when any job failed, and `dybatpho::kill_children` sends `TERM` to every group, waits for the group to empty, and sends `KILL` to what is left after `DYBATPHO_TIMEOUT_KILL_AFTER` seconds. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::trap dybatpho::kill_children EXIT INT TERM
+dybatpho::background_run api ./serve.sh --port 8080
+dybatpho::background_run worker ./worker.sh
+dybatpho::wait_all || dybatpho::die "A background job failed"
 ```
 
 ### End of Options
