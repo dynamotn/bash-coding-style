@@ -2119,7 +2119,9 @@ function __date_from_epoch {
 }
 
 # A portable in-place edit: write a copy, then move it over the file
-sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
+local staging
+staging="$(mktemp "$(dirname -- "${file}")/.staging.XXXXXXXX")"
+sed 's/old/new/' "${file}" > "${staging}" && mv -- "${staging}" "${file}"
 ```
 
 **Discouraged**
@@ -2689,16 +2691,15 @@ if ln -s "$$:$(hostname)" "${lock}" 2> /dev/null; then
   holding=true
 fi
 
-# Reclaim: move it aside, then check that what moved is the holder judged dead
-local aside="${lock}.stale.$$" moved
-if mv -- "${lock}" "${aside}" 2> /dev/null; then
-  moved="$(readlink -- "${aside}")"
-  if [[ "${moved}" == "${dead_holder}" ]]; then
-    rm -f -- "${aside}"
-  else
-    ln -s "${moved}" "${lock}" 2> /dev/null && rm -f -- "${aside}"
-  fi
+# Reclaim: move it into a private directory, then check that what moved is the holder judged dead
+local aside moved
+aside="$(mktemp -d "${lock}.stale.XXXXXXXX")"
+if mv -- "${lock}" "${aside}/lock" 2> /dev/null; then
+  moved="$(readlink -- "${aside}/lock")"
+  # Someone else's live claim moved with it: put that claim back
+  [[ "${moved}" == "${dead_holder}" ]] || ln -s "${moved}" "${lock}" 2> /dev/null || true
 fi
+rm -rf -- "${aside:?}"
 ```
 
 **Discouraged**
@@ -2737,8 +2738,12 @@ render_config > "${staging}"
 mv -f -- "${staging}" "${path}"
 
 # The sidecar first, then the archive it describes
-sha256sum "${partial}" > "${archive}.sha256.tmp"
-mv -- "${archive}.sha256.tmp" "${archive}.sha256"
+local digest sidecar
+digest="$(sha256sum < "${partial}")"
+sidecar="$(mktemp "$(dirname -- "${archive}")/.staging.XXXXXXXX")"
+# Name the archive, not the staging file, so `sha256sum -c` finds it
+printf '%s  %s\n' "${digest%% *}" "${archive##*/}" > "${sidecar}"
+mv -- "${sidecar}" "${archive}.sha256"
 mv -- "${partial}" "${archive}"
 ```
 

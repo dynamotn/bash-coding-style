@@ -2115,7 +2115,9 @@ function __date_from_epoch {
 }
 
 # Sửa tại chỗ một cách di động: ghi ra bản sao, rồi chuyển đè lên tệp
-sed 's/old/new/' "${file}" > "${file}.tmp" && mv -- "${file}.tmp" "${file}"
+local staging
+staging="$(mktemp "$(dirname -- "${file}")/.staging.XXXXXXXX")"
+sed 's/old/new/' "${file}" > "${staging}" && mv -- "${staging}" "${file}"
 ```
 
 **Không nên dùng**
@@ -2685,16 +2687,15 @@ if ln -s "$$:$(hostname)" "${lock}" 2> /dev/null; then
   holding=true
 fi
 
-# Thu hồi: chuyển nó sang chỗ khác, rồi kiểm tra thứ đã chuyển đúng là người giữ đã chết
-local aside="${lock}.stale.$$" moved
-if mv -- "${lock}" "${aside}" 2> /dev/null; then
-  moved="$(readlink -- "${aside}")"
-  if [[ "${moved}" == "${dead_holder}" ]]; then
-    rm -f -- "${aside}"
-  else
-    ln -s "${moved}" "${lock}" 2> /dev/null && rm -f -- "${aside}"
-  fi
+# Thu hồi: chuyển nó vào một thư mục riêng, rồi kiểm tra thứ đã chuyển đúng là người giữ đã chết
+local aside moved
+aside="$(mktemp -d "${lock}.stale.XXXXXXXX")"
+if mv -- "${lock}" "${aside}/lock" 2> /dev/null; then
+  moved="$(readlink -- "${aside}/lock")"
+  # Lấy nhầm lock đang được người khác giữ: trả lại cho họ
+  [[ "${moved}" == "${dead_holder}" ]] || ln -s "${moved}" "${lock}" 2> /dev/null || true
 fi
+rm -rf -- "${aside:?}"
 ```
 
 **Không nên dùng**
@@ -2733,8 +2734,12 @@ render_config > "${staging}"
 mv -f -- "${staging}" "${path}"
 
 # Sidecar trước, rồi mới tới archive mà nó mô tả
-sha256sum "${partial}" > "${archive}.sha256.tmp"
-mv -- "${archive}.sha256.tmp" "${archive}.sha256"
+local digest sidecar
+digest="$(sha256sum < "${partial}")"
+sidecar="$(mktemp "$(dirname -- "${archive}")/.staging.XXXXXXXX")"
+# Ghi tên archive, không phải tên tệp staging, để `sha256sum -c` tìm được nó
+printf '%s  %s\n' "${digest%% *}" "${archive##*/}" > "${sidecar}"
+mv -- "${sidecar}" "${archive}.sha256"
 mv -- "${partial}" "${archive}"
 ```
 
