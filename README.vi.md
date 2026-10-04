@@ -136,7 +136,7 @@ dyshellint --list-rules
 cat script.sh | dyshellint --stdin-filename script.sh -
 ```
 
-Mỗi quy tắc có một mã: `BSG###` cho quy tắc của hướng dẫn này, `SC####` cho phát hiện của ShellCheck, và `FMT001` cho khác biệt định dạng. Có thể tắt bất kỳ mã nào cho một lần chạy bằng `--exclude-rules`, và có thể tắt tại chỗ một phát hiện của ShellCheck bằng chú thích `# shellcheck disable=SCXXXX` kèm lý do. Các mã `BSG` kiểm tra một mục được liệt kê bên dưới các gợi ý của mục đó, sau `Trình kiểm tra:`.
+Mỗi quy tắc có một mã: `BSG###` cho quy tắc của hướng dẫn này, `SC####` cho phát hiện của ShellCheck, và `FMT001` cho khác biệt định dạng. Có thể tắt bất kỳ mã nào cho một lần chạy bằng `--exclude-rules`, và có thể tắt tại chỗ một phát hiện của ShellCheck bằng chú thích `# shellcheck disable=SCXXXX` kèm lý do. Một gợi ý được trình kiểm tra kiểm tra sẽ kết thúc bằng mã của quy tắc kiểm tra nó, như `BSG010`, để một phát hiện dẫn thẳng tới câu mà nó thực thi.
 
 [`.shellcheckrc`](.shellcheckrc) và [`.editorconfig`](.editorconfig) trong kho này là cấu hình mà hướng dẫn yêu cầu, và được dùng để sao chép vào dự án của bạn. `dyshellint` đọc `.shellcheckrc` của dự án mà nó kiểm tra, và cũng kèm sẵn một định nghĩa [nvim-lint](https://github.com/mfussenegger/nvim-lint) cho Neovim.
 
@@ -157,12 +157,10 @@ prek run --all-files
 > [!TIP]
 >
 > - ✔️ NÊN: Sử dụng Bash cho tất cả các script
-> - ✔️ NÊN: Viết `#!/usr/bin/env bash` ở đầu script. (tùy chỉnh)
-> - ✔️ NÊN: Sử dụng `set -euo pipefail` cho các cài đặt tùy chọn shell. (tùy chỉnh)
+> - ✔️ NÊN: Viết `#!/usr/bin/env bash` ở đầu script. (tùy chỉnh) `BSG030`
+> - ✔️ NÊN: Sử dụng `set -euo pipefail` cho các cài đặt tùy chọn shell. (tùy chỉnh) `BSG031`
 > - ✔️ NÊN: Sau khi source [dybatpho](https://github.com/dynamotn/dybatpho), bạn có thể bỏ qua `set -euo pipefail`. (dybatpho)
 > - ⚠️ CÂN NHẮC: Nếu sử dụng các shell khác, hãy giải thích lý do trong phần nhận xét. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG024`, `BSG030`, `BSG031`
 
 Sử dụng Bash. Hạn chế tất cả các script shell có thể thực thi đối với `bash` đảm bảo một shell nhất quán được cài đặt trên tất cả các máy.
 
@@ -207,12 +205,10 @@ fi
 > [!TIP]
 >
 > - ✔️ NÊN: Nhắm tới Bash 4.4 trở lên, và ghi rõ điều này trong README của dự án. (tùy chỉnh)
-> - ✔️ NÊN: Kiểm tra `BASH_VERSINFO` ở đầu một entrypoint, trước mọi thứ cần một tính năng mới hơn, và dừng lại với một thông báo nêu phiên bản đang có
+> - ✔️ NÊN: Kiểm tra `BASH_VERSINFO` ở đầu một entrypoint, trước mọi thứ cần một tính năng mới hơn, và dừng lại với một thông báo nêu phiên bản đang có `BSG099`
 > - ✔️ NÊN: Ghi phiên bản đã giới thiệu một tính năng bên cạnh quy tắc phụ thuộc vào nó, khi phiên bản đó mới hơn mục tiêu
 > - ❌ TRÁNH: Không cho rằng `bash` trên `PATH` là bản mới: macOS vẫn đi kèm Bash 3.2 ở `/bin/bash`
-> - ❌ TRÁNH: Không so sánh phiên bản theo dạng `major >= X && minor >= Y`, dạng này từ chối Bash 6.0 khi mức tối thiểu là 5.2, và không so sánh `BASH_VERSION` như chuỗi, khi đó `5.10` xếp trước `5.2`
->
-> Trình kiểm tra: `BSG099`, `BSG116`
+> - ❌ TRÁNH: Không so sánh phiên bản theo dạng `major >= X && minor >= Y`, dạng này từ chối Bash 6.0 khi mức tối thiểu là 5.2, và không so sánh `BASH_VERSION` như chuỗi, khi đó `5.10` xếp trước `5.2` `BSG116`
 
 Hướng dẫn này dựa vào các tính năng mà những bản cũ không có: nameref (`local -n`, 4.3), `mapfile -d` và `local -` (4.4), và mảng rỗng được `set -u` chấp nhận (4.4). Trên Bash 3.2, một script viết theo cách này không thất bại ngay chỗ thiếu tính năng; nó thất bại muộn hơn, với `invalid option` hay `unbound variable`, ở xa nguyên nhân. Một bước kiểm tra ở đầu biến điều đó thành một thông báo mà người dùng có thể xử lý, chẳng hạn cài một bản Bash mới hơn bằng Homebrew, bản mà `#!/usr/bin/env bash` sẽ tìm thấy trước.
 
@@ -278,11 +274,9 @@ Sử dụng shell script cho các tiện ích nhỏ hoặc các script wrapper �
 
 > [!TIP]
 >
-> - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script là thư viện và `chmod -x` cho chúng.
+> - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script là thư viện và `chmod -x` cho chúng. `BSG037`
 > - ✔️ NÊN: Không sử dụng phần mở rộng cho các script trong PATH và `chmod -x` cho chúng.
 > - ✔️ NÊN: Sử dụng phần mở rộng `.sh` cho các script không ở trong PATH và có thể gọi từ CLI. `chmod +x` cho chúng. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG037`
 
 Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) hoặc không có phần mở rộng. Các script được source từ bên ngoài phải có phần mở rộng `.sh` và không nên được đánh dấu là có thể thực thi.
 
@@ -296,9 +290,7 @@ Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) 
 > - ✔️ NÊN: Sử dụng `sudo` nếu bạn cần nâng quyền
 > - ✔️ NÊN: Xóa các biến của trình nạp và trình thông dịch trước khi một wrapper có quyền cao chuyển giao bằng `exec`: `LD_PRELOAD`, `LD_LIBRARY_PATH`, `LD_AUDIT`, `BASH_ENV`, `ENV`, `PYTHONPATH`, `PERL5LIB`, `RUBYLIB`, `NODE_PATH`, hoặc khởi động chương trình dưới `env -i`
 > - ❌ TRÁNH: SUID và SGID bị cấm
-> - ❌ TRÁNH: `sudo` cũng bị cấm trong các script CI (tùy chỉnh).
->
-> Trình kiểm tra: `BSG035`
+> - ❌ TRÁNH: `sudo` cũng bị cấm trong các script CI (tùy chỉnh). `BSG035`
 
 SUID và SGID bị cấm trong shell script. Shell có nhiều vấn đề bảo mật, khiến cho việc đảm bảo an toàn đầy đủ để cho phép SUID/SGID là gần như không thể. Mặc dù bash gây khó khăn cho việc thực thi SUID, nhưng nó vẫn có thể xảy ra trên một số nền tảng, vì vậy nó bị cấm. Nếu cần nâng quyền, hãy sử dụng `sudo`.
 
@@ -379,15 +371,13 @@ bash ./scripts/docker.sh --log-level debug "${identity}"
 > [!TIP]
 >
 > - ✔️ NÊN: Nhận mọi tham số dưới dạng tùy chọn có tên `--option value`
-> - ✔️ NÊN: Khai báo giao diện của script trong hàm `_spec_<entrypoint>` bằng `dybatpho::opts::*`, rồi chạy nó với `dybatpho::generate_from_spec "_spec_<entrypoint>" "$@"`. (dybatpho)
+> - ✔️ NÊN: Khai báo giao diện của script trong hàm `_spec_<entrypoint>` bằng `dybatpho::opts::*`, rồi chạy nó với `dybatpho::generate_from_spec "_spec_<entrypoint>" "$@"`. (dybatpho) `BSG051`
 > - ✔️ NÊN: Đặt tên biến nhận giá trị tùy chọn bằng `CHỮ HOA`, và cho mọi tùy chọn không bắt buộc một giá trị mặc định qua `init:=`. (tùy chỉnh)
 > - ✔️ NÊN: Gom các tham số vị trí còn lại vào một mảng duy nhất, khai báo ở `dybatpho::opts::setup`
-> - ✔️ NÊN: Khai báo tham số của hàm bằng `dybatpho::expect_args name... -- "$@"` thay vì tự đọc `$1`, `$2`. (dybatpho)
-> - ✔️ NÊN: Luôn cung cấp `--help` thông qua `dybatpho::opts::disp` và `dybatpho::generate_help`. (dybatpho)
+> - ✔️ NÊN: Khai báo tham số của hàm bằng `dybatpho::expect_args name... -- "$@"` thay vì tự đọc `$1`, `$2`. (dybatpho) `BSG050`
+> - ✔️ NÊN: Luôn cung cấp `--help` thông qua `dybatpho::opts::disp` và `dybatpho::generate_help`. (dybatpho) `BSG052`
 > - ❌ TRÁNH: Không nhận tham số vị trí trần như `script.sh value1 value2`, trừ khi đó là danh sách các phần tử cùng loại
 > - ❌ TRÁNH: Không định nghĩa tùy chọn chỉ có tên viết tắt một chữ cái
->
-> Trình kiểm tra: `BSG050`, `BSG051`, `BSG052`
 
 Tùy chọn có tên tự giải thích ngay tại chỗ gọi: `--dry-run false` nói rõ nó làm gì, còn `false` đứng một mình thì không. Khai báo giao diện dưới dạng spec giúp gom việc phân tích tham số, giá trị mặc định, kiểm tra hợp lệ và văn bản trợ giúp vào một chỗ, và khiến mọi script trong kho mã có cùng một cách hành xử trên dòng lệnh.
 
@@ -446,14 +436,12 @@ done
 > [!TIP]
 >
 > - ✔️ NÊN: Để người gọi chọn mức chi tiết của log bằng tùy chọn `--log-level` gắn với `LOG_LEVEL`, kiểm tra bằng `dybatpho::validate_log_level`. (dybatpho)
-> - ✔️ NÊN: Bật theo vết lệnh bằng `dybatpho::start_trace` thay vì viết `set -x` trực tiếp, và tắt bằng `dybatpho::end_trace`. (dybatpho)
-> - ✔️ NÊN: Chạy mọi lệnh làm thay đổi trạng thái qua `dybatpho::dry_run`, để chế độ chạy thử chỉ in ra lệnh thay vì thực thi nó. (dybatpho)
+> - ✔️ NÊN: Bật theo vết lệnh bằng `dybatpho::start_trace` thay vì viết `set -x` trực tiếp, và tắt bằng `dybatpho::end_trace`. (dybatpho) `BSG034`
+> - ✔️ NÊN: Chạy mọi lệnh làm thay đổi trạng thái qua `dybatpho::dry_run`, để chế độ chạy thử chỉ in ra lệnh thay vì thực thi nó. (dybatpho) `BSG095`
 > - ✔️ NÊN: Ưu tiên chế độ chạy thử do chính công cụ cung cấp, như `chezmoi diff` hay `kubectl --dry-run=server`, hơn là tự in lệnh ra
 > - ✔️ NÊN: Đưa mọi tác dụng phụ qua wrapper chạy thử trong một script có hỗ trợ chạy thử: tải về, ghi, xóa, thay đổi gói và dịch vụ. (dybatpho)
 > - ❌ TRÁNH: Không thực hiện trực tiếp một tác dụng phụ trong script có hỗ trợ chạy thử, kể cả một lần tải về hay ghi cache "vô hại"
 > - ⚠️ CÂN NHẮC: Đặt chạy thử làm mặc định cho script mà lần chạy thật có tính phá hủy. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG034`, `BSG095`
 
 Một script có thể được hỏi rằng nó *sẽ* làm gì là một script mà người ta dám chạy trên máy họ quan tâm. Bọc lệnh thay đổi trạng thái, thay vì rẽ nhánh quanh nó, giúp đường chạy thử và đường chạy thật giống hệt nhau cho tới bước cuối, nên lần chạy thử đi qua đúng những điều kiện và đúng những tham số đó.
 
@@ -515,16 +503,14 @@ dybatpho::dry_run systemctl --user restart app.service
 
 > [!TIP]
 >
-> - ✔️ NÊN: Tất cả các thông báo lỗi và nghiêm trọng nên được chuyển đến `STDERR`
+> - ✔️ NÊN: Tất cả các thông báo lỗi và nghiêm trọng nên được chuyển đến `STDERR` `BSG036`
 > - ✔️ NÊN: Sử dụng biến `LOG_LEVEL` để kiểm soát mức độ ghi log với 6 cấp độ: trace, debug, info, warn, error, fatal. (tùy chỉnh)
 > - ✔️ NÊN: Triệt tiêu tất cả các thông báo không cần thiết vào `/dev/null`. (tùy chỉnh)
 > - ✔️ NÊN: Sử dụng thư viện ghi log từ [dybatpho](https://github.com/dynamotn/dybatpho) để xuất các thông báo để ghi log tốt hơn. (dybatpho)
 > - ✔️ NÊN: Giữ standard output của một hàm bị bắt output chỉ cho kết quả của nó: gửi tiến độ, đường dẫn và thông báo sang `STDERR` hoặc `/dev/null`
 > - ✔️ NÊN: Gửi cả hai luồng về một nơi bằng `&>` và `&>>`: `cmd &> /dev/null`, `cmd &>> "${log}"`
 > - ❌ TRÁNH: Không gọi một helper in ra `STDOUT` từ một hàm mà output của nó bị bên gọi bắt lại hoặc pipe vào một tệp
-> - ❌ TRÁNH: Không trộn `&>` với `> file 2>&1` trong cùng một codebase, và không bao giờ viết `2>&1 > file`, cách này vẫn gửi lỗi ra terminal
->
-> Trình kiểm tra: `BSG036`, `BSG122`
+> - ❌ TRÁNH: Không trộn `&>` với `> file 2>&1` trong cùng một codebase, và không bao giờ viết `2>&1 > file`, cách này vẫn gửi lỗi ra terminal `BSG122`
 
 **Nên dùng**
 
@@ -607,16 +593,14 @@ backup::run 2>&1 > "${LOG_FILE}"
 
 > [!TIP]
 >
-> - ✔️ NÊN: Sử dụng `.` để gọi các hàm chung
+> - ✔️ NÊN: Sử dụng `.` để gọi các hàm chung `BSG032`
 > - ✔️ NÊN: Các hàm chung nên được để chung dưới dạng library trong thư mục con `lib`
-> - ✔️ NÊN: Chặn việc một thư viện bị source lần thứ hai trước khi nó khai báo các hằng `readonly`
-> - ✔️ NÊN: Xác định vị trí một thư viện từ bên trong nó bằng `${BASH_SOURCE[0]}`
-> - ✔️ NÊN: Kiểm tra đường dẫn thư viện được tính ra có tồn tại trước khi source, và nói cách lấy thư viện khi nó không có
+> - ✔️ NÊN: Chặn việc một thư viện bị source lần thứ hai trước khi nó khai báo các hằng `readonly` `BSG038`
+> - ✔️ NÊN: Xác định vị trí một thư viện từ bên trong nó bằng `${BASH_SOURCE[0]}` `BSG039`
+> - ✔️ NÊN: Kiểm tra đường dẫn thư viện được tính ra có tồn tại trước khi source, và nói cách lấy thư viện khi nó không có `BSG096`
 > - ❌ TRÁNH: Không khai báo `readonly` ở cấp cao nhất của một thư viện có thể bị source hai lần
-> - ❌ TRÁNH: Không dùng `$0` trong thư viện: nó là tên của script đã source thư viện
+> - ❌ TRÁNH: Không dùng `$0` trong thư viện: nó là tên của script đã source thư viện `BSG039`
 > - ❌ TRÁNH: Không source một đường dẫn tính ra mà không kiểm tra
->
-> Trình kiểm tra: `BSG032`, `BSG038`, `BSG039`, `BSG096`
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
@@ -700,9 +684,7 @@ fi
 > - ✔️ NÊN: Đọc một thiết lập kế thừa có chủ đích: ghi chú nó bằng `@env` và kiểm tra nó
 > - ✔️ NÊN: Đặt `PATH` thành các thư mục hệ thống cố định ở đầu một script chạy với quyền cao, trước lệnh bên ngoài đầu tiên của nó
 > - ❌ TRÁNH: Không cho rằng một biến bạn chưa từng đặt thì chưa được đặt
-> - ❌ TRÁNH: Không đưa `.`, một phần tử rỗng (`::`, hay `:` ở đầu hoặc cuối) hoặc một thư mục ai cũng ghi được như `/tmp` vào `PATH`
->
-> Trình kiểm tra: `BSG114`
+> - ❌ TRÁNH: Không đưa `.`, một phần tử rỗng (`::`, hay `:` ở đầu hoặc cuối) hoặc một thư mục ai cũng ghi được như `/tmp` vào `PATH` `BSG114`
 
 Một script kế thừa mọi biến được xuất của shell đã khởi chạy nó. `CDPATH` làm `cd dir` in ra một đường dẫn và đi tới nơi khác; một `IFS` tùy chỉnh thay đổi cách mọi khai triển không có nháy bị tách; `GIT_DIR` trỏ mọi lệnh git sang một repository khác; `FORCE_COLOR` đưa mã escape vào output bị bắt lại. Một thư viện phụ thuộc vào bất kỳ biến nào trong số này phải tự đặt nó, chứ không phải hy vọng.
 
@@ -757,9 +739,7 @@ PATH="/tmp/tools:${PATH}"
 > - ✔️ NÊN: Đọc tệp cấu hình như dữ liệu: phân tích các dòng `key=value`, chỉ chấp nhận những khóa mà script biết, và kiểm tra từng giá trị
 > - ✔️ NÊN: Nạp các tệp theo một thứ tự cố định, của hệ thống trước và của người dùng sau cùng, và ghi rõ trong `--help` những đường dẫn nào được đọc
 > - ⚠️ CÂN NHẮC: Chỉ `.` một tệp cấu hình khi nó thuộc về người dùng đang chạy script, hoặc root, và không ai khác ghi được vào nó
-> - ❌ TRÁNH: Không `.` một tệp mà người dùng khác, một thư mục ai cũng ghi được hay một lần tải về có thể thay đổi: mọi dòng của nó chạy như chính script
->
-> Trình kiểm tra: `BSG115`
+> - ❌ TRÁNH: Không `.` một tệp mà người dùng khác, một thư mục ai cũng ghi được hay một lần tải về có thể thay đổi: mọi dòng của nó chạy như chính script `BSG115`
 
 Source một tệp nghĩa là chạy nó. Một tệp cấu hình trong thư mục dùng chung, hay một tệp mà người dùng có ít quyền hơn sửa được, khi đó trở thành cách để chạy bất kỳ lệnh nào với quyền của script — với một script chạy qua `sudo` là quyền root. Phân tích tệp giữ nó đúng với vai trò của nó: giá trị cho những thiết lập mà script biết, được kiểm tra như mọi input khác.
 
@@ -801,13 +781,11 @@ function app::load_config {
 > [!TIP]
 >
 > - ✔️ NÊN: Trả về một trạng thái từ hàm thư viện, hoặc dừng qua helper die của thư viện, thứ báo rõ lỗi. (dybatpho)
-> - ✔️ NÊN: Đổi thư mục bên trong một subshell, `( cd -- "${dir}" && ... )`, hoặc khôi phục thư mục cũ trước khi trả về
-> - ✔️ NÊN: Giới hạn phạm vi một tùy chọn shell mà hàm cần: một subshell, `local -` cho tùy chọn của `set`, tiền tố `IFS=` trên đúng lệnh cần tách, `local IFS`, hoặc lưu và khôi phục nó trên mọi nhánh trả về
-> - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện
+> - ✔️ NÊN: Đổi thư mục bên trong một subshell, `( cd -- "${dir}" && ... )`, hoặc khôi phục thư mục cũ trước khi trả về `BSG091`
+> - ✔️ NÊN: Giới hạn phạm vi một tùy chọn shell mà hàm cần: một subshell, `local -` cho tùy chọn của `set`, tiền tố `IFS=` trên đúng lệnh cần tách, `local IFS`, hoặc lưu và khôi phục nó trên mọi nhánh trả về `BSG092`
+> - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện `BSG090`
 > - ❌ TRÁNH: Không `cd` trong shell của bên gọi từ một hàm thư viện
 > - ❌ TRÁNH: Không để `set -e`/`+e`/`-C`/`-f`, một tùy chọn `shopt`, `IFS` hay `umask` bị thay đổi khi hàm thư viện trả về
->
-> Trình kiểm tra: `BSG090`, `BSG091`, `BSG092`
 
 Một thư viện chạy trong shell của bên gọi. `exit` ở đó kết thúc cả script — bỏ qua phần xử lý lỗi của bên gọi, quyết định dọn dẹp của nó và thông báo lẽ ra phải nói lý do — còn bên trong `$(...)` thì nó chỉ kết thúc subshell, nên bên gọi không phân biệt được lỗi với một câu trả lời rỗng.
 
@@ -905,9 +883,7 @@ function text::split_into {
 >
 > - ✔️ NÊN: Chỉ hỏi khi standard input là terminal, hoặc tôn trọng chế độ không tương tác, và nếu không thì dùng một mặc định an toàn
 > - ✔️ NÊN: Đặt timeout và câu trả lời mặc định cho một lời nhắc
-> - ❌ TRÁNH: Không gọi `read` hay một lời nhắc vô điều kiện trong script có thể chạy trong CI, cron hay một pipe
->
-> Trình kiểm tra: `BSG098`
+> - ❌ TRÁNH: Không gọi `read` hay một lời nhắc vô điều kiện trong script có thể chạy trong CI, cron hay một pipe `BSG098`
 
 Khi không có terminal, `read` chờ một đầu vào không bao giờ tới — một job CI treo cho tới khi hết thời gian — hoặc đọc dòng tiếp theo của một pipe vốn dành cho thứ khác. Kiểm tra `[[ -t 0 ]]` và có sẵn một mặc định giúp lần chạy không người trông tự quyết định, còn timeout giới hạn lần chạy có tương tác.
 
@@ -938,14 +914,12 @@ read -r -p "Overwrite ${file}? [y/N] " answer
 
 > [!TIP]
 >
-> - ✔️ NÊN: Dùng từ khóa `function` để khai báo hàm
-> - ✔️ NÊN: Viết tên hàm bằng chữ thường, các từ ngăn cách bằng dấu gạch dưới
-> - ✔️ NÊN: Ngăn cách không gian tên với tên hàm bằng `::`, và đặt tên không gian tên theo tên tệp thư viện: `scripts/lib/package_manager.sh` định nghĩa `package_manager::install`
+> - ✔️ NÊN: Dùng từ khóa `function` để khai báo hàm `BSG001`
+> - ✔️ NÊN: Viết tên hàm bằng chữ thường, các từ ngăn cách bằng dấu gạch dưới `BSG003`
+> - ✔️ NÊN: Ngăn cách không gian tên với tên hàm bằng `::`, và đặt tên không gian tên theo tên tệp thư viện: `scripts/lib/package_manager.sh` định nghĩa `package_manager::install` `BSG004`
 > - ✔️ NÊN: Thêm tiền tố `__<namespace>_` cho hàm riêng tư của thư viện, và tiền tố `_` cho hàm riêng tư của một script thực thi. (tùy chỉnh)
-> - ❌ TRÁNH: Không viết `()` sau tên hàm khi đã dùng từ khóa `function`. (tùy chỉnh)
-> - ❌ TRÁNH: Không dùng PascalCase hay camelCase
->
-> Trình kiểm tra: `BSG001`, `BSG002`, `BSG003`, `BSG004`
+> - ❌ TRÁNH: Không viết `()` sau tên hàm khi đã dùng từ khóa `function`. (tùy chỉnh) `BSG002`
+> - ❌ TRÁNH: Không dùng PascalCase hay camelCase `BSG003`
 
 Từ khóa `function` khiến phần khai báo dễ tìm bằng `grep`, điều này quan trọng trong một ngôn ngữ không có cách nào khác để liệt kê những gì một tệp định nghĩa. Dấu `::` cho thư viện một không gian tên mà bản thân Bash không có: hai thư viện đều có thể có bước `download` mà không đụng nhau, và người đọc biết ngay hàm đến từ đâu mà không cần tra cứu.
 
@@ -992,13 +966,11 @@ function verifySha256 {
 > [!TIP]
 >
 > - ✔️ NÊN: Viết tên biến cục bộ và biến thường bằng chữ thường, các từ ngăn cách bằng dấu gạch dưới
-> - ✔️ NÊN: Khai báo mọi biến dùng trong hàm bằng `local`, và khai báo mảng cục bộ bằng `local -a name=()`
+> - ✔️ NÊN: Khai báo mọi biến dùng trong hàm bằng `local`, và khai báo mảng cục bộ bằng `local -a name=()` `BSG011` `BSG013`
 > - ✔️ NÊN: Dùng `CHỮ HOA` cho biến do bên gọi đặt: tùy chọn của script, biến môi trường được xuất ra và hằng số
 > - ✔️ NÊN: Đặt hằng số ở đầu tệp và cho nó thuộc tính chỉ đọc bằng `readonly` hoặc `declare -r`
-> - ✔️ NÊN: Đặt tên biến lặp theo tập hợp mà nó duyệt: `for tool in "${tools[@]}"`
-> - ❌ TRÁNH: Không khai báo và gán từ một lệnh thay thế trên cùng một dòng
->
-> Trình kiểm tra: `BSG010`, `BSG011`, `BSG012`, `BSG013`
+> - ✔️ NÊN: Đặt tên biến lặp theo tập hợp mà nó duyệt: `for tool in "${tools[@]}"` `BSG012`
+> - ❌ TRÁNH: Không khai báo và gán từ một lệnh thay thế trên cùng một dòng `BSG010`
 
 `local name="$(some_command)"` làm mất mã thoát của `some_command`, vì mã thoát của cả dòng là mã thoát của `local`, mà `local` thì luôn thành công. Dưới `set -e`, điều đó biến một lệnh thất bại thành một biến rỗng trong im lặng. Tách làm hai dòng giữ cho lỗi vẫn hiện ra. `readonly`, `export` và `declare` cũng nuốt mã thoát theo cùng cách đó, nên một hằng số được gán trước rồi mới đặt chỉ đọc ở dòng kế tiếp.
 
@@ -1052,11 +1024,9 @@ done
 
 > [!TIP]
 >
-> - ✔️ NÊN: Thêm tiền tố cho mọi biến cục bộ khác của một hàm gắn `local -n` với một tên do bên gọi chọn: `__<namespace>_<function>_<name>`
-> - ✔️ NÊN: Thêm tiền tố cho các biến cục bộ của một hàm chạy code của bên gọi — `"$@"`, `eval`, tên một callback, handler hay producer — khi chúng còn được dùng sau lần gọi đó
+> - ✔️ NÊN: Thêm tiền tố cho mọi biến cục bộ khác của một hàm gắn `local -n` với một tên do bên gọi chọn: `__<namespace>_<function>_<name>` `BSG014`
+> - ✔️ NÊN: Thêm tiền tố cho các biến cục bộ của một hàm chạy code của bên gọi — `"$@"`, `eval`, tên một callback, handler hay producer — khi chúng còn được dùng sau lần gọi đó `BSG015`
 > - ❌ TRÁNH: Không đặt cho những hàm như vậy các biến cục bộ trơn như `status`, `name`, `path`, `count` hay `result`
->
-> Trình kiểm tra: `BSG014`, `BSG015`
 
 Bash dùng phạm vi biến động. `local -n ref="$1"` chỉ phân giải tên bên gọi truyền vào lúc được dùng, nên nếu hàm có một biến cục bộ trùng tên đó, nameref sẽ gắn vào biến cục bộ và biến của bên gọi không bao giờ được gán. Code mà hàm chạy thay cho bên gọi cũng thấy các biến cục bộ của hàm theo cách đó, và có thể đọc hay ghi đè chúng: một lệnh tự giữ biến `count` của riêng nó từng làm thay đổi số lần thử lại của một helper retry.
 
@@ -1106,10 +1076,8 @@ function net::retry {
 
 > [!TIP]
 >
-> - ✔️ NÊN: Thêm một comment ở đầu file để giải thích ngắn gọn mục đích hoặc nội dung của file. Tuy nhiên, không thêm comment trước dòng shebang.
-> - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) bao gồm: `@file`, `@brief`, `@description` để giải thích file. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG020`
+> - ✔️ NÊN: Thêm một comment ở đầu file để giải thích ngắn gọn mục đích hoặc nội dung của file. Tuy nhiên, không thêm comment trước dòng shebang. `BSG024`
+> - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) bao gồm: `@file`, `@brief`, `@description` để giải thích file. (tùy chỉnh) `BSG020`
 
 Tất cả các file nên có một comment cấp cao nhất mô tả ngắn gọn nội dung của chúng.
 
@@ -1129,9 +1097,7 @@ Tất cả các file nên có một comment cấp cao nhất mô tả ngắn g�
 
 > [!TIP]
 >
-> - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) để giải thích hàm. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG021`, `BSG022`
+> - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) để giải thích hàm. (tùy chỉnh) `BSG021` `BSG022`
 
 Người khác có thể học cách sử dụng chương trình của bạn hoặc sử dụng một hàm trong thư viện của bạn bằng cách đọc các comment (và tự tìm hiểu, nếu có) mà không cần đọc code.
 
@@ -1184,9 +1150,7 @@ Comment về các phần code phức tạp, không rõ ràng, thú vị hoặc q
 > [!TIP]
 >
 > - ✔️ NÊN: Cân nhắc sử dụng comment TODO.
-> - ❌ TRÁNH: Không bao gồm tên của người viết comment TODO. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG023`
+> - ❌ TRÁNH: Không bao gồm tên của người viết comment TODO. (tùy chỉnh) `BSG023`
 
 Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc code đủ tốt nhưng chưa hoàn hảo. Comment TODO nên bao gồm chuỗi viết hoa `TODO`. Không cần thiết phải bao gồm tên của cá nhân, vì có thể xác định bằng `git blame`. Mục đích của comment TODO là cung cấp một marker `TODO` nhất quán và dễ tìm kiếm, có thể được tra cứu để biết thêm chi tiết khi cần. Vì người được tham chiếu trong TODO không nhất thiết phải cam kết sửa lỗi, nên việc bao gồm giải pháp dự kiến là hữu ích.
 
@@ -1205,11 +1169,9 @@ Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc
 
 > [!TIP]
 >
-> - ✔️ NÊN: Thụt lề bằng hai dấu cách. Không sử dụng dấu tab.
+> - ✔️ NÊN: Thụt lề bằng hai dấu cách. Không sử dụng dấu tab. `BSG071`
 > - ✔️ NÊN: Chèn dòng trống giữa các khối mã để tăng tính dễ đọc.
-> - ✔️ NÊN: Không bao gồm khoảng trắng ở cuối dòng. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG071`, `BSG072`
+> - ✔️ NÊN: Không bao gồm khoảng trắng ở cuối dòng. (tùy chỉnh) `BSG072`
 
 Thụt lề nên dùng hai dấu cách. Tuyệt đối không được sử dụng dấu tab.
 
@@ -1222,11 +1184,9 @@ Nhiều trình soạn thảo không thể chuyển đổi giữa thụt lề th�
 
 > [!TIP]
 >
-> - ✔️ NÊN: Độ dài dòng tối đa là 120 ký tự. (tùy chỉnh)
+> - ✔️ NÊN: Độ dài dòng tối đa là 120 ký tự. (tùy chỉnh) `BSG070`
 > - ✔️ NÊN: Cân nhắc sử dụng here document hoặc ký tự xuống dòng trong chuỗi quá dài. (tùy chỉnh)
 > - ⚠️ CÂN NHẮC: Tìm cách rút ngắn các chuỗi ký tự.
->
-> Trình kiểm tra: `BSG070`
 
 Giữ mọi dòng ở mức 120 ký tự hoặc ít hơn; `max_line_length` trong [`.editorconfig`](.editorconfig) đặt giới hạn này cho trình soạn thảo, và linter kiểm tra nó. Ngắt một lệnh dài tại các tùy chọn bằng `\`, và một chuỗi dài bằng here document hoặc ký tự xuống dòng. Một chuỗi không thể chia nhỏ, như một URL, nên được chuyển vào một biến riêng thay vì để nó vượt quá giới hạn.
 
@@ -1361,11 +1321,9 @@ esac
 >
 > - ✔️ NÊN: Đặt mọi biến có tên trong dấu ngoặc nhọn, `${var}`, kể cả khi nó đứng một mình trong dấu nháy. `require-variable-braces` trong [`.shellcheckrc`](.shellcheckrc) kiểm tra điều này
 > - ✔️ NÊN: Đặt các khai triển biến trong dấu nháy kép. Dấu nháy đơn không khai triển biến
-> - ✔️ NÊN: Đọc một biến môi trường có thể chưa được đặt kèm giá trị mặc định khi có `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}`
-> - ❌ TRÁNH: Tránh đặt các biến đặc biệt/tham số vị trí của shell trong dấu ngoặc nhọn trừ khi thực sự cần thiết hoặc để tránh nhầm lẫn nghiêm trọng
+> - ✔️ NÊN: Đọc một biến môi trường có thể chưa được đặt kèm giá trị mặc định khi có `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}` `BSG073`
+> - ❌ TRÁNH: Tránh đặt các biến đặc biệt/tham số vị trí của shell trong dấu ngoặc nhọn trừ khi thực sự cần thiết hoặc để tránh nhầm lẫn nghiêm trọng `BSG043`
 > - ❌ TRÁNH: Không đọc trơn một biến môi trường tùy chọn khi có `set -u`
->
-> Trình kiểm tra: `BSG043`, `BSG073`
 
 Các biến nên được đặt trong dấu nháy kép. Sử dụng `${var}` thay vì `$var`, kể cả khi biến là toàn bộ chuỗi trong dấu nháy kép: một dạng duy nhất ở mọi nơi dễ đọc và dễ kiểm tra hơn một quy tắc có ngoại lệ.
 Đây là một hướng dẫn được khuyến nghị mạnh mẽ nhưng không phải là một quy định tuyệt đối. Tuy nhiên, mặc dù nó không bắt buộc, đừng bỏ qua nó.
@@ -1535,9 +1493,7 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 > - ✔️ NÊN: Đặt shebang và chú thích đầu tệp trước, rồi tới hằng số, rồi tới các khai báo hàm, và cuối cùng là dòng duy nhất khởi động script
 > - ✔️ NÊN: Giữ lời gọi hàm vào (entrypoint) ở dòng cuối cùng của tệp
 > - ⚠️ CÂN NHẮC: Bảo vệ lời gọi đó bằng `[[ "${BASH_SOURCE[0]}" == "$0" ]]` khi một bài kiểm thử source script để lấy các hàm của nó
-> - ❌ TRÁNH: Không đặt mã thực thi xen giữa các khai báo hàm
->
-> Trình kiểm tra: `BSG033`
+> - ❌ TRÁNH: Không đặt mã thực thi xen giữa các khai báo hàm `BSG033`
 
 Một tệp chỉ gồm các khai báo và kết thúc bằng một lời gọi thì có thể đọc theo thứ tự bất kỳ, và việc `source` nó để kiểm thử không chạy gì ngoài lời gọi đó — thứ mà một điều kiện trên `BASH_SOURCE` bỏ qua, vì `${BASH_SOURCE[0]}` chỉ bằng `$0` khi tệp được thực thi. Mã nằm rải rác giữa các hàm sẽ chạy ngay lúc nạp tệp, khiến script không thể `source` được và rất khó lần ra khi nó hỏng giữa chừng.
 
@@ -1593,11 +1549,9 @@ function _main {
 > - ✔️ NÊN: Sử dụng ShellCheck để xác định lỗi trong các tập lệnh shell
 > - ✔️ NÊN: Giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "warning" trở lên. (tùy chỉnh)
 > - ✔️ NÊN: Sao chép [`.shellcheckrc`](.shellcheckrc) của hướng dẫn này vào dự án: nó bật các kiểm tra tùy chọn mà hướng dẫn yêu cầu theo tên, và cho phép ShellCheck đi theo các chỉ thị `source=`. (tùy chỉnh)
-> - ✔️ NÊN: Chỉ cho ShellCheck biết thư viện được source qua một đường dẫn tính ra bằng `# shellcheck source=<path>`, thay vì tắt SC1091
+> - ✔️ NÊN: Chỉ cho ShellCheck biết thư viện được source qua một đường dẫn tính ra bằng `# shellcheck source=<path>`, thay vì tắt SC1091 `BSG109`
 > - ⚠️ CÂN NHẮC: Cân nhắc giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "info" trở lên. (tùy chỉnh)
-> - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng, kèm lý do trên cùng dòng. (tùy chỉnh)
->
-> Trình kiểm tra: `BSG109`, `BSG123`
+> - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng, kèm lý do trên cùng dòng. (tùy chỉnh) `BSG123`
 
 Dự án [ShellCheck](https://www.shellcheck.net/) phát hiện các lỗi và cảnh báo phổ biến trong các tập lệnh shell. Hãy áp dụng nó cho tất cả các tập lệnh shell, bất kể kích thước của chúng.
 
@@ -1686,10 +1640,8 @@ mapfile -t lines <<< "${text}"
 > - ✔️ NÊN: Trả về một giá trị cần kiểm tra qua nameref, bằng một helper `*_into`, hoặc kiểm tra đầu vào trước khi thay thế lệnh
 > - ✔️ NÊN: Kiểm tra mã thoát của một lệnh thay thế mà hàm bên trong có thể dừng script: `value="$(fn)" || return $?`
 > - ✔️ NÊN: Gọi một hàm thay đổi trạng thái — biến toàn cục, cache hay memo, bộ đếm, việc đăng ký bí mật — trong shell của bên gọi, và trả giá trị qua nameref
-> - ❌ TRÁNH: Không gọi một hàm có thể dừng script, qua `dybatpho::die` hay `exit`, bên trong `$(...)` rồi chạy tiếp vô điều kiện
-> - ❌ TRÁNH: Không gọi hàm như vậy bên trong `$(...)`: mọi thay đổi nó tạo ra đều mất cùng subshell
->
-> Trình kiểm tra: `BSG047`, `BSG084`
+> - ❌ TRÁNH: Không gọi một hàm có thể dừng script, qua `dybatpho::die` hay `exit`, bên trong `$(...)` rồi chạy tiếp vô điều kiện `BSG047`
+> - ❌ TRÁNH: Không gọi hàm như vậy bên trong `$(...)`: mọi thay đổi nó tạo ra đều mất cùng subshell `BSG084`
 
 `$(...)` chạy trong một subshell, nên `dybatpho::die` hay `exit` bên trong chỉ kết thúc subshell đó. Dưới `set -e`, phép gán thất bại vẫn dừng script, nhưng ở bất kỳ chỗ nào errexit bị tạm tắt — trong `if`, sau `||`, `&&` hay `!`, hoặc dưới `run` của bats — bên gọi vẫn chạy tiếp với một giá trị rỗng, ngay sau một thông báo lỗi nghiêm trọng nói rằng script sắp dừng. Một helper kiểm tra ngay trong shell của bên gọi sẽ dừng script đúng chỗ.
 
@@ -1806,9 +1758,7 @@ fi
 > - ✔️ NÊN: So sánh số bằng `(( ... ))`, hoặc bằng `-lt`, `-gt`, `-eq` trong `[[ ... ]]`
 > - ❌ TRÁNH: Không dùng một dấu `=` để so sánh chuỗi
 > - ❌ TRÁNH: Không dùng `<` hay `>` để so sánh số trong `[[ ... ]]`
-> - ❌ TRÁNH: Không chạy một biến cờ như một lệnh, như `if ${force}; then` hay `while ${running}; do`: giá trị của nó bị thực thi
->
-> Trình kiểm tra: `BSG121`
+> - ❌ TRÁNH: Không chạy một biến cờ như một lệnh, như `if ${force}; then` hay `while ${running}; do`: giá trị của nó bị thực thi `BSG121`
 
 Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ điển, nên `[[ 10 < 9 ]]` là đúng. Số thì phải nằm trong `(( ... ))`.
 
@@ -1906,12 +1856,10 @@ major="${BASH_REMATCH[1]}"
 > [!TIP]
 >
 > - ✔️ NÊN: Thêm tiền tố `./` cho mẫu đại diện khi nó được khai triển thành tham số của lệnh
-> - ✔️ NÊN: Kiểm tra từng kết quả có tồn tại bằng `[[ -e "${file}" || -L "${file}" ]]`, hoặc bật `nullglob` trong một phạm vi kết thúc cùng vòng lặp
+> - ✔️ NÊN: Kiểm tra từng kết quả có tồn tại bằng `[[ -e "${file}" || -L "${file}" ]]`, hoặc bật `nullglob` trong một phạm vi kết thúc cùng vòng lặp `BSG093`
 > - ⚠️ CÂN NHẮC: Dùng `compgen -G` khi bạn cần các kết quả khớp như dữ liệu và chấp nhận kết quả rỗng. (tùy chỉnh)
 > - ❌ TRÁNH: Không truyền `*` trần cho một lệnh
 > - ❌ TRÁNH: Không cho rằng một glob không khớp gì sẽ khai triển thành rỗng: nó vẫn giữ nguyên là mẫu
->
-> Trình kiểm tra: `BSG093`
 
 Một tệp tên `-rf` trong thư mục sẽ biến `rm *` thành `rm -rf`. `./*` khai triển thành các đường dẫn bắt đầu bằng `./`, không lệnh nào nhầm chúng với tùy chọn được.
 
@@ -1992,11 +1940,9 @@ done
 
 > [!TIP]
 >
-> - ✔️ NÊN: Đặt mọi giá trị ghép vào một chuỗi cho `eval`, hay cho `dybatpho::dry_run` một chuỗi, trong `printf %q`; tốt hơn nữa là truyền một danh sách tham số
-> - ❌ TRÁNH: Không dùng `eval`
+> - ✔️ NÊN: Đặt mọi giá trị ghép vào một chuỗi cho `eval`, hay cho `dybatpho::dry_run` một chuỗi, trong `printf %q`; tốt hơn nữa là truyền một danh sách tham số `BSG080`
+> - ❌ TRÁNH: Không dùng `eval` `BSG040`
 > - ❌ TRÁNH: Không dựng chuỗi lệnh cho `eval` hay `dybatpho::dry_run "<string>"` từ dữ liệu chưa được escape
->
-> Trình kiểm tra: `BSG040`, `BSG080`
 
 `eval` khiến ta không thể biết, chỉ bằng cách đọc script, lệnh nào sẽ chạy hay biến nào sẽ được gán. Khi cần thực thi một giá trị, hãy dùng mảng cho lệnh và tham số của nó, hoặc tham chiếu gián tiếp cho biến.
 
@@ -2049,12 +1995,10 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ NÊN: Truyền token, mật khẩu và URL bí mật cho một lệnh qua tệp cấu hình, standard input hoặc biến môi trường: `curl --config`, `-H @file`
 > - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
 > - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi. (dybatpho)
-> - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc`
+> - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc` `BSG081`
 > - ✔️ NÊN: Tạo tệp chứa bí mật dưới `umask 077`, trong một subshell, hoặc bằng `mktemp`, công cụ tạo tệp với quyền `0600`
 > - ❌ TRÁNH: Không ghi nguyên vẹn URL hay body của request vào log khi nó có thể mang token
 > - ❌ TRÁNH: Không ghi bí mật bằng một `>` trơn dưới umask mặc định: tệp đọc được bởi mọi người dùng, ít nhất cho tới một lệnh `chmod` sau đó
->
-> Trình kiểm tra: `BSG081`
 
 Tham số của một tiến trình đang chạy là công khai trên máy, và log sống lâu hơn lần chạy đã ghi ra nó. Một URL webhook thường chính là thông tin xác thực, nên in URL của một request thất bại cũng làm lộ nó y như in một token. Vì vậy bí mật đi theo đường khác — một tệp cấu hình riêng mà curl đọc, standard input, một biến được kế thừa — và một thông báo chỉ gọi tên request bằng host của nó.
 
@@ -2095,9 +2039,7 @@ dybatpho::error "Request to ${WEBHOOK_URL} failed"
 >
 > - ✔️ NÊN: Dựng JSON và YAML bằng `jq` hoặc `yq` với `--arg`, hoặc qua một helper escape duy nhất mà mọi module dùng chung
 > - ✔️ NÊN: Ghi các trường CSV qua một helper duy nhất, nhân đôi dấu nháy và đặt trong nháy những trường chứa dấu phân cách, dấu nháy hay ký tự xuống dòng
-> - ❌ TRÁNH: Không ghép một giá trị vào văn bản có cấu trúc bằng `printf '{"key":"%s"}'`
->
-> Trình kiểm tra: `BSG086`
+> - ❌ TRÁNH: Không ghép một giá trị vào văn bản có cấu trúc bằng `printf '{"key":"%s"}'` `BSG086`
 
 Một giá trị chứa dấu nháy, dấu gạch chéo ngược hay ký tự xuống dòng sẽ làm hỏng một tài liệu dựng tay, hoặc đổi nghĩa của nó — phía nhận đọc ra thêm một khóa hay một chuỗi bị cắt cụt. Module nào tự dựng JSON cũng sẽ mọc ra bộ escape riêng, và mỗi bộ lại bỏ sót một ký tự điều khiển khác nhau.
 
@@ -2125,9 +2067,7 @@ printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 > - ✔️ NÊN: In dữ liệu — một biến, một đường dẫn, bất cứ thứ gì đến từ bên ngoài — bằng `printf '%s\n' "${value}"`
 > - ✔️ NÊN: Đặt các phần thay đổi vào đối số của `printf`, không bao giờ đặt vào chuỗi định dạng
 > - ⚠️ CÂN NHẮC: `echo` vẫn ổn cho một thông báo cố định không chứa biến và không bắt đầu bằng `-`
-> - ❌ TRÁNH: Không dùng `echo -e` hay `echo -n`, và không `echo` một giá trị có thể bắt đầu bằng `-` hoặc chứa dấu gạch chéo ngược
->
-> Trình kiểm tra: `BSG100`
+> - ❌ TRÁNH: Không dùng `echo -e` hay `echo -n`, và không `echo` một giá trị có thể bắt đầu bằng `-` hoặc chứa dấu gạch chéo ngược `BSG100`
 
 `echo` đọc các đối số đầu tiên như tùy chọn và, tùy shell và `xpg_echo`, khai triển dấu gạch chéo ngược. `echo "${value}"` không in gì khi giá trị là `-n`, và biến `C:\temp` thành một ký tự tab khi giá trị đi qua `echo -e`. `printf '%s\n'` in đối số đúng như nó là, trên mọi hệ thống. Một giá trị trong chuỗi định dạng cũng không an toàn: dấu `%` trong đó bị đọc như một chỉ thị.
 
@@ -2159,10 +2099,8 @@ echo -n "${token}" | gpg --encrypt --recipient "${recipient}"
 > - ✔️ NÊN: Đặt dấu phân cách trong dấu nháy, `<< 'EOF'`, khi văn bản không cần khai triển, để `$`, dấu backtick và dấu gạch chéo ngược giữ nguyên như đã viết
 > - ✔️ NÊN: Chỉ để dấu phân cách không có nháy khi văn bản cố ý khai triển biến
 > - ✔️ NÊN: Viết phần thân và dấu phân cách đóng ở đầu dòng
-> - ❌ TRÁNH: Không dùng `<<-` để thụt lề một here document: nó chỉ bỏ ký tự tab, thứ mà hướng dẫn này không cho phép
-> - ❌ TRÁNH: Không escape từng dấu `$` của một văn bản không khai triển gì: hãy đặt dấu phân cách trong nháy
->
-> Trình kiểm tra: `BSG101`, `BSG102`
+> - ❌ TRÁNH: Không dùng `<<-` để thụt lề một here document: nó chỉ bỏ ký tự tab, thứ mà hướng dẫn này không cho phép `BSG101`
+> - ❌ TRÁNH: Không escape từng dấu `$` của một văn bản không khai triển gì: hãy đặt dấu phân cách trong nháy `BSG102`
 
 Một dấu phân cách không có nháy chạy khai triển tham số, thay thế lệnh và phép tính số học trên toàn bộ phần thân: một văn bản trợ giúp nhắc tới `$(date)` sẽ chạy `date`, và một mức giá `$5` trở thành đối số thứ năm. Dạng có nháy khiến phần thân được giữ nguyên. `<<-` chỉ bỏ các tab ở đầu dòng, nên với thụt lề hai khoảng trắng của hướng dẫn này nó không làm gì cả, và `EOF` đóng không được tìm thấy.
 
@@ -2210,14 +2148,12 @@ EOF
 > - ✔️ NÊN: Khai báo mảng một cách tường minh: `local -a names=()` trong hàm, `declare -a NAMES=()` ở phạm vi tệp
 > - ✔️ NÊN: Thêm phần tử bằng `names+=("${value}")`
 > - ✔️ NÊN: Khai triển bằng `"${names[@]}"`, và lấy số phần tử bằng `"${#names[@]}"`
-> - ✔️ NÊN: Khai triển một mảng có thể rỗng bằng `${names[@]+"${names[@]}"}` khi script hỗ trợ Bash 4.3 dưới `set -u`
+> - ✔️ NÊN: Khai triển một mảng có thể rỗng bằng `${names[@]+"${names[@]}"}` khi script hỗ trợ Bash 4.3 dưới `set -u` `BSG049`
 > - ✔️ NÊN: Duyệt các chỉ số mà mảng thật sự có bằng `"${!names[@]}"`
 > - ✔️ NÊN: Thay cả mảng bằng `names=("${value}")`, và làm rỗng nó bằng `names=()`
 > - ❌ TRÁNH: Không giữ nhiều giá trị trong một chuỗi ngăn cách bằng dấu cách
-> - ❌ TRÁNH: Không duyệt từ `0` đến `${#names[@]} - 1` trên một mảng mà hàm không tự dựng
-> - ❌ TRÁNH: Không gán một giá trị đơn cho mảng, `names="${value}"`: nó chỉ thay phần tử 0 và giữ nguyên mọi phần tử khác
->
-> Trình kiểm tra: `BSG049`, `BSG085`, `BSG113`
+> - ❌ TRÁNH: Không duyệt từ `0` đến `${#names[@]} - 1` trên một mảng mà hàm không tự dựng `BSG085`
+> - ❌ TRÁNH: Không gán một giá trị đơn cho mảng, `names="${value}"`: nó chỉ thay phần tử 0 và giữ nguyên mọi phần tử khác `BSG113`
 
 Một chuỗi ngăn cách bằng dấu cách chỉ là mảng chừng nào chưa có phần tử nào chứa dấu cách. Mảng thì luôn đúng dù các phần tử là gì, và `"${names[@]}"` truyền đi đúng bằng số phần tử đang có, kể cả khi không có phần tử nào.
 
@@ -2292,13 +2228,11 @@ files+="${another_file}"
 
 > [!TIP]
 >
-> - ✔️ NÊN: Khai báo map một cách tường minh, `local -A name=()` hoặc `declare -A NAME=()`: không có `-A`, các khóa bị tính như biểu thức số học
+> - ✔️ NÊN: Khai báo map một cách tường minh, `local -A name=()` hoặc `declare -A NAME=()`: không có `-A`, các khóa bị tính như biểu thức số học `BSG103`
 > - ✔️ NÊN: Đặt trong nháy một khóa đến từ biến: `"${map["${key}"]}"`
 > - ✔️ NÊN: Kiểm tra khóa có tồn tại hay không bằng `[[ -v map["${key}"] ]]`, cách này phân biệt được khóa không có với giá trị rỗng
 > - ✔️ NÊN: Sắp xếp các khóa trước khi dùng thứ tự của chúng: `"${!map[@]}"` không theo thứ tự nào cả
 > - ❌ TRÁNH: Không dựa vào thứ tự của `"${!map[@]}"`, và không dùng `[[ -n "${map[key]}" ]]` để kiểm tra sự tồn tại
->
-> Trình kiểm tra: `BSG103`
 
 Không có `-A`, `versions[jq]=1` gán vào một mảng chỉ số: `jq` được đọc như một biến số học, có giá trị `0`, nên mọi khóa đều rơi vào chỉ số `0` và ghi đè khóa trước. Các khóa của một map đi ra theo thứ tự băm, thay đổi theo chính các khóa và giữa các phiên bản Bash, nên output dựng từ nó không tái lập được cho tới khi được sắp xếp.
 
@@ -2339,11 +2273,9 @@ done
 > - ✔️ NÊN: Cấp dữ liệu cho vòng lặp `while read` bằng thay thế tiến trình: `while read -r line; do ...; done < <(command)`
 > - ✔️ NÊN: Dùng `readarray -t` hoặc `mapfile -t` khi cần lấy toàn bộ kết quả thành một mảng
 > - ✔️ NÊN: Dùng `read -r`, và dùng `mapfile -d ''` cùng `-print0` khi giá trị có thể chứa ký tự xuống dòng
-> - ✔️ NÊN: Đọc mọi dòng, kể cả dòng cuối không có ký tự xuống dòng: `while IFS= read -r line || [[ -n "${line}" ]]`
-> - ❌ TRÁNH: Không đưa đường ống vào vòng lặp `while`
+> - ✔️ NÊN: Đọc mọi dòng, kể cả dòng cuối không có ký tự xuống dòng: `while IFS= read -r line || [[ -n "${line}" ]]` `BSG094`
+> - ❌ TRÁNH: Không đưa đường ống vào vòng lặp `while` `BSG041`
 > - ❌ TRÁNH: Không chỉ dựa vào `while read -r line` với đầu vào có thể không kết thúc bằng ký tự xuống dòng
->
-> Trình kiểm tra: `BSG041`, `BSG094`
 
 Vế phải của đường ống chạy trong một shell con, nên mọi biến mà vòng lặp gán đều bị vứt đi khi vòng lặp kết thúc. Thay thế tiến trình giữ vòng lặp ở lại trong shell hiện tại.
 
@@ -2401,12 +2333,10 @@ done < "${file}"
 
 > [!TIP]
 >
-> - ✔️ NÊN: Lưu output của một producer có thể thất bại vào một biến trước, kiểm tra mã thoát của nó, rồi mới đọc biến đó: `listing="$(cmd)" || return $?`
+> - ✔️ NÊN: Lưu output của một producer có thể thất bại vào một biến trước, kiểm tra mã thoát của nó, rồi mới đọc biến đó: `listing="$(cmd)" || return $?` `BSG048`
 > - ✔️ NÊN: Kiểm tra những gì truyền cho producer trước khi đọc nó qua `< <(...)`, khi chỉ có đầu vào sai mới làm nó thất bại
 > - ✔️ NÊN: Bật `pipefail` khi vế trái của một pipe có thể thất bại và kết quả phụ thuộc vào nó
 > - ❌ TRÁNH: Không đọc `< <(cmd)` hay `<(cmd)` từ một lệnh mà khi nó thất bại thì công việc phải dừng
->
-> Trình kiểm tra: `BSG048`
 
 Không có gì chờ lệnh bên trong `<(...)`: `mapfile`, `while read` và hàm bao quanh chúng đều thành công dù lệnh đó thất bại hay không, nên một producer thất bại được đọc như đầu vào rỗng. Khi đó một archive hỏng không liệt kê entry nào và qua được bước kiểm tra an toàn, còn hai tài liệu không parse được thì so ra giống hệt nhau. Vế trái của một pipe cũng mất mã thoát theo cách đó khi không bật `pipefail`. [Đường ống vào while](#%C4%91%C6%B0%E1%BB%9Dng-%E1%BB%91ng-v%C3%A0o-while) nói về việc giữ biến; mục này nói về việc giữ lỗi.
 
@@ -2433,9 +2363,7 @@ mapfile -t entries < <(tar -tzf "${archive}")
 >
 > - ✔️ NÊN: Duyệt mảng bằng `for item in "${items[@]}"`
 > - ✔️ NÊN: Đọc kết quả của lệnh vào một mảng trước, rồi mới lặp trên mảng đó
-> - ❌ TRÁNH: Không viết `for item in $(command)` khi kết quả có thể chứa dấu cách
->
-> Trình kiểm tra: `BSG042`
+> - ❌ TRÁNH: Không viết `for item in $(command)` khi kết quả có thể chứa dấu cách `BSG042`
 
 `for item in $(command)` tách theo từng dấu cách, dấu tab và ký tự xuống dòng, rồi còn khai triển ký tự đại diện trên kết quả. Nó chỉ đúng với dữ liệu mà bạn kiểm soát hoàn toàn.
 
@@ -2466,11 +2394,9 @@ done
 
 > [!TIP]
 >
-> - ✔️ NÊN: Khai báo `local` cho mọi biến mà hàm gán: biến lặp, đích của `read`, `mapfile`, `readarray` và `printf -v`, và các phép gán thường
+> - ✔️ NÊN: Khai báo `local` cho mọi biến mà hàm gán: biến lặp, đích của `read`, `mapfile`, `readarray` và `printf -v`, và các phép gán thường `BSG016`
 > - ✔️ NÊN: Ghi chú một biến toàn cục có chủ đích bằng `@set` trong chú thích hàm, và đặt tên nó bằng `CHỮ HOA`
 > - ❌ TRÁNH: Không để biến lặp hay đích của `read` lọt ra ngoài hàm
->
-> Trình kiểm tra: `BSG016`
 
 Một biến mà hàm gán mà không khai báo là biến toàn cục. Nó sống lâu hơn hàm, và ghi đè biến cùng tên ở mọi bên gọi: một helper lặp bằng `for i` sẽ âm thầm làm xê dịch chính vòng lặp `i` của bên gọi. [Tên biến](#t%C3%AAn-bi%E1%BA%BFn) yêu cầu dùng `local`; đây là những phép gán dễ quên nhất.
 
@@ -2517,12 +2443,10 @@ function fs::count_lines {
 > - ✔️ NÊN: Tăng giá trị bằng `((count += 1))` hoặc `count=$((count + 1))`
 > - ✔️ NÊN: Tính toán với số thập phân trong `awk`, truyền giá trị qua `-v`: phép tính của Bash chỉ dùng số nguyên
 > - ❌ TRÁNH: Không dùng `let`, `expr` hay cú pháp `$[ ... ]` đã lỗi thời
-> - ❌ TRÁNH: Không đưa thẳng một số đọc từ đầu vào, tên tệp hay ngày tháng vào `(( ))`: số 0 ở đầu biến nó thành hệ bát phân
-> - ❌ TRÁNH: Không viết `((count++))` hay `((count--))` như một câu lệnh khi có `set -e`
+> - ❌ TRÁNH: Không đưa thẳng một số đọc từ đầu vào, tên tệp hay ngày tháng vào `(( ))`: số 0 ở đầu biến nó thành hệ bát phân `BSG087`
+> - ❌ TRÁNH: Không viết `((count++))` hay `((count--))` như một câu lệnh khi có `set -e` `BSG088`
 > - ⚠️ CÂN NHẮC: Cẩn thận với `(( ... ))` đứng một mình dưới `set -e`: biểu thức có giá trị `0` sẽ trả về mã thoát `1` và làm dừng script
 > - ❌ TRÁNH: Không so sánh số thập phân bằng `[[ < ]]` hay đưa chúng vào `(( ))`: cách đầu so sánh chuỗi, cách sau từ chối dấu chấm
->
-> Trình kiểm tra: `BSG087`, `BSG088`
 
 `(( ... ))` là lệnh dựng sẵn, nên nhanh hơn `expr` và không cần tạo tiến trình con, đồng thời coi các toán hạng là số chứ không phải chuỗi.
 
@@ -2619,12 +2543,10 @@ fi
 
 > [!TIP]
 >
-> - ✔️ NÊN: Dò tính năng trước khi dùng một cờ chỉ GNU có, và giữ một nhánh di động: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix`
+> - ✔️ NÊN: Dò tính năng trước khi dùng một cờ chỉ GNU có, và giữ một nhánh di động: `date -d`, `sed -i`, `readlink -f`, `stat -c`, `find -printf`, `grep -P`, `xargs -r`, `mktemp --suffix` `BSG083`
 > - ✔️ NÊN: Phát hiện tính năng bằng cách thử chính cờ đó, không dựa vào tên công cụ hay `--version` của nó
 > - ❌ TRÁNH: Không mặc định có GNU coreutils khi script chạy trên macOS, BSD hay BusyBox
 > - ⚠️ CÂN NHẮC: Ưu tiên lệnh dựng sẵn của Bash hoặc dạng POSIX khi chúng làm được việc: `printf '%(%s)T'`, khai triển tham số
->
-> Trình kiểm tra: `BSG083`
 
 macOS dùng công cụ BSD, Alpine dùng BusyBox, và cùng một cờ lại mang nghĩa khác, hoặc không có nghĩa gì, trên mỗi nơi: `sed -i` đòi hậu tố sao lưu trên BSD, `stat -c` ở đó là `stat -f`, còn `date -d` thì không tồn tại. `date --version` thất bại không có nghĩa hệ thống là BSD — BusyBox cũng thất bại ở đó — nên hãy thử chính hành vi cần dùng, một lần, rồi giữ lại kết quả.
 
@@ -2666,10 +2588,8 @@ target="$(readlink -f "${link}")"
 >
 > - ✔️ NÊN: So sánh phiên bản bằng một helper semver
 > - ⚠️ CÂN NHẮC: Chỉ dùng `sort -V` cho các số có dấu chấm thuần túy như `1.10.2`, ở nơi có lệnh này
-> - ❌ TRÁNH: Không so sánh phiên bản bằng `<` hay `>` trên chuỗi, hoặc bằng phép tính trên chuỗi có dấu chấm
+> - ❌ TRÁNH: Không so sánh phiên bản bằng `<` hay `>` trên chuỗi, hoặc bằng phép tính trên chuỗi có dấu chấm `BSG097`
 > - ❌ TRÁNH: Không sắp xếp các phiên bản có thể mang hậu tố pre-release bằng `sort -V`: nó đặt `2.0.0-rc1` sau `2.0.0`
->
-> Trình kiểm tra: `BSG097`
 
 So sánh chuỗi đi theo từng ký tự, nên `1.10.0` xếp trước `1.9.0`, và `2.0.0-rc1` xếp sau `2.0.0`. Phép tính số học hoàn toàn không dùng được trên chuỗi có dấu chấm. Một bước kiểm tra phiên bản làm sai chuyện này sẽ nâng cấp một bản cài mới hơn, hoặc từ chối một bản đã đủ mới.
 
@@ -2717,12 +2637,10 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ✔️ NÊN: Thoát với mã có ý nghĩa: `0` khi thành công, khác `0` khi thất bại
 > - ✔️ NÊN: Kết thúc một hàm, hay một script, bằng một câu lệnh mà mã thoát chính là kết quả: viết `if cond; then action; fi` hoặc `cond || return 0`, không phải một `cond && action` trơn
 > - ✔️ NÊN: Chỉ tắt tiếng đúng lệnh mà thất bại của nó là đã lường trước, không phải cả hàm hay vòng lặp bao quanh
-> - ❌ TRÁNH: Không kiểm tra `$?` trong một câu lệnh riêng
-> - ❌ TRÁNH: Không dựa vào `PIPESTATUS`
-> - ❌ TRÁNH: Không kết thúc một hàm bằng `[[ ... ]] && action` hay `((flag)) && action`: khi điều kiện sai, hàm trả về 1 và `set -e` dừng bên gọi
-> - ❌ TRÁNH: Không chuyển hướng cả một khối vào `/dev/null`, như `} 2> /dev/null` hay `done 2> /dev/null`: nó giấu mọi lỗi bên trong, không chỉ lỗi đã lường trước
->
-> Trình kiểm tra: `BSG044`, `BSG110`, `BSG120`
+> - ❌ TRÁNH: Không kiểm tra `$?` trong một câu lệnh riêng `BSG044`
+> - ❌ TRÁNH: Không dựa vào `PIPESTATUS` `BSG044`
+> - ❌ TRÁNH: Không kết thúc một hàm bằng `[[ ... ]] && action` hay `((flag)) && action`: khi điều kiện sai, hàm trả về 1 và `set -e` dừng bên gọi `BSG110`
+> - ❌ TRÁNH: Không chuyển hướng cả một khối vào `/dev/null`, như `} 2> /dev/null` hay `done 2> /dev/null`: nó giấu mọi lỗi bên trong, không chỉ lỗi đã lường trước `BSG120`
 
 Đọc `$?` ở dòng kế tiếp chỉ đúng nếu giữa hai dòng đó không có gì chạy, một điều kiện mà không ai giữ được khi script lớn dần. Kiểm tra ngay trên lệnh thì không bao giờ lạc hậu. `|| true` tường minh còn là một dấu hiệu: nó nói với người đọc sau rằng khả năng thất bại đã được cân nhắc, chứ không phải bị bỏ quên.
 
@@ -2789,12 +2707,10 @@ function sync::all {
 
 > [!TIP]
 >
-> - ✔️ NÊN: Bật `shopt -s inherit_errexit` cạnh `set -euo pipefail`, để một lỗi bên trong `$(...)` dừng lệnh thay thế. (tùy chỉnh)
+> - ✔️ NÊN: Bật `shopt -s inherit_errexit` cạnh `set -euo pipefail`, để một lỗi bên trong `$(...)` dừng lệnh thay thế. (tùy chỉnh) `BSG104`
 > - ✔️ NÊN: Kết thúc mỗi bước bằng `|| return $?` trong một hàm có thể được gọi từ `if`, `while`, `!`, `&&` hay `||`
 > - ❌ TRÁNH: Không dựa vào `set -e` bên trong một hàm mà bên gọi kiểm tra mã thoát của nó: errexit bị tắt cho mọi thứ hàm đó chạy
 > - ❌ TRÁNH: Không mong `set -e` dừng tại một lệnh thất bại ở giữa `$(a; b)` khi không có `inherit_errexit`
->
-> Trình kiểm tra: `BSG104`
 
 `set -e` bị tạm ngưng cho toàn bộ lệnh được kiểm tra bởi `if`, `while`, `until`, `!`, `&&` hay `||`, và điều đó bao gồm mọi dòng của một hàm được gọi ở đó. Vì vậy một hàm dựa vào errexit sẽ dừng ở lỗi đầu tiên khi được gọi riêng, nhưng chạy tới cuối khi bên gọi viết `if fn`. Mã thoát của nó khi đó là mã thoát của dòng cuối, rất có thể là `0`. Bên trong `$(...)` errexit cũng bị tắt, cho tới khi `inherit_errexit` (Bash 4.4) truyền nó xuống.
 
@@ -2842,13 +2758,11 @@ fi
 > - ✔️ NÊN: Xử lý lỗi ngay trong hàm nơi nó xảy ra, không đẩy lên cho bên gọi
 > - ✔️ NÊN: Dừng bằng `dybatpho::die` khi script không thể tiếp tục, và `return 1` khi bên gọi còn xử lý được. (dybatpho)
 > - ✔️ NÊN: Nói rõ cái gì hỏng và người dùng có thể làm gì, trong một thông báo trên `STDERR`
-> - ✔️ NÊN: Cài đặt các trình xử lý chung một lần, ở đầu script thực thi, bằng `dybatpho::register_common_handlers`. (dybatpho)
+> - ✔️ NÊN: Cài đặt các trình xử lý chung một lần, ở đầu script thực thi, bằng `dybatpho::register_common_handlers`. (dybatpho) `BSG053`
 > - ✔️ NÊN: Ghi trong thông báo lỗi tên hàm mà bên gọi đã gọi: `FUNCNAME[1]` từ một helper được hàm đó gọi trực tiếp, một tên do hàm đó truyền vào, hoặc hàm public đầu tiên trên stack
 > - ✔️ NÊN: Hiển thị một giá trị đến từ bên ngoài — tên tệp, đối số, một dòng input — bằng `${value@Q}` trong thông báo
 > - ❌ TRÁNH: Không trả về mã khác `0` trần trụi mà không kèm thông báo
-> - ❌ TRÁNH: Không lấy một cấp cố định sâu hơn như `FUNCNAME[2]`, vì nó trỏ sang hàm khác ngay khi độ sâu lời gọi thay đổi
->
-> Trình kiểm tra: `BSG053`, `BSG054`
+> - ❌ TRÁNH: Không lấy một cấp cố định sâu hơn như `FUNCNAME[2]`, vì nó trỏ sang hàm khác ngay khi độ sâu lời gọi thay đổi `BSG054`
 
 Hàm bị lỗi là nơi duy nhất còn biết tên tệp, địa chỉ URL và tùy chọn nào đã dẫn tới lỗi đó. Bên gọi chỉ nhận được số `1` thì hoặc là không báo được gì hữu ích, hoặc là phải bịa ra bối cảnh.
 
@@ -2926,10 +2840,8 @@ dybatpho::die "File not found: ${path}"
 > - ✔️ NÊN: Thoát với `0` khi thành công, `1` khi thất bại chung, và `2` khi dùng sai cách, như thiếu hoặc không rõ tùy chọn. (tùy chỉnh)
 > - ✔️ NÊN: Ghi lại mọi mã thoát khác mà một hàm hay script trả về bằng `@exitcode`, và giữ ý nghĩa của nó ổn định
 > - ✔️ NÊN: Thoát với `128 + n` sau một handler cho tín hiệu `n` kết thúc script: `130` cho `INT`, `143` cho `TERM`
-> - ❌ TRÁNH: Không dùng `126`, `127` hay bất cứ số nào trên `128` cho ý nghĩa riêng: shell dùng chúng để báo "không thực thi được", "không tìm thấy" và tín hiệu
-> - ❌ TRÁNH: Không thoát với mã nằm ngoài `0`–`255`: nó bị lấy modulo 256, nên `256` là thành công
->
-> Trình kiểm tra: `BSG105`
+> - ❌ TRÁNH: Không dùng `126`, `127` hay bất cứ số nào trên `128` cho ý nghĩa riêng: shell dùng chúng để báo "không thực thi được", "không tìm thấy" và tín hiệu `BSG105`
+> - ❌ TRÁNH: Không thoát với mã nằm ngoài `0`–`255`: nó bị lấy modulo 256, nên `256` là thành công `BSG105`
 
 Bên gọi chỉ xử lý được một mã thoát mà nó hiểu. `2` cho dùng sai cách là thứ các lệnh dựng sẵn của Bash và hầu hết các công cụ vẫn dùng, `126` và `127` là thứ shell đặt khi một lệnh không chạy được, và mọi số trên `128` được hiểu là "bị một tín hiệu kết liễu". Một mã riêng trùng với chúng đưa bên gọi vào nhánh sai, còn một mã không được ghi lại thì không thể xử lý được.
 
@@ -2975,12 +2887,10 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Ưu tiên lệnh dựng sẵn hơn lệnh bên ngoài cho cùng một việc: khai triển tham số thay cho `sed`, `(( ... ))` thay cho `expr`, `[[ ... ]]` thay cho `test`
 > - ✔️ NÊN: Dùng công cụ bên ngoài như `sed`, `awk` hay `yq` khi nó làm mã ngắn gọn và rõ ràng hơn hẳn
 > - ✔️ NÊN: Gọi công cụ bên ngoài qua `command <tool>` khi có thể đang tồn tại một alias hay một hàm cùng tên. (tùy chỉnh)
-> - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)`
-> - ✔️ NÊN: Kết thúc `find -exec` bằng `+`, cách này chạy lệnh một lần cho nhiều tệp, trừ khi lệnh chỉ nhận đúng một tệp
+> - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)` `BSG108`
+> - ✔️ NÊN: Kết thúc `find -exec` bằng `+`, cách này chạy lệnh một lần cho nhiều tệp, trừ khi lệnh chỉ nhận đúng một tệp `BSG119`
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
->
-> Trình kiểm tra: `BSG108`, `BSG119`
 
 Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
 
@@ -3047,10 +2957,8 @@ command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
 > - ✔️ NÊN: Chạy phần dọn dẹp của lời gọi có phạm vi trước handler của bên gọi có gọi `exit`, rồi phát lại tín hiệu, để handler đó và hành động mặc định vẫn diễn ra
 > - ✔️ NÊN: Viết lệnh của trap trong nháy đơn, để biến của nó được khai triển khi trap chạy, không phải khi trap được cài
 > - ✔️ NÊN: Để handler `EXIT` giữ nguyên mã thoát của script: đọc `$?` trước và kết thúc bằng `exit "${status}"`, hoặc kết thúc mà không có `exit`
-> - ❌ TRÁNH: Không cài handler của thư viện bằng `trap '…' SIG` trơn, và không xóa handler bằng `trap - EXIT`
-> - ❌ TRÁNH: Không kết thúc một handler `EXIT` bằng `exit 0` hay một mã thoát cố định: một script đã thất bại lại báo thành công
->
-> Trình kiểm tra: `BSG055`, `BSG111`
+> - ❌ TRÁNH: Không cài handler của thư viện bằng `trap '…' SIG` trơn, và không xóa handler bằng `trap - EXIT` `BSG055`
+> - ❌ TRÁNH: Không kết thúc một handler `EXIT` bằng `exit 0` hay một mã thoát cố định: một script đã thất bại lại báo thành công `BSG111`
 
 Một thư viện dùng chung bảng trap với script đã source nó. `trap '…' INT` trong thư viện âm thầm xóa phần xử lý Ctrl-C của chính script, còn `trap - EXIT` xóa phần dọn dẹp do người khác đăng ký. Thứ tự cũng quan trọng không kém: handler của bên gọi có gọi `exit` sẽ kết thúc shell trước khi handler nối sau nó kịp chạy, nên lock không bao giờ được giải phóng và các job con vẫn chạy. Vì vậy một lời gọi có phạm vi cài handler của riêng nó, đặt lại các handler đã lưu khi kết thúc, và phát lại tín hiệu nó đã bắt.
 
@@ -3121,9 +3029,7 @@ trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
 > - ✔️ NÊN: Kết thúc mọi job mà một hàm đã khởi chạy trước khi nó trả về, kể cả khi nó trả về vì một tín hiệu
 > - ✔️ NÊN: Giữ pid của mọi job chạy nền, và đợi từng job, đếm số lần thất bại: `wait "${pid}" || failed=$((failed + 1))`
 > - ❌ TRÁNH: Không chỉ gửi tín hiệu tới pid của job, và không cho rằng một lần `TERM` là đủ
-> - ❌ TRÁNH: Không `wait` lần lượt từng job dưới `set -e` mà không kiểm tra mã thoát: thất bại đầu tiên dừng script và các job còn lại bị bỏ mặc
->
-> Trình kiểm tra: `BSG112`
+> - ❌ TRÁNH: Không `wait` lần lượt từng job dưới `set -e` mà không kiểm tra mã thoát: thất bại đầu tiên dừng script và các job còn lại bị bỏ mặc `BSG112`
 
 Pid của một job thường là một subshell, còn việc thật chạy trong một tiến trình cháu mà tín hiệu gửi tới pid không bao giờ chạm tới. Ngay cả tín hiệu gửi tới cả group cũng có thể trượt một tiến trình đã fork mà chưa gọi `exec`: nó vẫn chạy các handler của shell cha, và một handler bắt `TERM` sẽ nuốt tín hiệu trước khi `exec` đặt lại nó. Gửi tín hiệu tới khi group rỗng, với `KILL` là bước cuối, là cách duy nhất để biết không còn gì sót lại.
 
@@ -3194,9 +3100,7 @@ done
 > [!TIP]
 >
 > - ✔️ NÊN: Đặt `--` trước các toán hạng lấy từ biến: `rm -- "${file}"`, `grep -- "${pattern}" "${file}"`
-> - ❌ TRÁNH: Không truyền một biến làm toán hạng đầu tiên của lệnh mà thiếu `--` khi giá trị của nó có thể bắt đầu bằng `-`
->
-> Trình kiểm tra: `BSG057`
+> - ❌ TRÁNH: Không truyền một biến làm toán hạng đầu tiên của lệnh mà thiếu `--` khi giá trị của nó có thể bắt đầu bằng `-` `BSG057`
 
 Một lệnh đọc mọi tham số bắt đầu bằng `-` là tùy chọn cho tới khi gặp `--`. Khi đó một tệp tên `-rf`, một mẫu như `-v`, hay một đường dẫn do người dùng gõ vào sẽ bị hiểu là cờ: lệnh thất bại, hoặc làm một việc khác. Công cụ BSD trên macOS khắt khe về thứ tự hơn GNU, và đó thường là nơi việc thiếu `--` lộ ra.
 
@@ -3223,16 +3127,14 @@ grep "${pattern}" "${file}"
 
 > [!TIP]
 >
-> - ✔️ NÊN: Dùng `curl --fail` (hoặc kiểm tra HTTP status) trước khi dùng một response
+> - ✔️ NÊN: Dùng `curl --fail` (hoặc kiểm tra HTTP status) trước khi dùng một response `BSG056`
 > - ✔️ NÊN: Tải về thành tệp, kiểm tra nó với checksum hoặc chữ ký, rồi mới chạy
-> - ✔️ NÊN: Giới hạn thời gian của mọi lời gọi mạng: `curl --connect-timeout` và `--max-time`, hoặc `timeout` bao quanh một công cụ không có giới hạn riêng
+> - ✔️ NÊN: Giới hạn thời gian của mọi lời gọi mạng: `curl --connect-timeout` và `--max-time`, hoặc `timeout` bao quanh một công cụ không có giới hạn riêng `BSG107`
 > - ✔️ NÊN: Chỉ thử lại những gì có thể thành công ở lần sau, với số lần có giới hạn: `curl --retry 3` thử lại khi hết thời gian hay gặp lỗi 5xx, không thử lại một lỗi 404
-> - ✔️ NÊN: Chờ lâu hơn giữa mỗi lần thử lại, có thêm một phần ngẫu nhiên và một mức trần: `delay=$((2 ** attempt + RANDOM % 3))`
-> - ✔️ NÊN: Giới hạn cả `ssh`, `-o ConnectTimeout=10 -o BatchMode=yes` dưới `timeout`, và phân biệt hết giờ (mã 124) với thất bại
-> - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh`
+> - ✔️ NÊN: Chờ lâu hơn giữa mỗi lần thử lại, có thêm một phần ngẫu nhiên và một mức trần: `delay=$((2 ** attempt + RANDOM % 3))` `BSG117`
+> - ✔️ NÊN: Giới hạn cả `ssh`, `-o ConnectTimeout=10 -o BatchMode=yes` dưới `timeout`, và phân biệt hết giờ (mã 124) với thất bại `BSG118`
+> - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh` `BSG058`
 > - ❌ TRÁNH: Không thử lại trong một vòng lặp sát nút, `until curl ...; do :; done`, hay thử lại mãi mãi
->
-> Trình kiểm tra: `BSG056`, `BSG058`, `BSG107`, `BSG117`, `BSG118`
 
 Không có `--fail`, curl thoát với 0 khi gặp 404 hay 500 và trả trang lỗi về như thể đó là nội dung. Khi pipe vào `bash`, trang đó — hoặc một lần tải bị cắt giữa chừng, hoặc bất cứ thứ gì kẻ tấn công trả về — được chạy từng dòng trước khi có gì kiểm tra nó, và một dòng dở dang có thể làm điều mà không script hoàn chỉnh nào làm.
 
@@ -3295,10 +3197,8 @@ ssh "${host}" 'systemctl is-active app'
 
 > [!TIP]
 >
-> - ✔️ NÊN: Dùng lệnh thay thế hiện hành: keyring `signed-by` cho apt, `grep -E` và `grep -F`, `command -v`, `ip`, `mktemp`
+> - ✔️ NÊN: Dùng lệnh thay thế hiện hành: keyring `signed-by` cho apt, `grep -E` và `grep -F`, `command -v`, `ip`, `mktemp` `BSG059`
 > - ❌ TRÁNH: Không dùng `apt-key`, `egrep`, `fgrep`, `which`, `ifconfig` hay `tempfile`
->
-> Trình kiểm tra: `BSG059`
 
 Các lệnh này đã lỗi thời, không có trong các image tối giản, hoặc hoạt động khác nhau giữa các hệ thống. `apt-key` tin một khóa cho mọi repository; `egrep` và `fgrep` in cảnh báo trên grep hiện hành; `which` là một chương trình bên ngoài có output và mã thoát khác nhau tùy nơi, còn `command -v` là lệnh dựng sẵn; `ifconfig` và `tempfile` không có trên nhiều bản phân phối.
 
@@ -3415,18 +3315,16 @@ chmod +x "$output_path"
 
 > [!TIP]
 >
-> - ✔️ NÊN: Tạo tệp tạm bằng `dybatpho::create_temp <var> <suffix>` và thư mục tạm bằng `dybatpho::create_temp_dir <var>`, chúng tự đăng ký việc dọn dẹp. (dybatpho)
+> - ✔️ NÊN: Tạo tệp tạm bằng `dybatpho::create_temp <var> <suffix>` và thư mục tạm bằng `dybatpho::create_temp_dir <var>`, chúng tự đăng ký việc dọn dẹp. (dybatpho) `BSG046`
 > - ✔️ NÊN: Dùng `mktemp` khi không có thư viện, và xóa tệp bằng `trap 'rm -f "${temp_file}"' EXIT`
 > - ✔️ NÊN: Đặt cho tệp tạm đúng phần mở rộng mà nội dung cần, để các công cụ phân loại theo đuôi tệp vẫn hoạt động
 > - ✔️ NÊN: Chỉ dựng tệp staging cạnh đích từ một đường dẫn đã kiểm tra là không rỗng và không phải thư mục, và tạo nó độc quyền: `set -C`, hoặc `mktemp` trong thư mục của đích
 > - ✔️ NÊN: Tạo tệp trong thư mục dùng chung bằng `mktemp`, hoặc tự đặt tên với hậu tố ngẫu nhiên dưới noclobber (`set -C`), để một tên đã tồn tại bị từ chối
-> - ❌ TRÁNH: Không tự dựng đường dẫn tạm từ `$$`, từ dấu thời gian hay từ một tên cố định
+> - ❌ TRÁNH: Không tự dựng đường dẫn tạm từ `$$`, từ dấu thời gian hay từ một tên cố định `BSG045`
 > - ❌ TRÁNH: Không để việc dọn dẹp ở dòng cuối script, nơi mà một lỗi sẽ không bao giờ chạy tới
-> - ❌ TRÁNH: Không trap `INT` hay `TERM` bằng một bước dọn dẹp không thoát: script sẽ chạy tiếp sau Ctrl-C
+> - ❌ TRÁNH: Không trap `INT` hay `TERM` bằng một bước dọn dẹp không thoát: script sẽ chạy tiếp sau Ctrl-C `BSG106`
 > - ❌ TRÁNH: Không để một đường dẫn rỗng hay hỏng biến tệp staging thành một tệp trong thư mục làm việc
-> - ❌ TRÁNH: Không mở một tên trong thư mục dùng chung bằng `>` trơn: nó đi theo liên kết tượng trưng được đặt sẵn ở đó, kể cả khi tên có `$$` hay `$BASHPID`
->
-> Trình kiểm tra: `BSG045`, `BSG046`, `BSG082`, `BSG106`
+> - ❌ TRÁNH: Không mở một tên trong thư mục dùng chung bằng `>` trơn: nó đi theo liên kết tượng trưng được đặt sẵn ở đó, kể cả khi tên có `$$` hay `$BASHPID` `BSG082`
 
 Một cái tên đoán trước được trong thư mục ai cũng ghi được vừa dễ đụng nhau vừa mở đường cho tấn công liên kết tượng trưng. Đăng ký việc dọn dẹp ngay lúc tạo là cách duy nhất để nó chạy trên những nhánh quan trọng: nhánh lỗi và nhánh bị ngắt.
 
@@ -3597,10 +3495,8 @@ sha256sum "${archive}" > "${archive}.sha256"
 > - ✔️ NÊN: Khai triển biến dùng để dựng đường dẫn cho một lệnh phá hủy bằng `${var:?}`, hoặc kiểm tra trước rằng nó không rỗng và nằm trong một thư mục gốc được phép
 > - ✔️ NÊN: Phân giải thư mục gốc và đích bằng `cd -P` trước khi so sánh, và dừng lại khi thư mục gốc rỗng
 > - ✔️ NÊN: Ưu tiên một helper có bảo vệ, kiểm tra đường dẫn và xác nhận trước khi hành động. (dybatpho)
-> - ❌ TRÁNH: Không chạy `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` hay `mv` đè lên một đích có sẵn với đường dẫn dựng từ các biến chưa từng được kiểm tra
+> - ❌ TRÁNH: Không chạy `rm -r`, `find ... -delete`, `chmod -R`, `chown -R` hay `mv` đè lên một đích có sẵn với đường dẫn dựng từ các biến chưa từng được kiểm tra `BSG089`
 > - ❌ TRÁNH: Không kiểm tra một đường dẫn có nằm trong thư mục gốc hay không bằng cách so sánh chuỗi như được nhập vào
->
-> Trình kiểm tra: `BSG089`
 
 Một biến chưa đặt hoặc rỗng biến `rm -rf "${BUILD_DIR}/cache"` thành `rm -rf /cache`, và `rm -rf "${prefix}"*` thành thư mục làm việc. `${var:?}` dừng script khi biến chưa đặt hoặc rỗng, trước khi lệnh chạy; kiểm tra thư mục gốc chặn được một giá trị đã đặt nhưng sai.
 
@@ -3640,14 +3536,12 @@ chown -R "${owner}" "${target}"
 
 > [!TIP]
 >
-> - ✔️ NÊN: Mỗi thư viện có một tệp kiểm thử tương ứng, `scripts/test/<area>.bats` đặt cạnh `scripts/lib/<area>.sh`, viết bằng [bats](https://github.com/bats-core/bats-core). (tùy chỉnh)
+> - ✔️ NÊN: Mỗi thư viện có một tệp kiểm thử tương ứng, `scripts/test/<area>.bats` đặt cạnh `scripts/lib/<area>.sh`, viết bằng [bats](https://github.com/bats-core/bats-core). (tùy chỉnh) `BSG060`
 > - ✔️ NÊN: Thêm bài kiểm thử cho hàm mới trong cùng commit với chính hàm đó. (tùy chỉnh)
 > - ✔️ NÊN: Đặt phần chuẩn bị dùng chung của cả bộ kiểm thử vào một tệp trợ giúp, được mọi tệp kiểm thử nạp vào
 > - ✔️ NÊN: Đưa cả bộ kiểm thử ra sau một điểm vào duy nhất, để chạy kiểm thử không phải nhớ tham số nào
 > - ✔️ NÊN: Chạy trình kiểm lỗi và trình định dạng, `shellcheck` và `shfmt`, từ cùng chỗ với bộ kiểm thử
 > - ❌ TRÁNH: Không kiểm thử một hàm bằng cách chạy cả script gọi nó
->
-> Trình kiểm tra: `BSG060`
 
 Một hàm thư viện chỉ kiểm thử được nếu bản thân nó không có tác dụng phụ: nhận tham số qua `dybatpho::expect_args`, ghi kết quả ra `STDOUT` và thông báo ra `STDERR`, và thực hiện thay đổi trạng thái qua `dybatpho::dry_run`. Viết bài kiểm thử cùng lúc với hàm chính là điều giữ cho hình dạng đó không bị phá vỡ.
 
@@ -3688,10 +3582,8 @@ assert_success
 
 > [!TIP]
 >
-> - ✔️ NÊN: Truyền `-` khi một assertion đọc giá trị mong đợi từ here-document: `assert_output - << EOF`
+> - ✔️ NÊN: Truyền `-` khi một assertion đọc giá trị mong đợi từ here-document: `assert_output - << EOF` `BSG061`
 > - ❌ TRÁNH: Không viết `assert_output << EOF`, `refute_output << EOF`, `assert_stderr << EOF` hay `refute_stderr << EOF` mà thiếu `-`
->
-> Trình kiểm tra: `BSG061`
 
 bats-assert chỉ đọc standard input khi giá trị mong đợi là `-`. Thiếu nó thì here-document bị bỏ qua, và `assert_output` không có tham số chỉ kiểm tra rằng đã có output, nên test qua dù output nói gì đi nữa. Một bộ test xanh suốt nhiều năm có thể chứa hàng chục chỗ như vậy, mỗi chỗ che đi một kỳ vọng đã lỗi thời hoặc một lỗi thật.
 
@@ -3727,12 +3619,10 @@ EOF
 
 > [!TIP]
 >
-> - ✔️ NÊN: Xóa trạng thái kế thừa mà bộ test có thể tác động lên, trong helper dùng chung của test: `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `FORCE_COLOR`, `NO_COLOR`
+> - ✔️ NÊN: Xóa trạng thái kế thừa mà bộ test có thể tác động lên, trong helper dùng chung của test: `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `FORCE_COLOR`, `NO_COLOR` `BSG062`
 > - ✔️ NÊN: Tạo mọi fixture trong thư mục tạm riêng của test (`BATS_TEST_TMPDIR`)
-> - ✔️ NÊN: Khởi chạy shell con từ một tệp script thay vì `bash -c` khi có đo coverage
+> - ✔️ NÊN: Khởi chạy shell con từ một tệp script thay vì `bash -c` khi có đo coverage `BSG062`
 > - ❌ TRÁNH: Không để một test tác động lên repository, thư mục home hay bất kỳ đường dẫn nào ngoài thư mục tạm của nó
->
-> Trình kiểm tra: `BSG062`
 
 Bộ test kế thừa môi trường của thứ đang chạy nó. Một git hook xuất `GIT_DIR` và `GIT_INDEX_FILE`, nên một test chạy `git init` và `git commit` trong thư mục tạm lại ghi vào repository thật — từng có một lần chạy như vậy biến repository thành bare và thay mất remote của nó. Một công cụ đo coverage theo dõi qua `BASH_SOURCE` cũng không thấy gì trong shell con `bash -c`, vì `BASH_SOURCE` của nó rỗng.
 
