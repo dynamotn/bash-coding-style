@@ -2166,6 +2166,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
 > - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi, bằng `dybatpho::secret_register`. (dybatpho)
 > - ✔️ NÊN: Tạo tệp chứa bí mật dưới `umask 077`, trong một subshell, hoặc bằng `mktemp`, công cụ tạo tệp với quyền `0600`
+> - ✔️ NÊN: Ghi bí mật vào tệp bằng `dybatpho::secret_write_file`, hàm tạo tệp với quyền `0600` rồi chuyển nó vào đúng chỗ. (dybatpho)
 > - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc` `BSG081`
 > - ❌ TRÁNH: Không ghi nguyên vẹn URL hay body của request vào log khi nó có thể mang token
 > - ❌ TRÁNH: Không ghi bí mật bằng một `>` trơn dưới umask mặc định: tệp đọc được bởi mọi người dùng, ít nhất cho tới một lệnh `chmod` sau đó
@@ -2209,6 +2210,14 @@ API_TOKEN="$(< "${token_file}")"
 dybatpho::secret_register "${API_TOKEN}"
 # Ghi log "Request failed for ***"
 dybatpho::error "Request failed for ${API_TOKEN}"
+```
+
+`dybatpho::secret_write_file` nhận tên của biến chứa bí mật, không phải giá trị của nó, nên giá trị không bao giờ xuất hiện trong danh sách tham số. Hàm ghi dưới `umask 077` vào một tệp tạm mà không ai khác có thể đã tạo trước, rồi đổi tên nó đè lên đích. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::secret_write_file "${XDG_CONFIG_HOME:-${HOME}/.config}/app/token" API_TOKEN
 ```
 
 ### Dựng output có cấu trúc
