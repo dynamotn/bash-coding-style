@@ -28,6 +28,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [STDOUT và STDERR](#stdout-v%C3%A0-stderr)
   - [Hàm sử dụng chung](#h%C3%A0m-s%E1%BB%AD-d%E1%BB%A5ng-chung)
   - [Môi trường kế thừa](#m%C3%B4i-tr%C6%B0%E1%BB%9Dng-k%E1%BA%BF-th%E1%BB%ABa)
+  - [Tệp cấu hình](#t%E1%BB%87p-c%E1%BA%A5u-h%C3%ACnh)
   - [Tác dụng phụ của thư viện](#t%C3%A1c-d%E1%BB%A5ng-ph%E1%BB%A5-c%E1%BB%A7a-th%C6%B0-vi%E1%BB%87n)
   - [Nhập liệu tương tác](#nh%E1%BA%ADp-li%E1%BB%87u-t%C6%B0%C6%A1ng-t%C3%A1c)
 - [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-%C4%91%E1%BA%B7t-t%C3%AAn)
@@ -281,6 +282,7 @@ Các tệp thực thi nên có phần mở rộng `.sh` (rất khuyến khích) 
 > [!TIP]
 >
 > - ✔️ NÊN: Sử dụng `sudo` nếu bạn cần nâng quyền
+> - ✔️ NÊN: Xóa các biến của trình nạp và trình thông dịch trước khi một wrapper có quyền cao chuyển giao bằng `exec`: `LD_PRELOAD`, `LD_LIBRARY_PATH`, `LD_AUDIT`, `BASH_ENV`, `ENV`, `PYTHONPATH`, `PERL5LIB`, `RUBYLIB`, `NODE_PATH`, hoặc khởi động chương trình dưới `env -i`
 > - ❌ TRÁNH: SUID và SGID bị cấm
 > - ❌ TRÁNH: `sudo` cũng bị cấm trong các script CI (tùy chỉnh).
 >
@@ -302,6 +304,25 @@ sudo ./foo.sh
 
 ```sh
 # Chuyển sang người dùng su hoặc root bên trong script
+```
+
+Một wrapper chạy qua `sudo`, một unit systemd hay `ForceCommand` của SSH rồi khởi động một chương trình khác sẽ truyền môi trường của nó sang. `LD_PRELOAD` nạp một thư viện do bên gọi chọn vào chương trình đó, `BASH_ENV` chạy một tệp trước mọi script Bash mà nó khởi động, và `PYTHONPATH` tráo các module của một helper Python. Xóa chúng, hoặc bắt đầu từ một môi trường rỗng, giữ cho helper chạy đúng đoạn mã mà nó được cài đặt cùng.
+
+**Nên dùng**
+
+```sh
+unset LD_PRELOAD LD_LIBRARY_PATH LD_AUDIT BASH_ENV ENV PYTHONPATH PERL5LIB RUBYLIB NODE_PATH
+exec /usr/libexec/app/helper "$@"
+
+# Mạnh hơn: không kế thừa gì ngoài những gì được nêu tên
+exec env -i HOME="${HOME}" PATH=/usr/bin:/bin /usr/libexec/app/helper "$@"
+```
+
+**Không nên dùng**
+
+```sh
+# Chạy qua sudo: LD_PRELOAD và BASH_ENV tới được helper
+exec /usr/libexec/app/helper "$@"
 ```
 
 ## Môi trường
@@ -645,7 +666,9 @@ fi
 >
 > - ✔️ NÊN: Xóa hoặc cố định các biến kế thừa mà thư viện phụ thuộc, trong phạm vi hẹp nhất: `GIT_DIR`, `FORCE_COLOR`, `CDPATH`, `IFS`, `TMPDIR`
 > - ✔️ NÊN: Đọc một thiết lập kế thừa có chủ đích: ghi chú nó bằng `@env` và kiểm tra nó
+> - ✔️ NÊN: Đặt `PATH` thành các thư mục hệ thống cố định ở đầu một script chạy với quyền cao, trước lệnh bên ngoài đầu tiên của nó
 > - ❌ TRÁNH: Không cho rằng một biến bạn chưa từng đặt thì chưa được đặt
+> - ❌ TRÁNH: Không đưa `.`, một phần tử rỗng (`::`, hay `:` ở đầu hoặc cuối) hoặc một thư mục ai cũng ghi được như `/tmp` vào `PATH`
 
 Một script kế thừa mọi biến được xuất của shell đã khởi chạy nó. `CDPATH` làm `cd dir` in ra một đường dẫn và đi tới nơi khác; một `IFS` tùy chỉnh thay đổi cách mọi khai triển không có nháy bị tách; `GIT_DIR` trỏ mọi lệnh git sang một repository khác; `FORCE_COLOR` đưa mã escape vào output bị bắt lại. Một thư viện phụ thuộc vào bất kỳ biến nào trong số này phải tự đặt nó, chứ không phải hy vọng.
 
@@ -664,6 +687,74 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "${repo}" status --porc
 ```sh
 # Khi có CDPATH, đường dẫn bắt được bị in hai lần hoặc trỏ tới thư mục khác
 dir="$(cd "${relative}" && pwd)"
+```
+
+Một phần tử rỗng của `PATH` nghĩa là thư mục hiện tại, giống hệt `.`: với `PATH=":/usr/bin"`, một tệp tên `ls` trong thư mục mà script được khởi động sẽ chạy thay cho `/usr/bin/ls`. Một thư mục ai cũng ghi được cho phép bất kỳ người dùng nào đặt sẵn một `grep` hay một `rm` ở đó. Một script chạy qua `sudo` kế thừa bất cứ `PATH` nào mà chính sách cho qua, nên nó tự đặt `PATH` của mình.
+
+**Nên dùng**
+
+```sh
+# Một script chạy bằng root: chỉ các thư mục hệ thống, trước lệnh bên ngoài đầu tiên
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+# Mở rộng PATH mà không tạo phần tử rỗng khi nó chưa được đặt
+PATH="${HOME}/.local/bin${PATH:+:${PATH}}"
+```
+
+**Không nên dùng**
+
+```sh
+# Thư mục hiện tại đứng đầu: một ./ls hay ./grep đặt sẵn sẽ thắng
+PATH=".:${PATH}"
+# Một phần tử rỗng ở đầu cũng là thư mục hiện tại
+PATH=":${PATH}"
+# Ai cũng ghi được vào /tmp
+PATH="/tmp/tools:${PATH}"
+```
+
+### Tệp cấu hình
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đọc tệp cấu hình như dữ liệu: phân tích các dòng `key=value`, chỉ chấp nhận những khóa mà script biết, và kiểm tra từng giá trị
+> - ✔️ NÊN: Nạp các tệp theo một thứ tự cố định, của hệ thống trước và của người dùng sau cùng, và ghi rõ trong `--help` những đường dẫn nào được đọc
+> - ⚠️ CÂN NHẮC: Chỉ `.` một tệp cấu hình khi nó thuộc về người dùng đang chạy script, hoặc root, và không ai khác ghi được vào nó
+> - ❌ TRÁNH: Không `.` một tệp mà người dùng khác, một thư mục ai cũng ghi được hay một lần tải về có thể thay đổi: mọi dòng của nó chạy như chính script
+
+Source một tệp nghĩa là chạy nó. Một tệp cấu hình trong thư mục dùng chung, hay một tệp mà người dùng có ít quyền hơn sửa được, khi đó trở thành cách để chạy bất kỳ lệnh nào với quyền của script — với một script chạy qua `sudo` là quyền root. Phân tích tệp giữ nó đúng với vai trò của nó: giá trị cho những thiết lập mà script biết, được kiểm tra như mọi input khác.
+
+**Nên dùng**
+
+```sh
+# Mặc định của hệ thống trước, tệp của người dùng sau cùng; được phân tích, không bao giờ được chạy
+dybatpho::config_load --optional /etc/app.env "${XDG_CONFIG_HOME:-${HOME}/.config}/app/config.env"
+
+# Không có thư viện: chỉ những khóa đã biết, mỗi khóa được kiểm tra ở nơi nó được dùng
+function app::load_config {
+  local file key value
+  dybatpho::expect_args file -- "$@"
+  while IFS='=' read -r key value || [[ -n "${key}" ]]; do
+    [[ -n "${key}" && "${key}" != \#* ]] || continue
+    case "${key}" in
+      port) APP_PORT="${value}" ;;
+      log_level) APP_LOG_LEVEL="${value}" ;;
+      *) dybatpho::warn "Unknown setting ${key@Q} in ${file@Q}" ;;
+    esac
+  done < "${file}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+# Chạy bất cứ thứ gì tệp chứa, với quyền của script
+. "${XDG_CONFIG_HOME:-${HOME}/.config}/app/config"
+# Một thư mục ai cũng ghi được: bất kỳ ai cũng có thể đặt sẵn tệp này
+. "/tmp/app-${USER}.conf"
 ```
 
 ### Tác dụng phụ của thư viện

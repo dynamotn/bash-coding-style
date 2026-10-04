@@ -27,6 +27,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [STDOUT and STDERR](#stdout-and-stderr)
   - [Common Function Scripts](#common-function-scripts)
   - [Ambient Environment](#ambient-environment)
+  - [Configuration Files](#configuration-files)
   - [Library Side Effects](#library-side-effects)
   - [Interactive Input](#interactive-input)
 - [Naming Conventions](#naming-conventions)
@@ -279,6 +280,7 @@ Executable files should either have a `.sh` extension (strongly recommended) or 
 > [!TIP]
 >
 > - ✔️ SHOULD: Use `sudo` if you need to elevate privileges
+> - ✔️ SHOULD: Clear the loader and interpreter variables before a privileged wrapper hands over with `exec`: `LD_PRELOAD`, `LD_LIBRARY_PATH`, `LD_AUDIT`, `BASH_ENV`, `ENV`, `PYTHONPATH`, `PERL5LIB`, `RUBYLIB`, `NODE_PATH`, or start the program under `env -i`
 > - ❌ AVOID: SUID and SGID are prohibited
 > - ❌ AVOID: `sudo` is also prohibited in CI scripts. (custom)
 >
@@ -300,6 +302,25 @@ sudo ./foo.sh
 
 ```sh
 # Switching to su or root user inside the script
+```
+
+A wrapper that runs through `sudo`, a systemd unit or an SSH `ForceCommand` and then starts another program passes its environment on. `LD_PRELOAD` loads a library of the caller's choosing into that program, `BASH_ENV` runs a file before any Bash script it starts, and `PYTHONPATH` swaps the modules of a Python helper. Clearing them, or starting from an empty environment, keeps the helper running the code it was installed with.
+
+**Recommended**
+
+```sh
+unset LD_PRELOAD LD_LIBRARY_PATH LD_AUDIT BASH_ENV ENV PYTHONPATH PERL5LIB RUBYLIB NODE_PATH
+exec /usr/libexec/app/helper "$@"
+
+# Stronger: nothing is inherited but what is named
+exec env -i HOME="${HOME}" PATH=/usr/bin:/bin /usr/libexec/app/helper "$@"
+```
+
+**Discouraged**
+
+```sh
+# Run through sudo: LD_PRELOAD and BASH_ENV reach the helper
+exec /usr/libexec/app/helper "$@"
 ```
 
 ## Environment
@@ -643,7 +664,9 @@ fi
 >
 > - ✔️ SHOULD: Clear or pin the inherited variables a library depends on, in the narrowest scope: `GIT_DIR`, `FORCE_COLOR`, `CDPATH`, `IFS`, `TMPDIR`
 > - ✔️ SHOULD: Read an inherited setting on purpose: document it with `@env` and validate it
+> - ✔️ SHOULD: Set `PATH` to fixed system directories at the top of a script that runs with elevated privileges, before its first external command
 > - ❌ AVOID: Do not assume that a variable you never set is unset
+> - ❌ AVOID: Do not put `.`, an empty element (`::`, or a leading or trailing `:`) or a world-writable directory such as `/tmp` in `PATH`
 
 A script inherits every exported variable of the shell that started it. `CDPATH` makes `cd dir` print a path and go somewhere else; a custom `IFS` changes how every unquoted expansion splits; `GIT_DIR` points every git command at another repository; `FORCE_COLOR` puts escape codes into captured output. A library that depends on any of these has to set it, not hope.
 
@@ -662,6 +685,74 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "${repo}" status --porc
 ```sh
 # With CDPATH set, the captured path is printed twice or names another directory
 dir="$(cd "${relative}" && pwd)"
+```
+
+An empty element of `PATH` means the current directory, exactly like `.`: with `PATH=":/usr/bin"`, a file called `ls` in the directory the script was started from runs instead of `/usr/bin/ls`. A world-writable directory lets any user plant a `grep` or an `rm` there. A script run through `sudo` inherits whatever `PATH` the policy lets through, so it sets its own.
+
+**Recommended**
+
+```sh
+# A script run as root: only system directories, before the first external command
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+# Extending PATH without creating an empty element when it was unset
+PATH="${HOME}/.local/bin${PATH:+:${PATH}}"
+```
+
+**Discouraged**
+
+```sh
+# The current directory first: a planted ./ls or ./grep wins
+PATH=".:${PATH}"
+# A leading empty element is the current directory too
+PATH=":${PATH}"
+# Anyone can write to /tmp
+PATH="/tmp/tools:${PATH}"
+```
+
+### Configuration Files
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Read a configuration file as data: parse `key=value` lines, accept only the keys the script knows, and validate each value
+> - ✔️ SHOULD: Load the files in a fixed order, system first and user last, and say in `--help` which paths are read
+> - ⚠️ CONSIDER: `.` a configuration file only when it is owned by the user running the script, or by root, and nobody else can write to it
+> - ❌ AVOID: Do not `.` a file that another user, a world-writable directory or a download can change: every line of it runs as the script
+
+Sourcing a file runs it. A configuration file in a shared directory, or one a less privileged user can edit, then becomes a way to run any command with the rights of the script — for a script that runs through `sudo`, with root's. Parsing keeps the file to what it is meant to be: values for the settings the script knows, checked like any other input.
+
+**Recommended**
+
+```sh
+# System defaults first, the user's file last; parsed, never run
+dybatpho::config_load --optional /etc/app.env "${XDG_CONFIG_HOME:-${HOME}/.config}/app/config.env"
+
+# Without the library: only known keys, each one validated where it is used
+function app::load_config {
+  local file key value
+  dybatpho::expect_args file -- "$@"
+  while IFS='=' read -r key value || [[ -n "${key}" ]]; do
+    [[ -n "${key}" && "${key}" != \#* ]] || continue
+    case "${key}" in
+      port) APP_PORT="${value}" ;;
+      log_level) APP_LOG_LEVEL="${value}" ;;
+      *) dybatpho::warn "Unknown setting ${key@Q} in ${file@Q}" ;;
+    esac
+  done < "${file}"
+}
+```
+
+**Discouraged**
+
+```sh
+# Runs whatever the file holds, with the rights of the script
+. "${XDG_CONFIG_HOME:-${HOME}/.config}/app/config"
+# A world-writable directory: anyone can plant this file
+. "/tmp/app-${USER}.conf"
 ```
 
 ### Library Side Effects
