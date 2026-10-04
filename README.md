@@ -2135,10 +2135,14 @@ Custom rule
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Compare versions with a semantic-version helper, or with `sort -V` where it is available
+> - ✔️ SHOULD: Compare versions with a semantic-version helper
+> - ⚠️ CONSIDER: Use `sort -V` only for plain dotted numbers such as `1.10.2`, where it is available
 > - ❌ AVOID: Do not compare versions with string `<` or `>`, or with arithmetic on dotted strings
+> - ❌ AVOID: Do not order versions that may carry a pre-release suffix with `sort -V`: it puts `2.0.0-rc1` after `2.0.0`
 
 String comparison is character by character, so `1.10.0` sorts before `1.9.0`, and `2.0.0-rc1` after `2.0.0`. Arithmetic does not work on dotted strings at all. A version check that gets this wrong upgrades a newer install, or refuses one that is new enough.
+
+`sort -V` fixes the numbers but not the suffix: it reads `-rc1` as more characters after `2.0.0`, so a release candidate comes out newer than the release it precedes.
 
 **Recommended**
 
@@ -2147,7 +2151,11 @@ if dybatpho::semver_satisfies "${installed}" ">=1.10.0"; then
   use_new_flag=true
 fi
 
-# Without a library, where sort -V exists
+newest="$(dybatpho::semver_max "${a}" "${b}")"
+
+# Without a library: sort -V, for versions that are only dotted numbers
+[[ "${a}" =~ ^[0-9]+(\.[0-9]+)*$ && "${b}" =~ ^[0-9]+(\.[0-9]+)*$ ]] \
+  || dybatpho::die "Not a plain version: ${a} ${b}"
 newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
 ```
 
@@ -2158,6 +2166,9 @@ newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
 if [[ "${installed}" < "1.9.0" ]]; then
   upgrade
 fi
+
+# Prints 2.0.0-rc1: the release candidate looks newer than the release
+newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 ```
 
 ## Calling Commands

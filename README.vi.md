@@ -2131,10 +2131,14 @@ Quy tắc tùy chỉnh
 
 > [!TIP]
 >
-> - ✔️ NÊN: So sánh phiên bản bằng một helper semver, hoặc bằng `sort -V` ở nơi có lệnh này
+> - ✔️ NÊN: So sánh phiên bản bằng một helper semver
+> - ⚠️ CÂN NHẮC: Chỉ dùng `sort -V` cho các số có dấu chấm thuần túy như `1.10.2`, ở nơi có lệnh này
 > - ❌ TRÁNH: Không so sánh phiên bản bằng `<` hay `>` trên chuỗi, hoặc bằng phép tính trên chuỗi có dấu chấm
+> - ❌ TRÁNH: Không sắp xếp các phiên bản có thể mang hậu tố pre-release bằng `sort -V`: nó đặt `2.0.0-rc1` sau `2.0.0`
 
 So sánh chuỗi đi theo từng ký tự, nên `1.10.0` xếp trước `1.9.0`, và `2.0.0-rc1` xếp sau `2.0.0`. Phép tính số học hoàn toàn không dùng được trên chuỗi có dấu chấm. Một bước kiểm tra phiên bản làm sai chuyện này sẽ nâng cấp một bản cài mới hơn, hoặc từ chối một bản đã đủ mới.
+
+`sort -V` sửa được phần số nhưng không sửa được hậu tố: nó đọc `-rc1` như các ký tự nối thêm sau `2.0.0`, nên một bản release candidate lại trông mới hơn chính bản phát hành mà nó đi trước.
 
 **Nên dùng**
 
@@ -2143,7 +2147,11 @@ if dybatpho::semver_satisfies "${installed}" ">=1.10.0"; then
   use_new_flag=true
 fi
 
-# Khi không có thư viện, ở nơi có sort -V
+newest="$(dybatpho::semver_max "${a}" "${b}")"
+
+# Khi không có thư viện: sort -V, cho các phiên bản chỉ gồm số và dấu chấm
+[[ "${a}" =~ ^[0-9]+(\.[0-9]+)*$ && "${b}" =~ ^[0-9]+(\.[0-9]+)*$ ]] \
+  || dybatpho::die "Not a plain version: ${a} ${b}"
 newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
 ```
 
@@ -2154,6 +2162,9 @@ newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
 if [[ "${installed}" < "1.9.0" ]]; then
   upgrade
 fi
+
+# In ra 2.0.0-rc1: bản release candidate trông mới hơn bản phát hành
+newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 ```
 
 ## Gọi lệnh
