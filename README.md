@@ -600,6 +600,8 @@ backup::run 2>&1 > "${LOG_FILE}"
 > - ❌ AVOID: Do not declare `readonly` at the top level of a library that may be sourced twice
 > - ❌ AVOID: Do not use `$0` inside a library: it names the script that sourced it `BSG039`
 > - ❌ AVOID: Do not source a computed path unchecked
+> - ❌ AVOID: Do not rely on the directory of a script that may be read from standard input, `bash -c` or a process substitution: it has none
+> - ⚠️ CONSIDER: Resolve the directory of a script with `CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd` when it must run where `realpath` is missing, such as macOS before 13
 
 When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
 
@@ -650,6 +652,27 @@ NET_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # scripts/lib/net.sh: $0 is the caller, so this looks for http.sh next to it
 NET_LIB_DIR="$(dirname "$0")"
 . "${NET_LIB_DIR}/http.sh"
+```
+
+The directory of a script is only known when the script is a file. `curl ... | bash`, `bash -c "$(< script.sh)"` and `bash <(...)` give `BASH_SOURCE[0]` a value that is empty, `bash` or `/dev/fd/63`, and every path built from it points nowhere. A script that loads files next to it therefore has to be run as a file, and should say so when it is not. `realpath` resolves the directory in one call, but it is not on macOS before 13; `cd -P` and `pwd` are builtins and resolve the same symlinks.
+
+**Recommended**
+
+```sh
+SCRIPT_DIR="$(CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+if [[ ! -f "${SCRIPT_DIR}/lib/net.sh" ]]; then
+  echo "Run this script from a clone, not from a pipe: ${SCRIPT_DIR}/lib/net.sh is missing" >&2
+  exit 1
+fi
+```
+
+**Discouraged**
+
+```sh
+# Run as `curl ... | bash`, BASH_SOURCE[0] is empty and SCRIPT_DIR is the current directory
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+. "${SCRIPT_DIR}/lib/net.sh"
 ```
 
 A submodule that was never initialised, or a clone made without it, leaves the library missing. `.` on a missing file prints `No such file or directory` and, without `set -e`, the script carries on and fails later on a function that does not exist. A check with a message turns that into one line telling the user what to run.

@@ -602,6 +602,8 @@ backup::run 2>&1 > "${LOG_FILE}"
 > - ❌ TRÁNH: Không khai báo `readonly` ở cấp cao nhất của một thư viện có thể bị source hai lần
 > - ❌ TRÁNH: Không dùng `$0` trong thư viện: nó là tên của script đã source thư viện `BSG039`
 > - ❌ TRÁNH: Không source một đường dẫn tính ra mà không kiểm tra
+> - ❌ TRÁNH: Không dựa vào thư mục của một script có thể được đọc từ standard input, `bash -c` hay process substitution: nó không có thư mục nào
+> - ⚠️ CÂN NHẮC: Xác định thư mục của script bằng `CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd` khi nó phải chạy ở nơi không có `realpath`, như macOS trước bản 13
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
@@ -652,6 +654,27 @@ NET_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # scripts/lib/net.sh: $0 là bên gọi, nên câu này tìm http.sh cạnh bên gọi
 NET_LIB_DIR="$(dirname "$0")"
 . "${NET_LIB_DIR}/http.sh"
+```
+
+Thư mục của một script chỉ xác định được khi script là một tệp. `curl ... | bash`, `bash -c "$(< script.sh)"` và `bash <(...)` cho `BASH_SOURCE[0]` một giá trị rỗng, `bash` hoặc `/dev/fd/63`, và mọi đường dẫn dựng từ nó đều không trỏ tới đâu. Vì vậy, một script nạp các tệp nằm cạnh nó phải được chạy như một tệp, và nên nói rõ điều đó khi không phải vậy. `realpath` xác định thư mục trong một lần gọi, nhưng không có trên macOS trước bản 13; `cd -P` và `pwd` là lệnh dựng sẵn và phân giải các symlink giống hệt.
+
+**Nên dùng**
+
+```sh
+SCRIPT_DIR="$(CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+if [[ ! -f "${SCRIPT_DIR}/lib/net.sh" ]]; then
+  echo "Run this script from a clone, not from a pipe: ${SCRIPT_DIR}/lib/net.sh is missing" >&2
+  exit 1
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Chạy bằng `curl ... | bash`, BASH_SOURCE[0] rỗng và SCRIPT_DIR là thư mục hiện tại
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+. "${SCRIPT_DIR}/lib/net.sh"
 ```
 
 Một submodule chưa từng được khởi tạo, hoặc một bản clone không kèm nó, khiến thư viện bị thiếu. `.` trên một tệp không tồn tại in ra `No such file or directory` và, khi không có `set -e`, script chạy tiếp rồi hỏng muộn hơn ở một hàm không tồn tại. Một bước kiểm tra kèm thông báo biến chuyện đó thành một dòng chỉ cho người dùng lệnh cần chạy.
