@@ -52,6 +52,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
   - [Eval is Evil](#eval-is-evil)
   - [Secrets and Credentials](#secrets-and-credentials)
+  - [Building Structured Output](#building-structured-output)
   - [Arrays](#arrays)
   - [Pipes to While](#pipes-to-while)
   - [Process Substitution](#process-substitution)
@@ -1373,6 +1374,33 @@ curl -H "Authorization: Bearer ${TOKEN}" "${url}"
 
 # The webhook URL is the secret, and now it is in the log
 dybatpho::error "Request to ${WEBHOOK_URL} failed"
+```
+
+### Building Structured Output
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Build JSON and YAML with `jq` or `yq` and `--arg`, or through one escaping helper that every module uses
+> - ✔️ SHOULD: Write CSV fields through one helper that doubles quotes and quotes a field holding the delimiter, a quote or a line break
+> - ❌ AVOID: Do not splice a value into structured text with `printf '{"key":"%s"}'`
+
+A value holding a quote, a backslash or a line break breaks a hand-built document, or changes what it means — the receiving end reads an extra key or a cut-off string. Every module that builds JSON by hand grows its own escaper, and each one misses a different control character.
+
+**Recommended**
+
+```sh
+jq -n --arg text "${message}" --arg channel "${channel}" \
+  '{text: $text, channel: $channel}'
+```
+
+**Discouraged**
+
+```sh
+# A message with a quote or a line break produces invalid JSON
+printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 ```
 
 ### Arrays

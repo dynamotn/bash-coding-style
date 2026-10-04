@@ -53,6 +53,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-ky-t%E1%BB%B1-d%E1%BA%A1i-di%E1%BB%87n-cho-ten-t%E1%BB%87p)
   - [Eval là xấu xa](#eval-la-x%E1%BA%A5u-xa)
   - [Bí mật và thông tin xác thực](#bi-m%E1%BA%ADt-va-thong-tin-xac-th%E1%BB%B1c)
+  - [Dựng output có cấu trúc](#d%E1%BB%B1ng-output-co-c%E1%BA%A5u-truc)
   - [Mảng](#m%E1%BA%A3ng)
   - [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while)
   - [Thay thế tiến trình](#thay-th%E1%BA%BF-ti%E1%BA%BFn-trinh)
@@ -1369,6 +1370,33 @@ curl -H "Authorization: Bearer ${TOKEN}" "${url}"
 
 # URL webhook chính là bí mật, và giờ nó nằm trong log
 dybatpho::error "Request to ${WEBHOOK_URL} failed"
+```
+
+### Dựng output có cấu trúc
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dựng JSON và YAML bằng `jq` hoặc `yq` với `--arg`, hoặc qua một helper escape duy nhất mà mọi module dùng chung
+> - ✔️ NÊN: Ghi các trường CSV qua một helper duy nhất, nhân đôi dấu nháy và đặt trong nháy những trường chứa dấu phân cách, dấu nháy hay ký tự xuống dòng
+> - ❌ TRÁNH: Không ghép một giá trị vào văn bản có cấu trúc bằng `printf '{"key":"%s"}'`
+
+Một giá trị chứa dấu nháy, dấu gạch chéo ngược hay ký tự xuống dòng sẽ làm hỏng một tài liệu dựng tay, hoặc đổi nghĩa của nó — phía nhận đọc ra thêm một khóa hay một chuỗi bị cắt cụt. Module nào tự dựng JSON cũng sẽ mọc ra bộ escape riêng, và mỗi bộ lại bỏ sót một ký tự điều khiển khác nhau.
+
+**Nên dùng**
+
+```sh
+jq -n --arg text "${message}" --arg channel "${channel}" \
+  '{text: $text, channel: $channel}'
+```
+
+**Không nên dùng**
+
+```sh
+# Một thông điệp có dấu nháy hay xuống dòng tạo ra JSON không hợp lệ
+printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 ```
 
 ### Mảng
