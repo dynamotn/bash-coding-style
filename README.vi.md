@@ -1374,7 +1374,7 @@ ls "/foo/bar/${file}"
 . "${SCRIPT_DIR}/lib/functions.sh"
 
 # Một phát hiện sai trong ngữ cảnh này, được tắt kèm lý do
-# shellcheck disable=SC2016 # expanded by the remote shell
+# shellcheck disable=SC2016 # do shell ở máy từ xa khai triển
 ssh "${host}" 'printf "%s\n" "$HOSTNAME"'
 ```
 
