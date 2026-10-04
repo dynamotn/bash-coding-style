@@ -1006,7 +1006,7 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Cân nhắc sử dụng here document hoặc ký tự xuống dòng trong chuỗi quá dài. (tùy chỉnh)
 > - ⚠️ CÂN NHẮC: Tìm cách rút ngắn các chuỗi ký tự.
 
-Không có độ dài dòng tối đa hoặc quy tắc ngắt dòng tại N ký tự. Tuy nhiên, nếu bạn cần viết các chuỗi quá dài, hãy cân nhắc sử dụng here document hoặc ký tự xuống dòng nếu có thể. Mặc dù cho phép sự hiện diện của các chuỗi ký tự không thể chia nhỏ một cách thích hợp, nhưng bạn nên tìm cách rút ngắn chúng.
+Giữ mọi dòng ở mức 120 ký tự hoặc ít hơn; `max_line_length` trong [`.editorconfig`](.editorconfig) đặt giới hạn này cho trình soạn thảo, và linter kiểm tra nó. Ngắt một lệnh dài tại các tùy chọn bằng `\`, và một chuỗi dài bằng here document hoặc ký tự xuống dòng. Một chuỗi không thể chia nhỏ, như một URL, nên được chuyển vào một biến riêng thay vì để nó vượt quá giới hạn.
 
 **Nên dùng**
 

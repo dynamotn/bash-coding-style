@@ -1004,7 +1004,7 @@ Custom rule
 > - ✔️ SHOULD: Consider using here documents or embedded newlines for excessively long strings. (custom)
 > - ⚠️ CONSIDER: Look for ways to shorten string literals
 
-There is no maximum line length, nor a rule to break lines at N characters. However, if you need to write excessively long strings, consider using here documents or embedded newlines if possible. While the presence of string literals that cannot be appropriately divided is allowed, it is strongly recommended to look for ways to shorten them.
+Keep every line at 120 characters or fewer; `max_line_length` in [`.editorconfig`](.editorconfig) sets the limit for editors, and the linter checks it. Break a long command at its options with `\`, and a long string with a here document or embedded newlines. A literal that cannot be divided, such as a URL, is better moved into a variable of its own than left to run past the limit.
 
 **Recommended**
 
