@@ -1861,10 +1861,10 @@ mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
 local -a tools=()
 readarray -t tools < <(dytoy::get_yaml "${name}" "tools")
 
-local count=0 line
-while IFS= read -r line || [[ -n "${line}" ]]; do
+local count=0 path
+while IFS= read -r -d '' path; do
   count=$((count + 1))
-done < <(command grep -c "" "${file}")
+done < <(command find "${root}" -type f -print0)
 echo "${count}"
 ```
 
