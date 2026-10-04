@@ -212,7 +212,7 @@ fi
 > - ❌ TRÁNH: Không cho rằng `bash` trên `PATH` là bản mới: macOS vẫn đi kèm Bash 3.2 ở `/bin/bash`
 > - ❌ TRÁNH: Không so sánh phiên bản theo dạng `major >= X && minor >= Y`, dạng này từ chối Bash 6.0 khi mức tối thiểu là 5.2, và không so sánh `BASH_VERSION` như chuỗi, khi đó `5.10` xếp trước `5.2`
 >
-> Trình kiểm tra: `BSG099`
+> Trình kiểm tra: `BSG099`, `BSG116`
 
 Hướng dẫn này dựa vào các tính năng mà những bản cũ không có: nameref (`local -n`, 4.3), `mapfile -d` và `local -` (4.4), và mảng rỗng được `set -u` chấp nhận (4.4). Trên Bash 3.2, một script viết theo cách này không thất bại ngay chỗ thiếu tính năng; nó thất bại muộn hơn, với `invalid option` hay `unbound variable`, ở xa nguyên nhân. Một bước kiểm tra ở đầu biến điều đó thành một thông báo mà người dùng có thể xử lý, chẳng hạn cài một bản Bash mới hơn bằng Homebrew, bản mà `#!/usr/bin/env bash` sẽ tìm thấy trước.
 
@@ -524,7 +524,7 @@ dybatpho::dry_run systemctl --user restart app.service
 > - ❌ TRÁNH: Không gọi một helper in ra `STDOUT` từ một hàm mà output của nó bị bên gọi bắt lại hoặc pipe vào một tệp
 > - ❌ TRÁNH: Không trộn `&>` với `> file 2>&1` trong cùng một codebase, và không bao giờ viết `2>&1 > file`, cách này vẫn gửi lỗi ra terminal
 >
-> Trình kiểm tra: `BSG036`
+> Trình kiểm tra: `BSG036`, `BSG122`
 
 **Nên dùng**
 
@@ -701,6 +701,8 @@ fi
 > - ✔️ NÊN: Đặt `PATH` thành các thư mục hệ thống cố định ở đầu một script chạy với quyền cao, trước lệnh bên ngoài đầu tiên của nó
 > - ❌ TRÁNH: Không cho rằng một biến bạn chưa từng đặt thì chưa được đặt
 > - ❌ TRÁNH: Không đưa `.`, một phần tử rỗng (`::`, hay `:` ở đầu hoặc cuối) hoặc một thư mục ai cũng ghi được như `/tmp` vào `PATH`
+>
+> Trình kiểm tra: `BSG114`
 
 Một script kế thừa mọi biến được xuất của shell đã khởi chạy nó. `CDPATH` làm `cd dir` in ra một đường dẫn và đi tới nơi khác; một `IFS` tùy chỉnh thay đổi cách mọi khai triển không có nháy bị tách; `GIT_DIR` trỏ mọi lệnh git sang một repository khác; `FORCE_COLOR` đưa mã escape vào output bị bắt lại. Một thư viện phụ thuộc vào bất kỳ biến nào trong số này phải tự đặt nó, chứ không phải hy vọng.
 
@@ -756,6 +758,8 @@ PATH="/tmp/tools:${PATH}"
 > - ✔️ NÊN: Nạp các tệp theo một thứ tự cố định, của hệ thống trước và của người dùng sau cùng, và ghi rõ trong `--help` những đường dẫn nào được đọc
 > - ⚠️ CÂN NHẮC: Chỉ `.` một tệp cấu hình khi nó thuộc về người dùng đang chạy script, hoặc root, và không ai khác ghi được vào nó
 > - ❌ TRÁNH: Không `.` một tệp mà người dùng khác, một thư mục ai cũng ghi được hay một lần tải về có thể thay đổi: mọi dòng của nó chạy như chính script
+>
+> Trình kiểm tra: `BSG115`
 
 Source một tệp nghĩa là chạy nó. Một tệp cấu hình trong thư mục dùng chung, hay một tệp mà người dùng có ít quyền hơn sửa được, khi đó trở thành cách để chạy bất kỳ lệnh nào với quyền của script — với một script chạy qua `sudo` là quyền root. Phân tích tệp giữ nó đúng với vai trò của nó: giá trị cho những thiết lập mà script biết, được kiểm tra như mọi input khác.
 
@@ -1593,7 +1597,7 @@ function _main {
 > - ⚠️ CÂN NHẮC: Cân nhắc giải quyết tất cả các cảnh báo ShellCheck với mức độ nghiêm trọng từ "info" trở lên. (tùy chỉnh)
 > - ⚠️ CÂN NHẮC: Nếu bạn không thể giải quyết các cảnh báo ShellCheck với mức độ nghiêm trọng "info", hãy cân nhắc thêm các chú thích `# shellcheck disable=SCXXXX` để bỏ qua chúng, kèm lý do trên cùng dòng. (tùy chỉnh)
 >
-> Trình kiểm tra: `BSG109`
+> Trình kiểm tra: `BSG109`, `BSG123`
 
 Dự án [ShellCheck](https://www.shellcheck.net/) phát hiện các lỗi và cảnh báo phổ biến trong các tập lệnh shell. Hãy áp dụng nó cho tất cả các tập lệnh shell, bất kể kích thước của chúng.
 
@@ -1803,6 +1807,8 @@ fi
 > - ❌ TRÁNH: Không dùng một dấu `=` để so sánh chuỗi
 > - ❌ TRÁNH: Không dùng `<` hay `>` để so sánh số trong `[[ ... ]]`
 > - ❌ TRÁNH: Không chạy một biến cờ như một lệnh, như `if ${force}; then` hay `while ${running}; do`: giá trị của nó bị thực thi
+>
+> Trình kiểm tra: `BSG121`
 
 Trong `[[ ... ]]`, hai toán tử `<` và `>` so sánh theo thứ tự từ điển, nên `[[ 10 < 9 ]]` là đúng. Số thì phải nằm trong `(( ... ))`.
 
@@ -2211,7 +2217,7 @@ EOF
 > - ❌ TRÁNH: Không duyệt từ `0` đến `${#names[@]} - 1` trên một mảng mà hàm không tự dựng
 > - ❌ TRÁNH: Không gán một giá trị đơn cho mảng, `names="${value}"`: nó chỉ thay phần tử 0 và giữ nguyên mọi phần tử khác
 >
-> Trình kiểm tra: `BSG049`, `BSG085`
+> Trình kiểm tra: `BSG049`, `BSG085`, `BSG113`
 
 Một chuỗi ngăn cách bằng dấu cách chỉ là mảng chừng nào chưa có phần tử nào chứa dấu cách. Mảng thì luôn đúng dù các phần tử là gì, và `"${names[@]}"` truyền đi đúng bằng số phần tử đang có, kể cả khi không có phần tử nào.
 
@@ -2716,7 +2722,7 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ❌ TRÁNH: Không kết thúc một hàm bằng `[[ ... ]] && action` hay `((flag)) && action`: khi điều kiện sai, hàm trả về 1 và `set -e` dừng bên gọi
 > - ❌ TRÁNH: Không chuyển hướng cả một khối vào `/dev/null`, như `} 2> /dev/null` hay `done 2> /dev/null`: nó giấu mọi lỗi bên trong, không chỉ lỗi đã lường trước
 >
-> Trình kiểm tra: `BSG044`
+> Trình kiểm tra: `BSG044`, `BSG110`, `BSG120`
 
 Đọc `$?` ở dòng kế tiếp chỉ đúng nếu giữa hai dòng đó không có gì chạy, một điều kiện mà không ai giữ được khi script lớn dần. Kiểm tra ngay trên lệnh thì không bao giờ lạc hậu. `|| true` tường minh còn là một dấu hiệu: nó nói với người đọc sau rằng khả năng thất bại đã được cân nhắc, chứ không phải bị bỏ quên.
 
@@ -2974,7 +2980,7 @@ curl --fail -sS "${url}" || return 22
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
 >
-> Trình kiểm tra: `BSG108`
+> Trình kiểm tra: `BSG108`, `BSG119`
 
 Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
 
@@ -3044,7 +3050,7 @@ command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
 > - ❌ TRÁNH: Không cài handler của thư viện bằng `trap '…' SIG` trơn, và không xóa handler bằng `trap - EXIT`
 > - ❌ TRÁNH: Không kết thúc một handler `EXIT` bằng `exit 0` hay một mã thoát cố định: một script đã thất bại lại báo thành công
 >
-> Trình kiểm tra: `BSG055`
+> Trình kiểm tra: `BSG055`, `BSG111`
 
 Một thư viện dùng chung bảng trap với script đã source nó. `trap '…' INT` trong thư viện âm thầm xóa phần xử lý Ctrl-C của chính script, còn `trap - EXIT` xóa phần dọn dẹp do người khác đăng ký. Thứ tự cũng quan trọng không kém: handler của bên gọi có gọi `exit` sẽ kết thúc shell trước khi handler nối sau nó kịp chạy, nên lock không bao giờ được giải phóng và các job con vẫn chạy. Vì vậy một lời gọi có phạm vi cài handler của riêng nó, đặt lại các handler đã lưu khi kết thúc, và phát lại tín hiệu nó đã bắt.
 
@@ -3116,6 +3122,8 @@ trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
 > - ✔️ NÊN: Giữ pid của mọi job chạy nền, và đợi từng job, đếm số lần thất bại: `wait "${pid}" || failed=$((failed + 1))`
 > - ❌ TRÁNH: Không chỉ gửi tín hiệu tới pid của job, và không cho rằng một lần `TERM` là đủ
 > - ❌ TRÁNH: Không `wait` lần lượt từng job dưới `set -e` mà không kiểm tra mã thoát: thất bại đầu tiên dừng script và các job còn lại bị bỏ mặc
+>
+> Trình kiểm tra: `BSG112`
 
 Pid của một job thường là một subshell, còn việc thật chạy trong một tiến trình cháu mà tín hiệu gửi tới pid không bao giờ chạm tới. Ngay cả tín hiệu gửi tới cả group cũng có thể trượt một tiến trình đã fork mà chưa gọi `exec`: nó vẫn chạy các handler của shell cha, và một handler bắt `TERM` sẽ nuốt tín hiệu trước khi `exec` đặt lại nó. Gửi tín hiệu tới khi group rỗng, với `KILL` là bước cuối, là cách duy nhất để biết không còn gì sót lại.
 
@@ -3224,7 +3232,7 @@ grep "${pattern}" "${file}"
 > - ❌ TRÁNH: Không pipe thứ tải về vào shell: `curl ... | bash`, `wget -O- ... | sh`
 > - ❌ TRÁNH: Không thử lại trong một vòng lặp sát nút, `until curl ...; do :; done`, hay thử lại mãi mãi
 >
-> Trình kiểm tra: `BSG056`, `BSG058`, `BSG107`
+> Trình kiểm tra: `BSG056`, `BSG058`, `BSG107`, `BSG117`, `BSG118`
 
 Không có `--fail`, curl thoát với 0 khi gặp 404 hay 500 và trả trang lỗi về như thể đó là nội dung. Khi pipe vào `bash`, trang đó — hoặc một lần tải bị cắt giữa chừng, hoặc bất cứ thứ gì kẻ tấn công trả về — được chạy từng dòng trước khi có gì kiểm tra nó, và một dòng dở dang có thể làm điều mà không script hoàn chỉnh nào làm.
 

@@ -210,7 +210,7 @@ fi
 > - ❌ AVOID: Do not assume the `bash` on `PATH` is new: macOS still ships Bash 3.2 as `/bin/bash`
 > - ❌ AVOID: Do not compare the version as `major >= X && minor >= Y`, which refuses Bash 6.0 for a 5.2 floor, nor `BASH_VERSION` as a string, where `5.10` sorts before `5.2`
 >
-> Linter: `BSG099`
+> Linter: `BSG099`, `BSG116`
 
 The guide relies on features that older releases do not have: namerefs (`local -n`, 4.3), `mapfile -d` and `local -` (4.4), and empty arrays that `set -u` accepts (4.4). On Bash 3.2 a script written this way does not fail where the feature is missing; it fails later, with `invalid option` or `unbound variable`, far from the cause. One check at the top turns that into a message the user can act on, such as installing a newer Bash with Homebrew, whose `bash` `#!/usr/bin/env bash` then finds first.
 
@@ -522,7 +522,7 @@ dybatpho::dry_run systemctl --user restart app.service
 > - ❌ AVOID: Do not call a helper that prints to `STDOUT` from a function whose output a caller captures or pipes into a file
 > - ❌ AVOID: Do not mix `&>` with `> file 2>&1` in one codebase, and never write `2>&1 > file`, which still sends errors to the terminal
 >
-> Linter: `BSG036`
+> Linter: `BSG036`, `BSG122`
 
 **Recommended**
 
@@ -699,6 +699,8 @@ fi
 > - ✔️ SHOULD: Set `PATH` to fixed system directories at the top of a script that runs with elevated privileges, before its first external command
 > - ❌ AVOID: Do not assume that a variable you never set is unset
 > - ❌ AVOID: Do not put `.`, an empty element (`::`, or a leading or trailing `:`) or a world-writable directory such as `/tmp` in `PATH`
+>
+> Linter: `BSG114`
 
 A script inherits every exported variable of the shell that started it. `CDPATH` makes `cd dir` print a path and go somewhere else; a custom `IFS` changes how every unquoted expansion splits; `GIT_DIR` points every git command at another repository; `FORCE_COLOR` puts escape codes into captured output. A library that depends on any of these has to set it, not hope.
 
@@ -754,6 +756,8 @@ PATH="/tmp/tools:${PATH}"
 > - ✔️ SHOULD: Load the files in a fixed order, system first and user last, and say in `--help` which paths are read
 > - ⚠️ CONSIDER: `.` a configuration file only when it is owned by the user running the script, or by root, and nobody else can write to it
 > - ❌ AVOID: Do not `.` a file that another user, a world-writable directory or a download can change: every line of it runs as the script
+>
+> Linter: `BSG115`
 
 Sourcing a file runs it. A configuration file in a shared directory, or one a less privileged user can edit, then becomes a way to run any command with the rights of the script — for a script that runs through `sudo`, with root's. Parsing keeps the file to what it is meant to be: values for the settings the script knows, checked like any other input.
 
@@ -1591,7 +1595,7 @@ function _main {
 > - ⚠️ CONSIDER: Consider resolving all ShellCheck warnings with a severity level of info or higher. (custom)
 > - ⚠️ CONSIDER: If you cannot resolve ShellCheck warnings with a severity level of info, consider adding `# shellcheck disable=SCXXXX` comments to ignore them, with the reason on the same line. (custom)
 >
-> Linter: `BSG109`
+> Linter: `BSG109`, `BSG123`
 
 The [ShellCheck](https://www.shellcheck.net/) project detects common bugs and warnings in shell scripts. Apply it to all shell scripts, regardless of their size.
 
@@ -1801,6 +1805,8 @@ fi
 > - ❌ AVOID: Do not use a single `=` for string comparison
 > - ❌ AVOID: Do not use `<` or `>` to compare numbers inside `[[ ... ]]`
 > - ❌ AVOID: Do not run a flag variable as a command, as in `if ${force}; then` or `while ${running}; do`: its value is executed
+>
+> Linter: `BSG121`
 
 Inside `[[ ... ]]` the operators `<` and `>` compare lexicographically, so `[[ 10 < 9 ]]` is true. Numbers belong in `(( ... ))`.
 
@@ -2209,7 +2215,7 @@ EOF
 > - ❌ AVOID: Do not walk `0` to `${#names[@]} - 1` over an array the function did not build itself
 > - ❌ AVOID: Do not assign a plain value to an array, `names="${value}"`: it replaces element 0 and keeps all the others
 >
-> Linter: `BSG049`, `BSG085`
+> Linter: `BSG049`, `BSG085`, `BSG113`
 
 A space-separated string is only an array as long as no element contains a space. An array stays correct whatever the elements are, and `"${names[@]}"` passes exactly as many arguments as there are elements, including none.
 
@@ -2714,7 +2720,7 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ❌ AVOID: Do not end a function with `[[ ... ]] && action` or `((flag)) && action`: when the test is false, the function returns 1 and `set -e` stops the caller
 > - ❌ AVOID: Do not redirect a whole block to `/dev/null`, as in `} 2> /dev/null` or `done 2> /dev/null`: it hides every error in it, not only the expected one
 >
-> Linter: `BSG044`
+> Linter: `BSG044`, `BSG110`, `BSG120`
 
 Reading `$?` on the next line only works if nothing else ran in between, which is a condition nobody can keep while the script grows. Testing the command itself cannot go stale. An explicit `|| true` is also a marker: it tells the next reader that the failure was considered, rather than forgotten.
 
@@ -2972,7 +2978,7 @@ curl --fail -sS "${url}" || return 22
 > - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
 >
-> Linter: `BSG108`
+> Linter: `BSG108`, `BSG119`
 
 Builtins do not fork, so they are faster in a loop, and they behave the same on every machine. The exception is text transformation over many lines, where `sed` or `awk` say in one line what parameter expansion needs a loop for.
 
@@ -3042,7 +3048,7 @@ command find "${root}" -name '*.log' -mtime +7 -exec gzip -- {} \;
 > - ❌ AVOID: Do not install a library handler with a plain `trap '…' SIG`, and do not clear one with `trap - EXIT`
 > - ❌ AVOID: Do not end an `EXIT` handler with `exit 0` or any fixed status: a script that failed reports success
 >
-> Linter: `BSG055`
+> Linter: `BSG055`, `BSG111`
 
 A library shares the trap table with the script that sourced it. `trap '…' INT` in a library silently removes the script's own Ctrl-C handling, and `trap - EXIT` removes cleanup someone else registered. Order matters as much: a caller's handler that calls `exit` ends the shell before a handler appended after it runs, so a lock is never released and child jobs keep running. A scoped call therefore installs its handler alone, puts the saved ones back when it ends, and re-raises the signal it caught.
 
@@ -3114,6 +3120,8 @@ trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
 > - ✔️ SHOULD: Keep the pid of every background job, and wait for each of them, counting the failures: `wait "${pid}" || failed=$((failed + 1))`
 > - ❌ AVOID: Do not signal only the pid of a job, and do not assume one `TERM` is enough
 > - ❌ AVOID: Do not `wait` for jobs one after another under `set -e` without checking the status: the first failure stops the script and the other jobs are left behind
+>
+> Linter: `BSG112`
 
 The pid of a job is often a subshell whose real work runs in a grandchild that a signal to the pid never reaches. Even a signal to the group can miss a process that has forked and not yet called `exec`: it still runs the parent shell's handlers, and a handler that catches `TERM` swallows the signal before `exec` resets it. Signalling until the group is empty, with `KILL` as the last step, is the only way to know nothing was left behind.
 
@@ -3222,7 +3230,7 @@ grep "${pattern}" "${file}"
 > - ❌ AVOID: Do not pipe a download into a shell: `curl ... | bash`, `wget -O- ... | sh`
 > - ❌ AVOID: Do not retry in a tight loop, `until curl ...; do :; done`, or forever
 >
-> Linter: `BSG056`, `BSG058`, `BSG107`
+> Linter: `BSG056`, `BSG058`, `BSG107`, `BSG117`, `BSG118`
 
 Without `--fail`, curl exits 0 on a 404 or a 500 and hands over the error page as if it were the content. Piped into `bash`, that page — or a download cut off halfway, or whatever an attacker served — runs line by line before anything checked it, and a partial line can do something no complete script would.
 
