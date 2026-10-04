@@ -355,8 +355,8 @@ A script that can be asked what it *would* do is a script people are willing to 
 
 ```sh
 # The wrapper decides whether to run or to report
-dybatpho::dry_run mv "$temp_file" "$output_path"
-dybatpho::dry_run chmod +x "$output_path"
+dybatpho::dry_run mv -- "$temp_file" "$output_path"
+dybatpho::dry_run chmod +x -- "$output_path"
 
 # Reading DRY_RUN directly is fine when a whole block must be skipped
 if dybatpho::is true "${DRY_RUN}"; then
@@ -1160,7 +1160,7 @@ echo "${1}0${2}0${3}0"
 # Preferred style for other variables:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
 echo "$PATH"
-while read -r f; do
+while IFS= read -r f || [[ -n "${f}" ]]; do
   echo "file=${f}"
 done < <(find /tmp)
 ```
@@ -1862,8 +1862,8 @@ mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
 local -a tools=()
 readarray -t tools < <(dytoy::get_yaml "$name" "tools")
 
-local count=0
-while read -r line; do
+local count=0 line
+while IFS= read -r line || [[ -n "${line}" ]]; do
   count=$((count + 1))
 done < <(command grep -c "" "${file}")
 echo "${count}"
@@ -2032,8 +2032,8 @@ fi
 local -i retries=0
 retries=$((retries + 1))
 
-# Safe under set -e: the increment never decides the exit status of the line
-((count++)) || true
+# Never 0 after the increment, so the line never fails under set -e
+((count += 1))
 ```
 
 **Discouraged**
@@ -2543,11 +2543,11 @@ dybatpho::require "rbw"
 if dybatpho::string_is_blank "${profile_dir}"; then
   dybatpho::die "Profile directory is empty, refusing to remove"
 fi
-dybatpho::dry_run rm -rf "${profile_dir}"
+dybatpho::dry_run rm -rf -- "${profile_dir}"
 
 # Check the download before it is put in place
 binary::verify_sha256 "${name}" "${temp_file}" "${url}" "${sha256_asset}"
-dybatpho::dry_run mv "$temp_file" "$output_path"
+dybatpho::dry_run mv -- "$temp_file" "$output_path"
 ```
 
 **Discouraged**
@@ -2591,8 +2591,8 @@ dybatpho::curl_download "${sha256_url}" "${sha256_file}"
 dybatpho::create_temp_dir temp_dir
 tar -xf "${archive}" -C "${temp_dir}"
 
-# Without the library
-temp_file="$(mktemp --suffix=.json)"
+# Without the library; `--suffix` is GNU only, so the name has no extension
+temp_file="$(mktemp)"
 trap 'rm -f "${temp_file}"' EXIT INT TERM
 
 # A staging file for an atomic rewrite: checked destination, exclusive creation

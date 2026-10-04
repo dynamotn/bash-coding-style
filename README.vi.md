@@ -357,8 +357,8 @@ Một script có thể được hỏi rằng nó *sẽ* làm gì là một scrip
 
 ```sh
 # Hàm bọc tự quyết định là chạy hay chỉ báo cáo
-dybatpho::dry_run mv "$temp_file" "$output_path"
-dybatpho::dry_run chmod +x "$output_path"
+dybatpho::dry_run mv -- "$temp_file" "$output_path"
+dybatpho::dry_run chmod +x -- "$output_path"
 
 # Đọc thẳng DRY_RUN cũng được khi cần bỏ qua cả một khối lệnh
 if dybatpho::is true "${DRY_RUN}"; then
@@ -1159,7 +1159,7 @@ echo "${1}0${2}0${3}0"
 # Kiểu ưu tiên cho các biến khác:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
 echo "$PATH"
-while read -r f; do
+while IFS= read -r f || [[ -n "${f}" ]]; do
   echo "file=${f}"
 done < <(find /tmp)
 ```
@@ -1858,8 +1858,8 @@ mapfile -d '' -t files < <(command find "${root}" -type f -print0 | sort -z)
 local -a tools=()
 readarray -t tools < <(dytoy::get_yaml "$name" "tools")
 
-local count=0
-while read -r line; do
+local count=0 line
+while IFS= read -r line || [[ -n "${line}" ]]; do
   count=$((count + 1))
 done < <(command grep -c "" "${file}")
 echo "${count}"
@@ -2028,8 +2028,8 @@ fi
 local -i retries=0
 retries=$((retries + 1))
 
-# An toàn dưới set -e: phép tăng không quyết định mã thoát của cả dòng
-((count++)) || true
+# Không bao giờ bằng 0 sau khi tăng, nên dòng này không thất bại dưới set -e
+((count += 1))
 ```
 
 **Không nên dùng**
@@ -2539,11 +2539,11 @@ dybatpho::require "rbw"
 if dybatpho::string_is_blank "${profile_dir}"; then
   dybatpho::die "Profile directory is empty, refusing to remove"
 fi
-dybatpho::dry_run rm -rf "${profile_dir}"
+dybatpho::dry_run rm -rf -- "${profile_dir}"
 
 # Kiểm tra tệp tải về trước khi đặt nó vào chỗ
 binary::verify_sha256 "${name}" "${temp_file}" "${url}" "${sha256_asset}"
-dybatpho::dry_run mv "$temp_file" "$output_path"
+dybatpho::dry_run mv -- "$temp_file" "$output_path"
 ```
 
 **Không nên dùng**
@@ -2587,8 +2587,8 @@ dybatpho::curl_download "${sha256_url}" "${sha256_file}"
 dybatpho::create_temp_dir temp_dir
 tar -xf "${archive}" -C "${temp_dir}"
 
-# Khi không có thư viện
-temp_file="$(mktemp --suffix=.json)"
+# Khi không có thư viện; `--suffix` chỉ GNU có, nên tên tệp không có phần mở rộng
+temp_file="$(mktemp)"
 trap 'rm -f "${temp_file}"' EXIT INT TERM
 
 # Tệp staging cho một lần ghi lại nguyên tử: đích đã kiểm tra, tạo độc quyền
