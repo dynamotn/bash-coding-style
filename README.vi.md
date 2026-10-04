@@ -2104,8 +2104,8 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ NÊN: Truyền token, mật khẩu và URL bí mật cho một lệnh qua tệp cấu hình, standard input hoặc biến môi trường: `curl --config`, `-H @file`
 > - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
 > - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi. (dybatpho)
-> - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc` `BSG081`
 > - ✔️ NÊN: Tạo tệp chứa bí mật dưới `umask 077`, trong một subshell, hoặc bằng `mktemp`, công cụ tạo tệp với quyền `0600`
+> - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc` `BSG081`
 > - ❌ TRÁNH: Không ghi nguyên vẹn URL hay body của request vào log khi nó có thể mang token
 > - ❌ TRÁNH: Không ghi bí mật bằng một `>` trơn dưới umask mặc định: tệp đọc được bởi mọi người dùng, ít nhất cho tới một lệnh `chmod` sau đó
 

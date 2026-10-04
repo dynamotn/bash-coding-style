@@ -2102,8 +2102,8 @@ eval "${SIGN_CMD} ${signature} ${path}"
 > - ✔️ SHOULD: Pass tokens, passwords and secret URLs to a command through a config file, standard input or the environment: `curl --config`, `-H @file`
 > - ✔️ SHOULD: Redact a URL before it reaches a message or a log: keep the scheme and the host, drop the user info, the path and the query
 > - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell. (dybatpho)
-> - ❌ AVOID: Do not put a secret in the arguments of a command, where every user of the host reads it from `ps` and `/proc` `BSG081`
 > - ✔️ SHOULD: Create a file that holds a secret under `umask 077`, in a subshell, or with `mktemp`, which creates it `0600`
+> - ❌ AVOID: Do not put a secret in the arguments of a command, where every user of the host reads it from `ps` and `/proc` `BSG081`
 > - ❌ AVOID: Do not log a request URL or body whole when it may carry a token
 > - ❌ AVOID: Do not write a secret with a plain `>` under the default umask: the file is readable by every user, at least until a later `chmod`
 
