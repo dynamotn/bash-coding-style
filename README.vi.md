@@ -106,8 +106,8 @@ Các ký hiệu sau được sử dụng trong hướng dẫn này:
 Để giúp tuân thủ hướng dẫn phong cách, tôi đã viết một thư viện Bash [dybatpho](https://github.com/dynamotn/dybatpho). Bằng cách sử dụng thư viện, một số quy tắc trong hướng dẫn phong cách này đã được đảm bảo. Các mục được hỗ trợ sẵn được đánh dấu rõ ràng là `(dybatpho)`.
 
 ```sh
-DYBATPHO_DIR=<path to dybatpho>
-. "$DYBATPHO_DIR/init.sh"
+DYBATPHO_DIR="<path to dybatpho>"
+. "${DYBATPHO_DIR}/init.sh"
 ```
 
 ### Trình kiểm tra
@@ -161,8 +161,8 @@ set -euo pipefail
 # Nếu không dùng dybatpho
 
 #!/usr/bin/env bash
-DYBATPHO_DIR=<path to dybatpho>
-. "$DYBATPHO_DIR/init.sh"
+DYBATPHO_DIR="<path to dybatpho>"
+. "${DYBATPHO_DIR}/init.sh"
 # Nếu dùng dybatpho
 ```
 
@@ -181,7 +181,7 @@ DYBATPHO_DIR=<path to dybatpho>
 ### Khi nào nên sử dụng shell
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -244,7 +244,7 @@ sudo ./foo.sh
 ### Cách gọi script
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -274,7 +274,7 @@ bash ./scripts/docker.sh --log-level debug "${identity}"
 ### Kiểm soát tham số của script
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -339,7 +339,7 @@ done
 ### Chế độ gỡ lỗi và chạy thử
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -479,7 +479,7 @@ archive="$(release::package)"
 ### Hàm sử dụng chung
 
 > [!NOTE]
-Quy tắc mới
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -500,7 +500,7 @@ Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/functions.sh"
 ```
 
-**Không nên**
+**Không nên dùng**
 
 ```sh
 # Sử dụng source
@@ -566,7 +566,7 @@ fi
 ### Môi trường kế thừa
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -596,13 +596,13 @@ dir="$(cd "${relative}" && pwd)"
 ### Tác dụng phụ của thư viện
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
 > - ✔️ NÊN: Trả về một trạng thái từ hàm thư viện, hoặc dừng qua helper die của thư viện, thứ báo rõ lỗi. (dybatpho)
 > - ✔️ NÊN: Đổi thư mục bên trong một subshell, `( cd -- "${dir}" && ... )`, hoặc khôi phục thư mục cũ trước khi trả về
-> - ✔️ NÊN: Giới hạn phạm vi một tùy chọn shell mà hàm cần: một subshell, `local -` cho tùy chọn của `set`, `local IFS`, hoặc lưu và khôi phục nó trên mọi nhánh trả về
+> - ✔️ NÊN: Giới hạn phạm vi một tùy chọn shell mà hàm cần: một subshell, `local -` cho tùy chọn của `set`, tiền tố `IFS=` trên đúng lệnh cần tách, `local IFS`, hoặc lưu và khôi phục nó trên mọi nhánh trả về
 > - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện
 > - ❌ TRÁNH: Không `cd` trong shell của bên gọi từ một hàm thư viện
 > - ❌ TRÁNH: Không để `set -e`/`+e`/`-C`/`-f`, một tùy chọn `shopt`, `IFS` hay `umask` bị thay đổi khi hàm thư viện trả về
@@ -671,8 +671,8 @@ function text::split_into {
   local __text_split_var __text_split_input
   dybatpho::expect_args __text_split_var __text_split_input -- "$@"
   local -n __text_split_ref="${__text_split_var}"
-  local IFS=,
-  read -r -a __text_split_ref <<< "${__text_split_input}"
+  # IFS chỉ đổi cho lệnh read này; một `local IFS` ở đây sẽ là một biến cục bộ mà nameref có thể trỏ vào
+  IFS=, read -r -a __text_split_ref <<< "${__text_split_input}"
 }
 ```
 
@@ -697,7 +697,7 @@ function text::split_into {
 ### Nhập liệu tương tác
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -730,7 +730,7 @@ read -r -p "Overwrite ${file}? [y/N] " answer
 ### Tên hàm
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -781,7 +781,7 @@ function verifySha256 {
 ### Tên biến
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -840,7 +840,7 @@ done
 ### Tên biến cục bộ trong hàm nameref và hàm callback
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -985,7 +985,7 @@ Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc
 ### Dấu tab và dấu cách
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1000,7 +1000,7 @@ Nhiều trình soạn thảo không thể chuyển đổi giữa thụt lề th�
 ### Độ dài dòng code và chuỗi dài
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1014,7 +1014,7 @@ Giữ mọi dòng ở mức 120 ký tự hoặc ít hơn; `max_line_length` tron
 
 ```sh
 # Sử dụng here document
-cat <<END
+cat << END
 Tôi là một chuỗi
 đặc biệt dài.
 END
@@ -1134,6 +1134,9 @@ esac
 
 ### Khai triển biến
 
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
 > [!TIP]
 >
 > - ✔️ NÊN: Đặt mọi biến có tên trong dấu ngoặc nhọn, `${var}`, kể cả khi nó đứng một mình trong dấu nháy. `require-variable-braces` trong [`.shellcheckrc`](.shellcheckrc) kiểm tra điều này
@@ -1205,6 +1208,9 @@ fi
 
 ### Dấu nháy
 
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
 > [!TIP]
 >
 > - ✔️ NÊN: Luôn luôn đặt các biến, command substitution, các chuỗi chứa dấu cách hoặc các ký tự meta của shell trong dấu nháy kép, trừ khi cần một khai triển không được đặt trong nháy kép hoặc shell internal là một số nguyên
@@ -1233,12 +1239,12 @@ echo "${flag}"
 
 # Sử dụng mảng với khai triển được dùng dấu nháy cho các list.
 declare -a FLAGS
-FLAGS=( --foo --bar='baz' )
+FLAGS=(--foo --bar='baz')
 readonly FLAGS
 mybinary "${FLAGS[@]}"
 
 # Được chấp nhận nếu không dùng dấu nháy các biến số nguyên nội bộ.
-if (( $# > 3 )); then
+if (($# > 3)); then
   echo "ppid=${PPID}"
 fi
 
@@ -1285,8 +1291,18 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 # https://www.gnu.org/software/bash/manual/html_node/Special-Parameters.html và
 # https://mywiki.wooledge.org/BashGuide/Arrays để biết thêm
 
-(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
-(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
+(
+  set -- 1 "2 two" "3 three tres"
+  echo $#
+  set -- "$*"
+  echo "$#, $*"
+)
+(
+  set -- 1 "2 two" "3 three tres"
+  echo $#
+  set -- "$@"
+  echo "$#, $*"
+)
 ```
 
 ### Khai báo hàm
@@ -1432,7 +1448,7 @@ mapfile -t lines <<< "${text}"
 ### Kiểm tra đầu vào trong thay thế lệnh
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1642,7 +1658,7 @@ done
 ### Locale và thứ tự sắp xếp
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1723,7 +1739,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 ### Bí mật và thông tin xác thực
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1760,7 +1776,7 @@ dybatpho::error "Request to ${WEBHOOK_URL} failed"
 ### Dựng output có cấu trúc
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1910,7 +1926,7 @@ done < "${file}"
 ### Thay thế tiến trình
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -1971,7 +1987,7 @@ done
 ### Biến cục bộ
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2098,7 +2114,7 @@ local count=0
 ### Tính di động
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2140,7 +2156,7 @@ target="$(readlink -f "${link}")"
 ### So sánh phiên bản
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2185,7 +2201,7 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 ### Kiểm tra giá trị trả về
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2225,7 +2241,7 @@ fi
 ### Xử lý lỗi
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2245,7 +2261,7 @@ Thông báo cũng phải ghi đúng lời gọi mà script đã thực hiện. `
 
 ```sh
 if [[ ! -x "${BATS_CMD}" ]]; then
-  dybatpho::die "Bats test runner not found. Install bats, or run: git -C ${DYBATPHO_DIR} submodule update --init --recursive"
+  dybatpho::die "Bats not found. Install bats, or run: git -C ${DYBATPHO_DIR} submodule update --init --recursive"
 fi
 
 function get_dir {
@@ -2290,7 +2306,7 @@ function __csv_require_text {
 ### Lệnh dựng sẵn và lệnh bên ngoài
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2328,10 +2344,11 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 # Không đọc nổi, mà cũng chỉ làm đúng việc của hai dòng sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
 ```
+
 ### Trình xử lý tín hiệu
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2374,7 +2391,7 @@ function lib::with_lock {
 ### Tiến trình con
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2418,7 +2435,7 @@ kill "${pid}"
 ### Kết thúc tùy chọn
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2446,7 +2463,7 @@ grep "${pattern}" "${file}"
 ### Request mạng
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2476,7 +2493,7 @@ curl -sSL "${url}" | bash
 ### Lệnh đã lỗi thời
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2521,7 +2538,7 @@ staging="$(tempfile)"
 ### Viết script chạy lại được
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2594,7 +2611,7 @@ chmod +x "$output_path"
 ### Tạo tệp tạm an toàn
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2676,7 +2693,7 @@ printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
 ### Lock
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2722,7 +2739,7 @@ fi
 ### Ghi nguyên tử
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2765,7 +2782,7 @@ sha256sum "${archive}" > "${archive}.sha256"
 ### Lệnh phá hủy
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2809,7 +2826,7 @@ chown -R "${owner}" "${target}"
 ## Kiểm thử
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2855,7 +2872,7 @@ assert_success
 ### Assertion output nghiêm ngặt
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >
@@ -2892,7 +2909,7 @@ EOF
 ### Cô lập test
 
 > [!NOTE]
-Quy tắc tùy chỉnh
+> Quy tắc tùy chỉnh
 
 > [!TIP]
 >

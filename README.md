@@ -104,8 +104,8 @@ The following symbols are used:
 To help adhere to the style guide, I wrote a Bash library [dybatpho](https://github.com/dynamotn/dybatpho). By using this library, some rules in this style guide have been guaranteed. Items that are supported are explicitly marked as `(dybatpho)`
 
 ```sh
-DYBATPHO_DIR=<path to dybatpho>
-. "$DYBATPHO_DIR/init.sh"
+DYBATPHO_DIR="<path to dybatpho>"
+. "${DYBATPHO_DIR}/init.sh"
 ```
 
 ### Linter
@@ -159,8 +159,8 @@ set -euo pipefail
 # If not used dybatpho
 
 #!/usr/bin/env bash
-DYBATPHO_DIR=<path to dybatpho>
-. "$DYBATPHO_DIR/init.sh"
+DYBATPHO_DIR="<path to dybatpho>"
+. "${DYBATPHO_DIR}/init.sh"
 # If used dybatpho
 ```
 
@@ -179,7 +179,7 @@ DYBATPHO_DIR=<path to dybatpho>
 ### When to Use Shell
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -199,7 +199,7 @@ Use shell scripts for small utilities or simple wrapper scripts. In particular, 
 ### File Extensions
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -212,7 +212,7 @@ Executable files should either have a `.sh` extension (strongly recommended) or 
 ### SUID/SGID
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -242,7 +242,7 @@ sudo ./foo.sh
 ### Script Invocation
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -272,7 +272,7 @@ bash ./scripts/docker.sh --log-level debug "${identity}"
 ### Script Argument Control
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -337,7 +337,7 @@ done
 ### Debug and Dry-run Mode
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -405,7 +405,7 @@ dybatpho::dry_run systemctl --user restart app.service
 ### STDOUT and STDERR
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -477,7 +477,7 @@ archive="$(release::package)"
 ### Common Function Scripts
 
 > [!NOTE]
-New rule
+> Custom rule
 
 > [!TIP]
 >
@@ -564,7 +564,7 @@ fi
 ### Ambient Environment
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -594,13 +594,13 @@ dir="$(cd "${relative}" && pwd)"
 ### Library Side Effects
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
 > - ✔️ SHOULD: Return a status from a library function, or stop through the library's die helper, which reports the failure. (dybatpho)
 > - ✔️ SHOULD: Change directory inside a subshell, `( cd -- "${dir}" && ... )`, or restore the previous directory before returning
-> - ✔️ SHOULD: Scope a shell option a function needs: a subshell, `local -` for `set` options, `local IFS`, or save and restore it on every return path
+> - ✔️ SHOULD: Scope a shell option a function needs: a subshell, `local -` for `set` options, an `IFS=` prefix on the one command that splits, `local IFS`, or save and restore it on every return path
 > - ❌ AVOID: Do not call `exit` in a library function: it ends the script that sourced the library
 > - ❌ AVOID: Do not `cd` in the caller's shell from a library function
 > - ❌ AVOID: Do not leave `set -e`/`+e`/`-C`/`-f`, a `shopt` option, `IFS` or `umask` changed when a library function returns
@@ -669,8 +669,8 @@ function text::split_into {
   local __text_split_var __text_split_input
   dybatpho::expect_args __text_split_var __text_split_input -- "$@"
   local -n __text_split_ref="${__text_split_var}"
-  local IFS=,
-  read -r -a __text_split_ref <<< "${__text_split_input}"
+  # IFS changes for this read only; a `local IFS` here would be a local the nameref can bind to
+  IFS=, read -r -a __text_split_ref <<< "${__text_split_input}"
 }
 ```
 
@@ -695,7 +695,7 @@ function text::split_into {
 ### Interactive Input
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -728,7 +728,7 @@ read -r -p "Overwrite ${file}? [y/N] " answer
 ### Function Names
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -779,7 +779,7 @@ function verifySha256 {
 ### Variable Names
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -838,7 +838,7 @@ done
 ### Local Names in Nameref and Callback Functions
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -890,7 +890,7 @@ function net::retry {
 ### File Header
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -911,7 +911,7 @@ All files should include a top-level comment that briefly describes their conten
 ### Function Comments
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -963,7 +963,7 @@ Comment on parts of the code that are tricky, not immediately obvious, interesti
 ### TODO Comments
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -972,7 +972,7 @@ Custom rule
 
 Use TODO comments for temporary, short-term solutions, or code that is good enough but not perfect. TODO comments should include the uppercase string `TODO`. There is no need to include the individual's name, as it can be identified using `git blame`. The purpose of TODO comments is to provide a searchable and consistent `TODO` marker that can be looked up for more details as needed. Since the person referenced in the TODO is not necessarily committed to fixing the issue, it is helpful to include the expected resolution.
 
-**Recommend**
+**Recommended**
 
 ```sh
 # TODO: This code needs to be fixed due to insufficient error handling. Add error checks and exit with 1.
@@ -983,7 +983,7 @@ Use TODO comments for temporary, short-term solutions, or code that is good enou
 ### Tabs and Spaces
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -998,7 +998,7 @@ Many editors cannot switch between actual indentation and displayed spaces/tabs 
 ### Line Length and Long Strings
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1012,7 +1012,7 @@ Keep every line at 120 characters or fewer; `max_line_length` in [`.editorconfig
 
 ```sh
 # Use of here document
-cat <<END
+cat << END
 I am an exceptionally long
 string.
 END
@@ -1133,7 +1133,7 @@ For simple commands, place the pattern and `;;` on the same line if readability 
 ### Variable Expansion
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1207,7 +1207,7 @@ fi
 ### Quoting
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1237,12 +1237,12 @@ echo "${flag}"
 
 # Use arrays with quoted expansion for lists.
 declare -a FLAGS
-FLAGS=( --foo --bar='baz' )
+FLAGS=(--foo --bar='baz')
 readonly FLAGS
 mybinary "${FLAGS[@]}"
 
 # It's ok to not quote internal integer variables.
-if (( $# > 3 )); then
+if (($# > 3)); then
   echo "ppid=${PPID}"
 fi
 
@@ -1289,8 +1289,18 @@ grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 # https://www.gnu.org/software/bash/manual/html_node/Special-Parameters.html and
 # https://mywiki.wooledge.org/BashGuide/Arrays for more
 
-(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$*"; echo "$#, $@")
-(set -- 1 "2 two" "3 three tres"; echo $#; set -- "$@"; echo "$#, $@")
+(
+  set -- 1 "2 two" "3 three tres"
+  echo $#
+  set -- "$*"
+  echo "$#, $*"
+)
+(
+  set -- 1 "2 two" "3 three tres"
+  echo $#
+  set -- "$@"
+  echo "$#, $*"
+)
 ```
 
 ### Function Declaration
@@ -1436,7 +1446,7 @@ mapfile -t lines <<< "${text}"
 ### Validation in Command Substitution
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1646,7 +1656,7 @@ done
 ### Locale and Collation
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1727,7 +1737,7 @@ eval "${SIGN_CMD} ${signature} ${path}"
 ### Secrets and Credentials
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1764,7 +1774,7 @@ dybatpho::error "Request to ${WEBHOOK_URL} failed"
 ### Building Structured Output
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1914,7 +1924,7 @@ done < "${file}"
 ### Process Substitution
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -1975,7 +1985,7 @@ done
 ### Local Variables
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2102,7 +2112,7 @@ local count=0
 ### Portability
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2144,7 +2154,7 @@ target="$(readlink -f "${link}")"
 ### Comparing Versions
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2189,7 +2199,7 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 ### Checking Return Values
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2229,7 +2239,7 @@ fi
 ### Error Handling
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2249,7 +2259,7 @@ The message also has to name the call the script made. `FUNCNAME[2]` is right on
 
 ```sh
 if [[ ! -x "${BATS_CMD}" ]]; then
-  dybatpho::die "Bats test runner not found. Install bats, or run: git -C ${DYBATPHO_DIR} submodule update --init --recursive"
+  dybatpho::die "Bats not found. Install bats, or run: git -C ${DYBATPHO_DIR} submodule update --init --recursive"
 fi
 
 function get_dir {
@@ -2294,7 +2304,7 @@ function __csv_require_text {
 ### Builtin Commands vs External Commands
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2332,10 +2342,11 @@ asset_name="$(echo "$url" | rev | cut -d/ -f1 | rev)"
 # Unreadable, and it does the same as a two-line sed
 result="${input//${a}\/${b}/${c}${d//x/y}}"
 ```
+
 ### Signal Handlers
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2378,7 +2389,7 @@ function lib::with_lock {
 ### Child Processes
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2422,7 +2433,7 @@ kill "${pid}"
 ### End of Options
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2450,7 +2461,7 @@ grep "${pattern}" "${file}"
 ### Network Requests
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2480,7 +2491,7 @@ curl -sSL "${url}" | bash
 ### Deprecated Commands
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2525,7 +2536,7 @@ staging="$(tempfile)"
 ### Writing Rerunnable Scripts
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2598,7 +2609,7 @@ chmod +x "$output_path"
 ### Safely Creating Temporary Files
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2680,7 +2691,7 @@ printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
 ### Locks
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2726,7 +2737,7 @@ fi
 ### Atomic Writes
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2769,7 +2780,7 @@ sha256sum "${archive}" > "${archive}.sha256"
 ### Destructive Commands
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2813,7 +2824,7 @@ chown -R "${owner}" "${target}"
 ## Testing
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2859,7 +2870,7 @@ assert_success
 ### Strict Output Assertions
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
@@ -2896,7 +2907,7 @@ EOF
 ### Test Isolation
 
 > [!NOTE]
-Custom rule
+> Custom rule
 
 > [!TIP]
 >
