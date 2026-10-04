@@ -2657,6 +2657,7 @@ function fs::count_lines {
 > - ✔️ SHOULD: Omit the `$` on variables inside `(( ... ))`
 > - ✔️ SHOULD: Declare counters with `local -i` when the variable only ever holds an integer
 > - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))`
+> - ✔️ SHOULD: Check a decimal number with `dybatpho::math_is_number`, and an integer with `dybatpho::is int`. (dybatpho)
 > - ✔️ SHOULD: Increment with `((count += 1))` or `count=$((count + 1))`
 > - ✔️ SHOULD: Compute with fractions in `awk`, passing the values with `-v`: Bash arithmetic is integer only
 > - ✔️ SHOULD: Compute and compare decimal numbers with `dybatpho::math_add`, `dybatpho::math_compare`, `dybatpho::math_gt` and the other `math_*` helpers, which keep every decimal digit. (dybatpho)
@@ -2764,6 +2765,15 @@ total="$(dybatpho::math_add "${price}" "${shipping}")" || return 1
 if dybatpho::math_gt "${load}" 1.5; then
   dybatpho::warn "Load is ${load}"
 fi
+```
+
+`dybatpho::is int` accepts an optionally signed integer without a leading zero, which arithmetic would read as octal, and `dybatpho::math_is_number` a plain decimal such as `-12.5`; neither accepts blanks, hexadecimal or a thousands separator. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::is int "${count}" || dybatpho::die "Not an integer: ${count}"
+dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
 ```
 
 ### Portability
