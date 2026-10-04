@@ -3016,9 +3016,11 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ SHOULD: Read a whole file with `$(< file)`, not `$(cat file)` `BSG108`
 > - ✔️ SHOULD: End `find -exec` with `+`, which runs the command once for many files, unless the command takes exactly one `BSG119`
 > - ✔️ SHOULD: Split a string into fields with `read`, `IFS=: read -r user _ uid _ <<< "${record}"`, naming each field you discard `_` `BSG126`
+> - ✔️ SHOULD: Give a file to the command by name, `grep foo "${file}"`, or with `< "${file}"`. `useless-use-of-cat` in [`.shellcheckrc`](.shellcheckrc) checks it
 > - ⚠️ CONSIDER: Move an external command out of a loop over many items: one `sed` over the whole input instead of one per line
 > - ❌ AVOID: Do not build a parameter expansion so intricate that the reader has to test it to know what it does
 > - ❌ AVOID: Do not pipe a string into `cut` or `awk '{print $2}'` to take one field of it
+> - ❌ AVOID: Do not write `cat file | command` for a command that reads a file or standard input
 
 Builtins do not fork, so they are faster in a loop, and they behave the same on every machine. The exception is text transformation over many lines, where `sed` or `awk` say in one line what parameter expansion needs a loop for.
 
@@ -3089,6 +3091,21 @@ IFS=: read -r user _ uid _ _ home _ <<< "${record}"
 user="$(echo "${record}" | cut -d: -f1)"
 uid="$(echo "${record}" | cut -d: -f3)"
 home="$(echo "${record}" | awk -F: '{print $6}')"
+```
+
+`cat` in front of a command that can open the file itself is one more process and one more pipe, and it hides the file name from the error messages of the command.
+
+**Recommended**
+
+```sh
+grep -c -- "${pattern}" "${file}"
+```
+
+**Discouraged**
+
+```sh
+# A process and a pipe for nothing, and grep no longer knows the file name
+cat "${file}" | grep -c -- "${pattern}"
 ```
 
 ### Signal Handlers

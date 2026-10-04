@@ -3018,9 +3018,11 @@ curl --fail -sS "${url}" || return 22
 > - ✔️ NÊN: Đọc cả một tệp bằng `$(< file)`, không phải `$(cat file)` `BSG108`
 > - ✔️ NÊN: Kết thúc `find -exec` bằng `+`, cách này chạy lệnh một lần cho nhiều tệp, trừ khi lệnh chỉ nhận đúng một tệp `BSG119`
 > - ✔️ NÊN: Tách một chuỗi thành các trường bằng `read`, `IFS=: read -r user _ uid _ <<< "${record}"`, đặt tên `_` cho mỗi trường bỏ đi `BSG126`
+> - ✔️ NÊN: Đưa tệp cho lệnh bằng tên, `grep foo "${file}"`, hoặc bằng `< "${file}"`. `useless-use-of-cat` trong [`.shellcheckrc`](.shellcheckrc) kiểm tra điều này
 > - ⚠️ CÂN NHẮC: Đưa một lệnh bên ngoài ra khỏi vòng lặp trên nhiều phần tử: một lệnh `sed` trên toàn bộ input thay vì một lệnh cho mỗi dòng
 > - ❌ TRÁNH: Không viết khai triển tham số rắc rối tới mức người đọc phải chạy thử mới biết nó làm gì
 > - ❌ TRÁNH: Không pipe một chuỗi vào `cut` hay `awk '{print $2}'` chỉ để lấy một trường của nó
+> - ❌ TRÁNH: Không viết `cat file | command` cho một lệnh tự đọc được tệp hoặc standard input
 
 Lệnh dựng sẵn không tạo tiến trình con nên nhanh hơn khi nằm trong vòng lặp, và hành xử như nhau trên mọi máy. Ngoại lệ là việc biến đổi văn bản trên nhiều dòng, nơi `sed` hay `awk` nói trong một dòng điều mà khai triển tham số cần cả một vòng lặp.
 
@@ -3091,6 +3093,21 @@ IFS=: read -r user _ uid _ _ home _ <<< "${record}"
 user="$(echo "${record}" | cut -d: -f1)"
 uid="$(echo "${record}" | cut -d: -f3)"
 home="$(echo "${record}" | awk -F: '{print $6}')"
+```
+
+`cat` đặt trước một lệnh tự mở được tệp là thêm một tiến trình và một pipe, và còn giấu tên tệp khỏi thông báo lỗi của lệnh đó.
+
+**Nên dùng**
+
+```sh
+grep -c -- "${pattern}" "${file}"
+```
+
+**Không nên dùng**
+
+```sh
+# Một tiến trình và một pipe vô ích, và grep không còn biết tên tệp
+cat "${file}" | grep -c -- "${pattern}"
 ```
 
 ### Trình xử lý tín hiệu
