@@ -52,6 +52,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra chuỗi](#ki%E1%BB%83m-tra-chu%E1%BB%97i)
   - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-ky-t%E1%BB%B1-d%E1%BA%A1i-di%E1%BB%87n-cho-ten-t%E1%BB%87p)
   - [Eval là xấu xa](#eval-la-x%E1%BA%A5u-xa)
+  - [Bí mật và thông tin xác thực](#bi-m%E1%BA%ADt-va-thong-tin-xac-th%E1%BB%B1c)
   - [Mảng](#m%E1%BA%A3ng)
   - [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while)
   - [Thay thế tiến trình](#thay-th%E1%BA%BF-ti%E1%BA%BFn-trinh)
@@ -1278,6 +1279,43 @@ eval "${command}"
 # Đường dẫn có dấu cách bị tách, và đường dẫn chứa $(...) sẽ chạy nó
 dybatpho::dry_run "${SIGN_CMD} ${signature} ${path}"
 eval "${SIGN_CMD} ${signature} ${path}"
+```
+
+### Bí mật và thông tin xác thực
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Truyền token, mật khẩu và URL bí mật cho một lệnh qua tệp cấu hình, standard input hoặc biến môi trường: `curl --config`, `-H @file`
+> - ✔️ NÊN: Che URL trước khi nó vào một thông báo hay một log: giữ scheme và host, bỏ thông tin người dùng, đường dẫn và query
+> - ✔️ NÊN: Đăng ký một bí mật để che ngay khi đọc nó, trong shell của bên gọi. (dybatpho)
+> - ❌ TRÁNH: Không đặt bí mật trong tham số của một lệnh, nơi mọi người dùng trên máy đọc được nó qua `ps` và `/proc`
+> - ❌ TRÁNH: Không ghi nguyên vẹn URL hay body của request vào log khi nó có thể mang token
+
+Tham số của một tiến trình đang chạy là công khai trên máy, và log sống lâu hơn lần chạy đã ghi ra nó. Một URL webhook thường chính là thông tin xác thực, nên in URL của một request thất bại cũng làm lộ nó y như in một token. Vì vậy bí mật đi theo đường khác — một tệp cấu hình riêng mà curl đọc, standard input, một biến được kế thừa — và một thông báo chỉ gọi tên request bằng host của nó.
+
+**Nên dùng**
+
+```sh
+local config
+dybatpho::create_temp config ".curl"
+printf 'header = "Authorization: Bearer %s"\n' "${TOKEN}" > "${config}"
+curl --config "${config}" --fail-with-body "${url}"
+
+# Chỉ có scheme và host vào log: https://hooks.slack.com/[redacted]
+dybatpho::error "Request to ${redacted_url} failed"
+```
+
+**Không nên dùng**
+
+```sh
+# Token nằm trong `ps` suốt thời gian request chạy
+curl -H "Authorization: Bearer ${TOKEN}" "${url}"
+
+# URL webhook chính là bí mật, và giờ nó nằm trong log
+dybatpho::error "Request to ${WEBHOOK_URL} failed"
 ```
 
 ### Mảng

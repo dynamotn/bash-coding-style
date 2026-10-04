@@ -51,6 +51,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Testing Strings](#testing-strings)
   - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
   - [Eval is Evil](#eval-is-evil)
+  - [Secrets and Credentials](#secrets-and-credentials)
   - [Arrays](#arrays)
   - [Pipes to While](#pipes-to-while)
   - [Process Substitution](#process-substitution)
@@ -1282,6 +1283,43 @@ eval "${command}"
 # A path with a space splits, and a path holding $(...) runs it
 dybatpho::dry_run "${SIGN_CMD} ${signature} ${path}"
 eval "${SIGN_CMD} ${signature} ${path}"
+```
+
+### Secrets and Credentials
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Pass tokens, passwords and secret URLs to a command through a config file, standard input or the environment: `curl --config`, `-H @file`
+> - ✔️ SHOULD: Redact a URL before it reaches a message or a log: keep the scheme and the host, drop the user info, the path and the query
+> - ✔️ SHOULD: Register a secret for masking as soon as it is read, in the caller's shell. (dybatpho)
+> - ❌ AVOID: Do not put a secret in the arguments of a command, where every user of the host reads it from `ps` and `/proc`
+> - ❌ AVOID: Do not log a request URL or body whole when it may carry a token
+
+The arguments of a running process are public on the host, and a log outlives the run that wrote it. A webhook URL is often the credential itself, so printing the URL of a failed request leaks it as surely as printing a token. Secrets therefore travel out of band — a private config file curl reads, standard input, an inherited variable — and a message names a request by its host only.
+
+**Recommended**
+
+```sh
+local config
+dybatpho::create_temp config ".curl"
+printf 'header = "Authorization: Bearer %s"\n' "${TOKEN}" > "${config}"
+curl --config "${config}" --fail-with-body "${url}"
+
+# Only the scheme and the host reach the log: https://hooks.slack.com/[redacted]
+dybatpho::error "Request to ${redacted_url} failed"
+```
+
+**Discouraged**
+
+```sh
+# The token is in `ps` for as long as the request runs
+curl -H "Authorization: Bearer ${TOKEN}" "${url}"
+
+# The webhook URL is the secret, and now it is in the log
+dybatpho::error "Request to ${WEBHOOK_URL} failed"
 ```
 
 ### Arrays
