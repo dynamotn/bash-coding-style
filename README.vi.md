@@ -72,6 +72,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con)
   - [Kết thúc tùy chọn](#k%E1%BA%BFt-th%C3%BAc-t%C3%B9y-ch%E1%BB%8Dn)
   - [Request mạng](#request-m%E1%BA%A1ng)
+  - [Lệnh đã lỗi thời](#l%E1%BB%87nh-%C4%91%C3%A3-l%E1%BB%97i-th%E1%BB%9Di)
 - [Ổn định hóa script](#%E1%BB%95n-%C4%91%E1%BB%8Bnh-h%C3%B3a-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-%C4%91%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-th%C3%A1i-tr%C6%B0%E1%BB%9Bc-khi-thay-%C4%91%E1%BB%95i)
@@ -2334,6 +2335,39 @@ bash "${installer}"
 ```sh
 # Một trang 404, hay một script bị cắt cụt, được chạy ngay khi nó tới
 curl -sSL "${url}" | bash
+```
+
+### Lệnh đã lỗi thời
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dùng lệnh thay thế hiện hành: keyring `signed-by` cho apt, `grep -E` và `grep -F`, `command -v`, `ip`, `mktemp`
+> - ❌ TRÁNH: Không dùng `apt-key`, `egrep`, `fgrep`, `which`, `ifconfig` hay `tempfile`
+
+Các lệnh này đã lỗi thời, không có trong các image tối giản, hoặc hoạt động khác nhau giữa các hệ thống. `apt-key` tin một khóa cho mọi repository; `egrep` và `fgrep` in cảnh báo trên grep hiện hành; `which` là một chương trình bên ngoài có output và mã thoát khác nhau tùy nơi, còn `command -v` là lệnh dựng sẵn; `ifconfig` và `tempfile` không có trên nhiều bản phân phối.
+
+**Nên dùng**
+
+```sh
+curl --fail -sSL "${key_url}" | gpg --dearmor -o /etc/apt/keyrings/vendor.gpg
+echo "deb [signed-by=/etc/apt/keyrings/vendor.gpg] ${repo} stable main" > /etc/apt/sources.list.d/vendor.list
+grep -E -- "${pattern}" "${file}"
+command -v jq > /dev/null
+ip -brief address
+staging="$(mktemp)"
+```
+
+**Không nên dùng**
+
+```sh
+curl -sSL "${key_url}" | apt-key add -
+egrep "${pattern}" "${file}"
+which jq > /dev/null
+ifconfig
+staging="$(tempfile)"
 ```
 
 ## Ổn định hóa script

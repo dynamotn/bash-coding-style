@@ -71,6 +71,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Child Processes](#child-processes)
   - [End of Options](#end-of-options)
   - [Network Requests](#network-requests)
+  - [Deprecated Commands](#deprecated-commands)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
@@ -2338,6 +2339,39 @@ bash "${installer}"
 ```sh
 # A 404 page, or a truncated script, runs as it arrives
 curl -sSL "${url}" | bash
+```
+
+### Deprecated Commands
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use the current replacement: `signed-by` keyrings for apt, `grep -E` and `grep -F`, `command -v`, `ip`, `mktemp`
+> - ❌ AVOID: Do not use `apt-key`, `egrep`, `fgrep`, `which`, `ifconfig` or `tempfile`
+
+These commands are deprecated, missing from minimal images, or behave differently between systems. `apt-key` trusts a key for every repository; `egrep` and `fgrep` print a warning on current grep; `which` is an external program whose output and exit status vary, while `command -v` is a builtin; `ifconfig` and `tempfile` are absent from many distributions.
+
+**Recommended**
+
+```sh
+curl --fail -sSL "${key_url}" | gpg --dearmor -o /etc/apt/keyrings/vendor.gpg
+echo "deb [signed-by=/etc/apt/keyrings/vendor.gpg] ${repo} stable main" > /etc/apt/sources.list.d/vendor.list
+grep -E -- "${pattern}" "${file}"
+command -v jq > /dev/null
+ip -brief address
+staging="$(mktemp)"
+```
+
+**Discouraged**
+
+```sh
+curl -sSL "${key_url}" | apt-key add -
+egrep "${pattern}" "${file}"
+which jq > /dev/null
+ifconfig
+staging="$(tempfile)"
 ```
 
 ## Script Stabilization
