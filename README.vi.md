@@ -2363,7 +2363,9 @@ mapfile -t entries < <(tar -tzf "${archive}")
 >
 > - ✔️ NÊN: Duyệt mảng bằng `for item in "${items[@]}"`
 > - ✔️ NÊN: Đọc kết quả của lệnh vào một mảng trước, rồi mới lặp trên mảng đó
+> - ✔️ NÊN: Đếm bằng brace expansion, `for i in {1..5}`, khi cả hai cận là hằng, và bằng `for ((i = start; i <= end; i++))` khi có một cận là biến
 > - ❌ TRÁNH: Không viết `for item in $(command)` khi kết quả có thể chứa dấu cách `BSG042`
+> - ❌ TRÁNH: Không tạo dãy số bằng `seq` `BSG124`
 
 `for item in $(command)` tách theo từng dấu cách, dấu tab và ký tự xuống dòng, rồi còn khai triển ký tự đại diện trên kết quả. Nó chỉ đúng với dữ liệu mà bạn kiểm soát hoàn toàn.
 
@@ -2384,6 +2386,36 @@ done
 # Một tên phụ thuộc có dấu cách sẽ biến thành hai vòng lặp
 for dependency in $(dytoy::get_yaml "$name" "dependencies"); do
   dytoy "${method}" -i -t "$dependency"
+done
+```
+
+`seq` là lệnh bên ngoài, nên mỗi vòng lặp dùng nó đều tạo một tiến trình, và kết quả của nó còn đi qua bước tách từ của `$(...)`. Brace expansion tạo một khoảng cố định ngay trong shell, nhưng nó chạy trước khi biến được khai triển, nên `{1..${count}}` vẫn chỉ là một từ nguyên văn; vòng `for` số học thì nhận được biến.
+
+**Nên dùng**
+
+```sh
+local attempt
+for attempt in {1..3}; do
+  printf 'Attempt %d\n' "${attempt}"
+done
+
+local -i index
+for ((index = 1; index <= count; index++)); do
+  printf 'Worker %d\n' "${index}"
+done
+```
+
+**Không nên dùng**
+
+```sh
+# Một tiến trình để tạo dãy số, và tách từ trên kết quả của nó
+for index in $(seq 1 "${count}"); do
+  printf 'Worker %d\n' "${index}"
+done
+
+# Không phải một khoảng: brace expansion chạy trước khi ${count} được khai triển
+for index in {1..${count}}; do
+  printf 'Worker %d\n' "${index}"
 done
 ```
 

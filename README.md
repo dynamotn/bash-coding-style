@@ -2361,7 +2361,9 @@ mapfile -t entries < <(tar -tzf "${archive}")
 >
 > - ✔️ SHOULD: Iterate over an array with `for item in "${items[@]}"`
 > - ✔️ SHOULD: Read command output into an array first, then loop over it
+> - ✔️ SHOULD: Count with brace expansion, `for i in {1..5}`, when both bounds are literal, and with `for ((i = start; i <= end; i++))` when one is a variable
 > - ❌ AVOID: Do not write `for item in $(command)` when the output may contain spaces `BSG042`
+> - ❌ AVOID: Do not generate a sequence with `seq` `BSG124`
 
 `for item in $(command)` splits on every space, tab and newline, and then globs the result. It is correct only for output you control completely.
 
@@ -2382,6 +2384,36 @@ done
 # A dependency name containing a space becomes two iterations
 for dependency in $(dytoy::get_yaml "$name" "dependencies"); do
   dytoy "${method}" -i -t "$dependency"
+done
+```
+
+`seq` is an external command, so every loop over it starts a process, and its output goes through the word splitting of `$(...)`. Brace expansion makes a fixed range in the shell, but it happens before variables are expanded, so `{1..${count}}` stays a literal word; an arithmetic `for` takes variables.
+
+**Recommended**
+
+```sh
+local attempt
+for attempt in {1..3}; do
+  printf 'Attempt %d\n' "${attempt}"
+done
+
+local -i index
+for ((index = 1; index <= count; index++)); do
+  printf 'Worker %d\n' "${index}"
+done
+```
+
+**Discouraged**
+
+```sh
+# A process for the sequence, and word splitting on its output
+for index in $(seq 1 "${count}"); do
+  printf 'Worker %d\n' "${index}"
+done
+
+# Not a range: brace expansion runs before ${count} is expanded
+for index in {1..${count}}; do
+  printf 'Worker %d\n' "${index}"
 done
 ```
 
