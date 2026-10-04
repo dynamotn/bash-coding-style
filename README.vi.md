@@ -388,6 +388,8 @@ fi
 > - ✔️ NÊN: Sử dụng biến `LOG_LEVEL` để kiểm soát mức độ ghi log với 6 cấp độ: trace, debug, info, warn, error, fatal. (tùy chỉnh)
 > - ✔️ NÊN: Triệt tiêu tất cả các thông báo không cần thiết vào `/dev/null`. (tùy chỉnh)
 > - ✔️ NÊN: Sử dụng thư viện ghi log từ [dybatpho](https://github.com/dynamotn/dybatpho) để xuất các thông báo để ghi log tốt hơn. (dybatpho)
+> - ✔️ NÊN: Giữ standard output của một hàm bị bắt output chỉ cho kết quả của nó: gửi tiến độ, đường dẫn và thông báo sang `STDERR` hoặc `/dev/null`
+> - ❌ TRÁNH: Không gọi một helper in ra `STDOUT` từ một hàm mà output của nó bị bên gọi bắt lại hoặc pipe vào một tệp
 
 **Nên dùng**
 
@@ -416,6 +418,33 @@ echo "LỖI: Không thể thực hiện do_something"
 
 # hiển thị các thông báo không cần thiết
 grep -rn "abc" README.md || echo "LỖI: README.md không có từ `abc`"
+```
+
+Khi bên gọi viết `value="$(fn)"` hay `fn | store`, mọi thứ trên standard output đều là kết quả. Một helper bên trong `fn` in ra thư mục nó vừa tạo, hay một dòng tiến độ, sẽ trở thành một phần của giá trị: một mục cache bắt đầu bằng một đường dẫn, một đường dẫn archive kèm theo `Packaging ...`.
+
+**Nên dùng**
+
+```sh
+function cache::set {
+  dybatpho::ensure_dir "${CACHE_DIR}" > /dev/null
+  cat > "${CACHE_DIR}/$1"
+}
+
+function release::package {
+  printf 'Packaging %s\n' "${name}" >&2
+  printf '%s\n' "${archive}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+function release::package {
+  # Bên gọi bắt đường dẫn archive, và nhận luôn cả dòng tiến độ
+  printf 'Packaging %s\n' "${name}"
+  printf '%s\n' "${archive}"
+}
+archive="$(release::package)"
 ```
 
 ### Hàm sử dụng chung

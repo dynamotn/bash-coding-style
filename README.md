@@ -386,6 +386,8 @@ Custom rule
 > - ✔️ SHOULD: Use `LOG_LEVEL` variable to control logging level with 6 levels: trace, debug, info, warn, error, fatal. (custom)
 > - ✔️ SHOULD: Suppress all unnecessary messages to `/dev/null`. (custom)
 > - ✔️ SHOULD: Use logging library from [dybatpho](https://github.com/dynamotn/dybatpho) to output messages for better logging. (dybatpho)
+> - ✔️ SHOULD: Keep the standard output of a function whose output is captured for its result alone: send progress, paths and notices to `STDERR` or `/dev/null`
+> - ❌ AVOID: Do not call a helper that prints to `STDOUT` from a function whose output a caller captures or pipes into a file
 
 **Recommended**
 
@@ -414,6 +416,33 @@ echo "Error: Unable to do_something"
 
 # show unnecessary messages
 grep -rn "abc" README.md || echo "Error: README.md not has `abc` word"
+```
+
+When a caller writes `value="$(fn)"` or `fn | store`, everything on standard output is the result. A helper inside `fn` that prints the directory it created, or a progress line, becomes part of the value: a cached entry that starts with a path, an archive path followed by `Packaging ...`.
+
+**Recommended**
+
+```sh
+function cache::set {
+  dybatpho::ensure_dir "${CACHE_DIR}" > /dev/null
+  cat > "${CACHE_DIR}/$1"
+}
+
+function release::package {
+  printf 'Packaging %s\n' "${name}" >&2
+  printf '%s\n' "${archive}"
+}
+```
+
+**Discouraged**
+
+```sh
+function release::package {
+  # The caller captures the archive path, and gets the progress line with it
+  printf 'Packaging %s\n' "${name}"
+  printf '%s\n' "${archive}"
+}
+archive="$(release::package)"
 ```
 
 ### Common Function Scripts
