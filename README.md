@@ -659,7 +659,8 @@ function fs::list {
   (
     shopt -s nullglob dotglob
     local -a entries=("${dir}"/*)
-    printf '%s\n' ${entries[@]+"${entries[@]}"}
+    # printf with no argument still prints one empty line
+    ((${#entries[@]} == 0)) || printf '%s\n' "${entries[@]}"
   )
 }
 

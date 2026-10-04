@@ -661,7 +661,8 @@ function fs::list {
   (
     shopt -s nullglob dotglob
     local -a entries=("${dir}"/*)
-    printf '%s\n' ${entries[@]+"${entries[@]}"}
+    # printf không có đối số vẫn in ra một dòng trống
+    ((${#entries[@]} == 0)) || printf '%s\n' "${entries[@]}"
   )
 }
 
