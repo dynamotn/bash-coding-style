@@ -26,6 +26,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Chế độ gỡ lỗi và chạy thử](#ch%E1%BA%BF-d%E1%BB%99-g%E1%BB%A1-l%E1%BB%97i-va-ch%E1%BA%A1y-th%E1%BB%AD)
   - [STDOUT và STDERR](#stdout-va-stderr)
   - [Hàm sử dụng chung](#ham-s%E1%BB%AD-d%E1%BB%A5ng-chung)
+  - [Môi trường kế thừa](#moi-tr%C6%B0%E1%BB%9Dng-k%E1%BA%BF-th%E1%BB%ABa)
 - [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-d%E1%BA%B7t-ten)
   - [Tên hàm](#ten-ham)
   - [Tên biến](#ten-bi%E1%BA%BFn)
@@ -459,6 +460,36 @@ readonly NET_TIMEOUT=10
 ```sh
 # scripts/lib/net.sh: lần `.` thứ hai dừng script
 readonly NET_TIMEOUT=10
+```
+
+### Môi trường kế thừa
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Xóa hoặc cố định các biến kế thừa mà thư viện phụ thuộc, trong phạm vi hẹp nhất: `GIT_DIR`, `FORCE_COLOR`, `CDPATH`, `IFS`, `TMPDIR`
+> - ✔️ NÊN: Đọc một thiết lập kế thừa có chủ đích: ghi chú nó bằng `@env` và kiểm tra nó
+> - ❌ TRÁNH: Không cho rằng một biến bạn chưa từng đặt thì chưa được đặt
+
+Một script kế thừa mọi biến được xuất của shell đã khởi chạy nó. `CDPATH` làm `cd dir` in ra một đường dẫn và đi tới nơi khác; một `IFS` tùy chỉnh thay đổi cách mọi khai triển không có nháy bị tách; `GIT_DIR` trỏ mọi lệnh git sang một repository khác; `FORCE_COLOR` đưa mã escape vào output bị bắt lại. Một thư viện phụ thuộc vào bất kỳ biến nào trong số này phải tự đặt nó, chứ không phải hy vọng.
+
+**Nên dùng**
+
+```sh
+# cd không in gì và đi đúng tới nơi tham số chỉ
+dir="$(CDPATH='' cd -- "${relative}" && pwd -P)"
+
+# Một lệnh git chỉ được tác động lên đúng thư mục này
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "${repo}" status --porcelain
+```
+
+**Không nên dùng**
+
+```sh
+# Khi có CDPATH, đường dẫn bắt được bị in hai lần hoặc trỏ tới thư mục khác
+dir="$(cd "${relative}" && pwd)"
 ```
 
 ## Quy ước đặt tên

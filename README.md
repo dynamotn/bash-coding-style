@@ -25,6 +25,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Debug and Dry-run Mode](#debug-and-dry-run-mode)
   - [STDOUT and STDERR](#stdout-and-stderr)
   - [Common Function Scripts](#common-function-scripts)
+  - [Ambient Environment](#ambient-environment)
 - [Naming Conventions](#naming-conventions)
   - [Function Names](#function-names)
   - [Variable Names](#variable-names)
@@ -457,6 +458,36 @@ readonly NET_TIMEOUT=10
 ```sh
 # scripts/lib/net.sh: a second `.` stops the script
 readonly NET_TIMEOUT=10
+```
+
+### Ambient Environment
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Clear or pin the inherited variables a library depends on, in the narrowest scope: `GIT_DIR`, `FORCE_COLOR`, `CDPATH`, `IFS`, `TMPDIR`
+> - ✔️ SHOULD: Read an inherited setting on purpose: document it with `@env` and validate it
+> - ❌ AVOID: Do not assume that a variable you never set is unset
+
+A script inherits every exported variable of the shell that started it. `CDPATH` makes `cd dir` print a path and go somewhere else; a custom `IFS` changes how every unquoted expansion splits; `GIT_DIR` points every git command at another repository; `FORCE_COLOR` puts escape codes into captured output. A library that depends on any of these has to set it, not hope.
+
+**Recommended**
+
+```sh
+# cd prints nothing and goes where the argument says
+dir="$(CDPATH='' cd -- "${relative}" && pwd -P)"
+
+# A git call that has to act on this directory only
+env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "${repo}" status --porcelain
+```
+
+**Discouraged**
+
+```sh
+# With CDPATH set, the captured path is printed twice or names another directory
+dir="$(cd "${relative}" && pwd)"
 ```
 
 ## Naming Conventions
