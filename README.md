@@ -71,6 +71,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Safely Creating Temporary Files](#safely-creating-temporary-files)
 - [Testing](#testing)
   - [Strict Output Assertions](#strict-output-assertions)
+  - [Test Isolation](#test-isolation)
 
 <!-- tocstop -->
 
@@ -2145,5 +2146,44 @@ EOF
 name    count
 apples  3
 EOF
+}
+```
+
+### Test Isolation
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Clear the ambient state a suite could act on, in the shared test helper: `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `FORCE_COLOR`, `NO_COLOR`
+> - ✔️ SHOULD: Create every fixture under the test's own temporary directory (`BATS_TEST_TMPDIR`)
+> - ✔️ SHOULD: Start a child shell from a script file rather than with `bash -c` when coverage is measured
+> - ❌ AVOID: Do not let a test act on the repository, the home directory or any path outside its temporary directory
+
+A suite inherits the environment of whatever runs it. A git hook exports `GIT_DIR` and `GIT_INDEX_FILE`, so a test that runs `git init` and `git commit` in a temporary directory writes into the real repository instead — one such run turned a repository bare and replaced its remote. A coverage tool that traces through `BASH_SOURCE` also sees nothing in a `bash -c` child, whose `BASH_SOURCE` is empty.
+
+**Recommended**
+
+```sh
+# test/test_helper.bash
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR FORCE_COLOR
+
+@test "release reads the tags of a repository" {
+  local repo="${BATS_TEST_TMPDIR}/repo" script="${BATS_TEST_TMPDIR}/run.sh"
+  git init -q "${repo}"
+  printf '. %q\nrelease::latest %q\n' "${LIB}" "${repo}" > "${script}"
+  run bash "${script}"
+}
+```
+
+**Discouraged**
+
+```sh
+@test "release reads the tags of a repository" {
+  # Inside a git hook, GIT_DIR points at the real repository
+  git init -q "${BATS_TEST_TMPDIR}/repo"
+  git -C "${BATS_TEST_TMPDIR}/repo" tag v1.0.0
+  run bash -c ". ${LIB}; release::latest ${BATS_TEST_TMPDIR}/repo"
 }
 ```

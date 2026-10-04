@@ -72,6 +72,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-toan)
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
   - [Assertion output nghiêm ngặt](#assertion-output-nghiem-ng%E1%BA%B7t)
+  - [Cô lập test](#co-l%E1%BA%ADp-test)
 
 <!-- tocstop -->
 
@@ -2141,5 +2142,44 @@ EOF
 name    count
 apples  3
 EOF
+}
+```
+
+### Cô lập test
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Xóa trạng thái kế thừa mà bộ test có thể tác động lên, trong helper dùng chung của test: `GIT_DIR`, `GIT_INDEX_FILE`, `GIT_WORK_TREE`, `FORCE_COLOR`, `NO_COLOR`
+> - ✔️ NÊN: Tạo mọi fixture trong thư mục tạm riêng của test (`BATS_TEST_TMPDIR`)
+> - ✔️ NÊN: Khởi chạy shell con từ một tệp script thay vì `bash -c` khi có đo coverage
+> - ❌ TRÁNH: Không để một test tác động lên repository, thư mục home hay bất kỳ đường dẫn nào ngoài thư mục tạm của nó
+
+Bộ test kế thừa môi trường của thứ đang chạy nó. Một git hook xuất `GIT_DIR` và `GIT_INDEX_FILE`, nên một test chạy `git init` và `git commit` trong thư mục tạm lại ghi vào repository thật — từng có một lần chạy như vậy biến repository thành bare và thay mất remote của nó. Một công cụ đo coverage theo dõi qua `BASH_SOURCE` cũng không thấy gì trong shell con `bash -c`, vì `BASH_SOURCE` của nó rỗng.
+
+**Nên dùng**
+
+```sh
+# test/test_helper.bash
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR FORCE_COLOR
+
+@test "release reads the tags of a repository" {
+  local repo="${BATS_TEST_TMPDIR}/repo" script="${BATS_TEST_TMPDIR}/run.sh"
+  git init -q "${repo}"
+  printf '. %q\nrelease::latest %q\n' "${LIB}" "${repo}" > "${script}"
+  run bash "${script}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+@test "release reads the tags of a repository" {
+  # Trong một git hook, GIT_DIR trỏ tới repository thật
+  git init -q "${BATS_TEST_TMPDIR}/repo"
+  git -C "${BATS_TEST_TMPDIR}/repo" tag v1.0.0
+  run bash -c ". ${LIB}; release::latest ${BATS_TEST_TMPDIR}/repo"
 }
 ```
