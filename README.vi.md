@@ -2693,6 +2693,7 @@ function fs::count_lines {
 > - ✔️ NÊN: Bỏ dấu `$` trước tên biến bên trong `(( ... ))`
 > - ✔️ NÊN: Khai báo biến đếm bằng `local -i` khi biến đó chỉ chứa số nguyên
 > - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))`
+> - ✔️ NÊN: Kiểm tra một số thập phân bằng `dybatpho::math_is_number`, và một số nguyên bằng `dybatpho::is int`. (dybatpho)
 > - ✔️ NÊN: Tăng giá trị bằng `((count += 1))` hoặc `count=$((count + 1))`
 > - ✔️ NÊN: Tính toán với số thập phân trong `awk`, truyền giá trị qua `-v`: phép tính của Bash chỉ dùng số nguyên
 > - ✔️ NÊN: Tính và so sánh số thập phân bằng `dybatpho::math_add`, `dybatpho::math_compare`, `dybatpho::math_gt` và các helper `math_*` khác, các hàm giữ đủ mọi chữ số thập phân. (dybatpho)
@@ -2800,6 +2801,15 @@ total="$(dybatpho::math_add "${price}" "${shipping}")" || return 1
 if dybatpho::math_gt "${load}" 1.5; then
   dybatpho::warn "Load is ${load}"
 fi
+```
+
+`dybatpho::is int` chấp nhận một số nguyên có thể có dấu mà không có số 0 ở đầu, thứ mà phép tính sẽ đọc thành hệ bát phân, còn `dybatpho::math_is_number` chấp nhận một số thập phân thông thường như `-12.5`; cả hai đều không nhận khoảng trắng, hệ thập lục phân hay dấu phân cách hàng nghìn. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::is int "${count}" || dybatpho::die "Not an integer: ${count}"
+dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
 ```
 
 ### Tính di động
