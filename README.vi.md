@@ -907,6 +907,7 @@ function text::split_into {
 >
 > - ✔️ NÊN: Chỉ hỏi khi standard input là terminal, hoặc tôn trọng chế độ không tương tác, và nếu không thì dùng một mặc định an toàn
 > - ✔️ NÊN: Đặt timeout và câu trả lời mặc định cho một lời nhắc
+> - ✔️ NÊN: Hỏi một câu có hay không bằng `dybatpho::confirm`, hàm chỉ hỏi khi có terminal, trả lời không khi không có, và nhận một câu trả lời mặc định. (dybatpho)
 > - ❌ TRÁNH: Không gọi `read` hay một lời nhắc vô điều kiện trong script có thể chạy trong CI, cron hay một pipe `BSG098`
 
 Khi không có terminal, `read` chờ một đầu vào không bao giờ tới — một job CI treo cho tới khi hết thời gian — hoặc đọc dòng tiếp theo của một pipe vốn dành cho thứ khác. Kiểm tra `[[ -t 0 ]]` và có sẵn một mặc định giúp lần chạy không người trông tự quyết định, còn timeout giới hạn lần chạy có tương tác.
@@ -927,6 +928,15 @@ fi
 # Treo mãi trong CI, và đọc nhầm dòng từ một pipe
 read -r -p "Overwrite ${file}? [y/N] " answer
 [[ "${answer}" == [yY] ]] || return 1
+```
+
+`dybatpho::confirm` ghi câu hỏi ra standard error và chỉ đọc câu trả lời khi `dybatpho::is_interactive` thấy standard input là terminal, hoặc `DYBATPHO_INTERACTIVE=true` nói là có. Nếu không, nó cảnh báo và trả về 1, nên một lần chạy không người trông sẽ nhận câu trả lời an toàn, còn `DYBATPHO_FORCE=true` trả lời có cho một lần chạy đã được duyệt trước. Hàm không có timeout: trên terminal nó chờ câu trả lời. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::confirm "Overwrite ${file}?" || return 1
+dybatpho::confirm "Keep the backup?" yes || rm -f -- "${file}.bak"
 ```
 
 ## Quy ước đặt tên
