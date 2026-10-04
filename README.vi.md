@@ -55,6 +55,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Mảng](#m%E1%BA%A3ng)
   - [Đường ống vào while](#d%C6%B0%E1%BB%9Dng-%E1%BB%91ng-vao-while)
   - [Vòng lặp for](#vong-l%E1%BA%B7p-for)
+  - [Biến cục bộ](#bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99)
   - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
 - [Gọi lệnh](#g%E1%BB%8Di-l%E1%BB%87nh)
   - [Kiểm tra giá trị trả về](#ki%E1%BB%83m-tra-gia-tr%E1%BB%8B-tr%E1%BA%A3-v%E1%BB%81)
@@ -515,6 +516,7 @@ function dytoy::install {
 
   local -a dependencies=()
   readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+  local dependency
   for dependency in "${dependencies[@]}"; do
     dytoy::install "$dependency"
   done
@@ -1335,6 +1337,7 @@ echo "${count}"
 ```sh
 local -a dependencies=()
 readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+local dependency
 for dependency in "${dependencies[@]}"; do
   dybatpho::dry_run dytoy "${method}" -i -t "$dependency"
 done
@@ -1347,6 +1350,51 @@ done
 for dependency in $(dytoy::get_yaml "$name" "dependencies"); do
   dytoy "${method}" -i -t "$dependency"
 done
+```
+
+### Biến cục bộ
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Khai báo `local` cho mọi biến mà hàm gán: biến lặp, đích của `read`, `mapfile`, `readarray` và `printf -v`, và các phép gán thường
+> - ✔️ NÊN: Ghi chú một biến toàn cục có chủ đích bằng `@set` trong chú thích hàm, và đặt tên nó bằng `CHỮ HOA`
+> - ❌ TRÁNH: Không để biến lặp hay đích của `read` lọt ra ngoài hàm
+
+Một biến mà hàm gán mà không khai báo là biến toàn cục. Nó sống lâu hơn hàm, và ghi đè biến cùng tên ở mọi bên gọi: một helper lặp bằng `for i` sẽ âm thầm làm xê dịch chính vòng lặp `i` của bên gọi. [Tên biến](#ten-bi%E1%BA%BFn) yêu cầu dùng `local`; đây là những phép gán dễ quên nhất.
+
+**Nên dùng**
+
+```sh
+function fs::count_lines {
+  local file total=0 line
+  for file in "$@"; do
+    while IFS= read -r line; do
+      total=$((total + 1))
+    done < "${file}"
+  done
+  local summary
+  printf -v summary '%d lines' "${total}"
+  printf '%s\n' "${summary}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+function fs::count_lines {
+  local total=0
+  # `file`, `line` và `summary` giờ là biến toàn cục, và ghi đè biến của bên gọi
+  for file in "$@"; do
+    while IFS= read -r line; do
+      total=$((total + 1))
+    done < "${file}"
+  done
+  printf -v summary '%d lines' "${total}"
+  printf '%s\n' "${summary}"
+}
 ```
 
 ### Số học

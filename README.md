@@ -54,6 +54,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Arrays](#arrays)
   - [Pipes to While](#pipes-to-while)
   - [For Loops](#for-loops)
+  - [Local Variables](#local-variables)
   - [Arithmetic](#arithmetic)
 - [Calling Commands](#calling-commands)
   - [Checking Return Values](#checking-return-values)
@@ -513,6 +514,7 @@ function dytoy::install {
 
   local -a dependencies=()
   readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+  local dependency
   for dependency in "${dependencies[@]}"; do
     dytoy::install "$dependency"
   done
@@ -1339,6 +1341,7 @@ echo "${count}"
 ```sh
 local -a dependencies=()
 readarray -t dependencies < <(dytoy::get_yaml "$name" "dependencies")
+local dependency
 for dependency in "${dependencies[@]}"; do
   dybatpho::dry_run dytoy "${method}" -i -t "$dependency"
 done
@@ -1351,6 +1354,51 @@ done
 for dependency in $(dytoy::get_yaml "$name" "dependencies"); do
   dytoy "${method}" -i -t "$dependency"
 done
+```
+
+### Local Variables
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Declare `local` every variable a function assigns: loop variables, the targets of `read`, `mapfile`, `readarray` and `printf -v`, and plain assignments
+> - ✔️ SHOULD: Document a deliberate global with `@set` in the function comment, and name it in `UPPERCASE`
+> - ❌ AVOID: Do not let a loop variable or a `read` target leak out of a function
+
+A variable a function assigns without declaring it is global. It outlives the function, and it overwrites a variable of the same name in every caller: a helper that loops with `for i` silently moves the caller's own `i` loop. [Variable Names](#variable-names) asks for `local`; these are the assignments that are easiest to forget.
+
+**Recommended**
+
+```sh
+function fs::count_lines {
+  local file total=0 line
+  for file in "$@"; do
+    while IFS= read -r line; do
+      total=$((total + 1))
+    done < "${file}"
+  done
+  local summary
+  printf -v summary '%d lines' "${total}"
+  printf '%s\n' "${summary}"
+}
+```
+
+**Discouraged**
+
+```sh
+function fs::count_lines {
+  local total=0
+  # `file`, `line` and `summary` are globals now, and clobber the caller's
+  for file in "$@"; do
+    while IFS= read -r line; do
+      total=$((total + 1))
+    done < "${file}"
+  done
+  printf -v summary '%d lines' "${total}"
+  printf '%s\n' "${summary}"
+}
 ```
 
 ### Arithmetic
