@@ -1144,7 +1144,9 @@ ls "/foo/bar/${file}"
 > [!TIP]
 >
 > - ✔️ NÊN: Dùng `$(command)` để thay thế lệnh
+> - ✔️ NÊN: Đọc các dòng từ một tham số chuỗi và từ standard input qua cùng một helper, để cả hai cho ra cùng các dòng
 > - ❌ TRÁNH: Không dùng dấu nháy ngược
+> - ❌ TRÁNH: Không trộn `$(...)` với `<<<` mà không tính tới ký tự xuống dòng mà mỗi cái bỏ đi hay thêm vào
 
 `$(...)` cho phép lồng nhau mà không cần thoát ký tự, và dễ đọc hơn vì dấu mở và dấu đóng khác nhau.
 
@@ -1159,6 +1161,28 @@ SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 ```sh
 # Lồng nhau thì phải thoát ký tự, và hai dấu trông giống hệt nhau
 SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
+```
+
+`$(...)` bỏ hết các ký tự xuống dòng ở cuối, còn `<<<` thêm vào một cái. Văn bản đi qua một lệnh thay thế rồi một here-string sẽ thêm hoặc mất một dòng: `mapfile -t lines <<< "${text}"` biến `$'a\nb\n'` thành ba dòng với dòng cuối rỗng, trong khi cùng văn bản đó truyền qua pipe chỉ cho ra hai dòng.
+
+**Nên dùng**
+
+```sh
+function text::lines_into {
+  local -n __text_lines_ref="$1"
+  __text_lines_ref=()
+  local __text_lines_line
+  while IFS= read -r __text_lines_line || [[ -n "${__text_lines_line}" ]]; do
+    __text_lines_ref+=("${__text_lines_line}")
+  done < <(printf '%s' "$2")
+}
+```
+
+**Không nên dùng**
+
+```sh
+# `$'a\nb\n'` thành ba dòng, dòng cuối rỗng
+mapfile -t lines <<< "${text}"
 ```
 
 ### Kiểm tra đầu vào trong thay thế lệnh

@@ -1148,7 +1148,9 @@ ls "/foo/bar/${file}"
 > [!TIP]
 >
 > - ✔️ SHOULD: Use `$(command)` for command substitution
+> - ✔️ SHOULD: Read lines from a literal argument and from standard input through the same helper, so both give the same lines
 > - ❌ AVOID: Do not use backticks
+> - ❌ AVOID: Do not mix `$(...)` and `<<<` without accounting for the newline each one removes or adds
 
 `$(...)` nests without escaping and is easier to read, because the opening and closing markers differ.
 
@@ -1163,6 +1165,28 @@ SCRIPT_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 ```sh
 # Nesting requires escaping, and the two markers look alike
 SCRIPT_DIR="`realpath \`dirname "${BASH_SOURCE[0]}"\``"
+```
+
+`$(...)` strips every trailing newline, and `<<<` appends one. Text that goes through a substitution and then a here-string gains or loses a line: `mapfile -t lines <<< "${text}"` turns `$'a\nb\n'` into three lines with an empty last one, while the same text piped in gives two.
+
+**Recommended**
+
+```sh
+function text::lines_into {
+  local -n __text_lines_ref="$1"
+  __text_lines_ref=()
+  local __text_lines_line
+  while IFS= read -r __text_lines_line || [[ -n "${__text_lines_line}" ]]; do
+    __text_lines_ref+=("${__text_lines_line}")
+  done < <(printf '%s' "$2")
+}
+```
+
+**Discouraged**
+
+```sh
+# `$'a\nb\n'` becomes three lines, the last one empty
+mapfile -t lines <<< "${text}"
 ```
 
 ### Validation in Command Substitution
