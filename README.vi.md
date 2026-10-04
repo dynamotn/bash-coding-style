@@ -3606,6 +3606,7 @@ staging="$(tempfile)"
 >
 > - ✔️ NÊN: Làm cho script lũy đẳng: chạy hai lần với cùng tham số thì cho cùng kết quả
 > - ✔️ NÊN: Kiểm tra xem việc đó đã làm xong chưa trước khi làm
+> - ✔️ NÊN: Thêm một dòng vào tệp đúng một lần bằng `dybatpho::file_ensure_line`, và gỡ nó ra bằng `dybatpho::file_remove_line`, thay vì nối thêm bằng `>>`. (dybatpho)
 > - ✔️ NÊN: Ưu tiên lệnh vốn đã lũy đẳng, như `chezmoi apply`, `pacman -S --needed` hay `kubectl apply`, hơn là lệnh thất bại ở lần chạy thứ hai
 > - ❌ TRÁNH: Không giả định rằng lần chạy trước đã hoàn tất
 
@@ -3631,6 +3632,14 @@ dytoy -t "$name"
 
 # Thất bại ở lần chạy thứ hai vì thư mục đã tồn tại
 mkdir "${config_dir}"
+```
+
+`dybatpho::file_ensure_line` tìm đúng dòng đó trước và không làm gì khi nó đã có, nên lần chạy thứ hai không thay đổi gì; nếu chưa có, nó nối dòng đó vào qua một tệp tạm, thêm ký tự xuống dòng mà dòng cuối có thể đang thiếu. Cả hai helper đều tôn trọng `DRY_RUN`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::file_ensure_line "${profile}" 'export EDITOR=nvim'
 ```
 
 ### Kiểm tra trạng thái trước khi thay đổi
