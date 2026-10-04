@@ -2454,7 +2454,7 @@ Without `--fail`, curl exits 0 on a 404 or a 500 and hands over the error page a
 local installer
 dybatpho::create_temp installer ".sh"
 curl --fail -sSL "${url}" -o "${installer}"
-dybatpho::verify_checksum "${installer}" "${expected_sha256}"
+dybatpho::verify_checksum "${installer}" "sha256:${expected_sha256}"
 bash "${installer}"
 ```
 

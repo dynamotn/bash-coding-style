@@ -2450,7 +2450,7 @@ Không có `--fail`, curl thoát với 0 khi gặp 404 hay 500 và trả trang l
 local installer
 dybatpho::create_temp installer ".sh"
 curl --fail -sSL "${url}" -o "${installer}"
-dybatpho::verify_checksum "${installer}" "${expected_sha256}"
+dybatpho::verify_checksum "${installer}" "sha256:${expected_sha256}"
 bash "${installer}"
 ```
 
