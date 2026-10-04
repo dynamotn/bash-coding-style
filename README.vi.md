@@ -1490,8 +1490,10 @@ fi
 > [!TIP]
 >
 > - ✔️ NÊN: Thêm tiền tố `./` cho mẫu đại diện khi nó được khai triển thành tham số của lệnh
+> - ✔️ NÊN: Kiểm tra từng kết quả có tồn tại bằng `[[ -e "${file}" || -L "${file}" ]]`, hoặc bật `nullglob` trong một phạm vi kết thúc cùng vòng lặp
 > - ⚠️ CÂN NHẮC: Dùng `compgen -G` khi bạn cần các kết quả khớp như dữ liệu và chấp nhận kết quả rỗng. (tùy chỉnh)
 > - ❌ TRÁNH: Không truyền `*` trần cho một lệnh
+> - ❌ TRÁNH: Không cho rằng một glob không khớp gì sẽ khai triển thành rỗng: nó vẫn giữ nguyên là mẫu
 
 Một tệp tên `-rf` trong thư mục sẽ biến `rm *` thành `rm -rf`. `./*` khai triển thành các đường dẫn bắt đầu bằng `./`, không lệnh nào nhầm chúng với tùy chọn được.
 
@@ -1510,6 +1512,27 @@ mapfile -t matches < <(compgen -G "${search_pattern}" || true)
 ```sh
 # Một tệp tên '-rf' hay '--force' sẽ trở thành tùy chọn
 rm -f *.tmp
+```
+
+Khi không có `nullglob`, một mẫu không khớp tệp nào được giữ nguyên, nên vòng lặp chạy một lần với `file` là `/etc/app/*.conf` và lệnh thất bại trên một cái tên không tồn tại — hoặc, với thao tác ghi, sẽ tạo ra nó.
+
+**Nên dùng**
+
+```sh
+local file
+for file in "${dir}"/*.conf; do
+  [[ -e "${file}" || -L "${file}" ]] || continue
+  load_config "${file}"
+done
+```
+
+**Không nên dùng**
+
+```sh
+# Không có tệp .conf nào, vòng lặp chạy một lần trên chuỗi "/etc/app/*.conf"
+for file in "${dir}"/*.conf; do
+  load_config "${file}"
+done
 ```
 
 ### Locale và thứ tự sắp xếp

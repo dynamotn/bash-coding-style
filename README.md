@@ -1494,8 +1494,10 @@ fi
 > [!TIP]
 >
 > - ✔️ SHOULD: Prefix a glob with `./` when it is expanded into command arguments
+> - ✔️ SHOULD: Check each match exists with `[[ -e "${file}" || -L "${file}" ]]`, or turn on `nullglob` in a scope that ends with the loop
 > - ⚠️ CONSIDER: Use `compgen -G` when you need the matches as data and an empty result is acceptable. (custom)
 > - ❌ AVOID: Do not pass a bare `*` to a command
+> - ❌ AVOID: Do not assume a glob that matched nothing expands to nothing: it stays as the literal pattern
 
 A file named `-rf` in the directory turns `rm *` into `rm -rf`. `./*` expands to paths that begin with `./`, which no command can mistake for an option.
 
@@ -1514,6 +1516,27 @@ mapfile -t matches < <(compgen -G "${search_pattern}" || true)
 ```sh
 # A file named '-rf' or '--force' becomes an option
 rm -f *.tmp
+```
+
+Without `nullglob`, a pattern that matches no file is left as it is, so the loop runs once with `file` set to `/etc/app/*.conf` and the command fails on a name that does not exist — or, for a write, creates it.
+
+**Recommended**
+
+```sh
+local file
+for file in "${dir}"/*.conf; do
+  [[ -e "${file}" || -L "${file}" ]] || continue
+  load_config "${file}"
+done
+```
+
+**Discouraged**
+
+```sh
+# With no .conf file, this runs once on the literal "/etc/app/*.conf"
+for file in "${dir}"/*.conf; do
+  load_config "${file}"
+done
 ```
 
 ### Locale and Collation
