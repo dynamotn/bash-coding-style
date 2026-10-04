@@ -906,6 +906,7 @@ function text::split_into {
 > - ✔️ SHOULD: Ask only when standard input is a terminal, or honour a non-interactive mode, and fall back to a safe default otherwise
 > - ✔️ SHOULD: Give a prompt a timeout and a default answer
 > - ✔️ SHOULD: Ask a yes or no question with `dybatpho::confirm`, which asks only on a terminal, answers no without one, and takes a default answer. (dybatpho)
+> - ✔️ SHOULD: Tell a CI run with `dybatpho::is_ci`, which honours `CI=false` and knows the services that set no `CI`. (dybatpho)
 > - ❌ AVOID: Do not call `read` or a prompt unconditionally in a script that may run in CI, cron or a pipe `BSG098`
 
 With no terminal, `read` waits for input that never comes — a CI job hangs until its timeout — or reads the next line of a pipe meant for something else. Checking `[[ -t 0 ]]` and having a default makes the unattended run decide on its own, and a timeout bounds the interactive one.
@@ -935,6 +936,16 @@ read -r -p "Overwrite ${file}? [y/N] " answer
 ```sh
 dybatpho::confirm "Overwrite ${file}?" || return 1
 dybatpho::confirm "Keep the backup?" yes || rm -f -- "${file}.bak"
+```
+
+`dybatpho::is_ci` reads `CI` first, so `CI=false`, `0` or `no` means a local run even on a CI host, and only when `CI` is unset does it look for a service that names itself, such as `GITHUB_ACTIONS` or `GITLAB_CI`. (dybatpho)
+
+**Recommended**
+
+```sh
+if dybatpho::is_ci; then
+  DYBATPHO_INTERACTIVE=false
+fi
 ```
 
 ## Naming Conventions
