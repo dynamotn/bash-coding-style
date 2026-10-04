@@ -1107,21 +1107,22 @@ done
 > - ✔️ SHOULD: Indent cases by two spaces
 > - ✔️ SHOULD: For single-line cases, place one space after the closing parenthesis of the pattern and before `;;`
 > - ✔️ SHOULD: For long or multiple command cases, split the pattern, action, and `;;` into multiple lines
+> - ✔️ SHOULD: End every `case` with a `*)` branch, which handles or rejects what no other pattern matched. `add-default-case` in [`.shellcheckrc`](.shellcheckrc) checks it
+> - ❌ AVOID: Do not write an opening parenthesis before a pattern, and do not fall through with `;&` or `;;&`
 > - ⚠️ CONSIDER: For short command cases, consider placing the pattern, action, and `;;` on one line if readability is maintained
 
-Indent the conditions one level from `case` and `esac`. For multi-line actions, indent an additional level. There should be no opening parentheses before the pattern expression. Avoid using `;&` or `;;&`.
+Indent the conditions one level from `case` and `esac`. For multi-line actions, indent an additional level. There should be no opening parentheses before the pattern expression. A fall-through with `;&` or `;;&` makes the reader trace every branch below the one that matched, so give each branch its own action instead. Without a `*)` branch, a value nobody expected passes through silently.
 
 **Recommended**
 
 ```sh
-case "${expression}" in
-  "--a")
-    _VARIABLE_="..."
+case "${format}" in
+  json | yaml)
+    output_file="${name}.${format}"
+    renderer="render_${format}"
     ;;
-  "--absolute")
-    _ACTIONS="relative"
-    ;;
-  *) shift ;;
+  text) renderer=render_text ;;
+  *) dybatpho::die "Unknown format: ${format}" ;;
 esac
 ```
 

@@ -1109,21 +1109,22 @@ done
 > - ✔️ NÊN: Thụt các case vào hai khoảng trắng
 > - ✔️ NÊN: Đối với các case một dòng, đặt một khoảng trắng sau dấu ngoặc đơn đóng của pattern và trước `;;`
 > - ✔️ NÊN: Đối với các case dài hoặc nhiều lệnh, chia pattern, action và `;;` thành nhiều dòng
+> - ✔️ NÊN: Kết thúc mọi `case` bằng một nhánh `*)`, xử lý hoặc từ chối những gì không pattern nào khớp. `add-default-case` trong [`.shellcheckrc`](.shellcheckrc) kiểm tra điều này
+> - ❌ TRÁNH: Không viết dấu ngoặc đơn mở trước pattern, và không rơi xuống nhánh dưới bằng `;&` hay `;;&`
 > - ⚠️ CÂN NHẮC: Đối với các case lệnh ngắn, hãy cân nhắc đặt pattern, action và `;;` trên một dòng nếu duy trì được tính dễ đọc
 
-Thụt các điều kiện vào một cấp so với `case` và `esac`. Đối với các action nhiều dòng, thụt thêm một cấp nữa. Không nên có dấu ngoặc đơn mở trước biểu thức pattern. Tránh sử dụng `;&` hoặc `;;&`.
+Thụt các điều kiện vào một cấp so với `case` và `esac`. Đối với các action nhiều dòng, thụt thêm một cấp nữa. Không nên có dấu ngoặc đơn mở trước biểu thức pattern. Rơi xuống nhánh dưới bằng `;&` hay `;;&` buộc người đọc lần theo mọi nhánh bên dưới nhánh đã khớp, vì vậy hãy cho mỗi nhánh một action riêng. Không có nhánh `*)`, một giá trị không ai lường trước sẽ lặng lẽ đi qua.
 
 **Nên dùng**
 
 ```sh
-case "${expression}" in
-  "--a")
-    _VARIABLE_="..."
+case "${format}" in
+  json | yaml)
+    output_file="${name}.${format}"
+    renderer="render_${format}"
     ;;
-  "--absolute")
-    _ACTIONS="relative"
-    ;;
-  *) shift ;;
+  text) renderer=render_text ;;
+  *) dybatpho::die "Unknown format: ${format}" ;;
 esac
 ```
 
