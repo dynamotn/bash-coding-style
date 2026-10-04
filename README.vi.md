@@ -3357,6 +3357,7 @@ trap 'rm -rf -- "${work_dir}"; exit 0' EXIT
 > - ✔️ NÊN: Lặp lại tín hiệu tới khi group rỗng, trong một khoảng ân hạn có giới hạn, rồi gửi `KILL`
 > - ✔️ NÊN: Kết thúc mọi job mà một hàm đã khởi chạy trước khi nó trả về, kể cả khi nó trả về vì một tín hiệu
 > - ✔️ NÊN: Giữ pid của mọi job chạy nền, và đợi từng job, đếm số lần thất bại: `wait "${pid}" || failed=$((failed + 1))`
+> - ✔️ NÊN: Khởi chạy job bằng `dybatpho::background_run`, đợi chúng bằng `dybatpho::wait_all`, và kết thúc chúng bằng `dybatpho::kill_children`, các hàm tuân theo mọi điều trên. (dybatpho)
 > - ❌ TRÁNH: Không chỉ gửi tín hiệu tới pid của job, và không cho rằng một lần `TERM` là đủ
 > - ❌ TRÁNH: Không `wait` lần lượt từng job dưới `set -e` mà không kiểm tra mã thoát: thất bại đầu tiên dừng script và các job còn lại bị bỏ mặc `BSG112`
 
@@ -3419,6 +3420,17 @@ done
 for pid in $(jobs -p); do
   wait "${pid}"
 done
+```
+
+`dybatpho::background_run` khởi chạy mỗi job trong process group riêng dưới một cái tên, `dybatpho::wait_all` đợi mọi job, ghi lại mã thoát của từng job và thất bại khi có job thất bại, còn `dybatpho::kill_children` gửi `TERM` tới mọi group, đợi cho group rỗng, rồi gửi `KILL` tới những gì còn lại sau `DYBATPHO_TIMEOUT_KILL_AFTER` giây. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::trap dybatpho::kill_children EXIT INT TERM
+dybatpho::background_run api ./serve.sh --port 8080
+dybatpho::background_run worker ./worker.sh
+dybatpho::wait_all || dybatpho::die "A background job failed"
 ```
 
 ### Kết thúc tùy chọn
