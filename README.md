@@ -1117,7 +1117,9 @@ Custom rule
 >
 > - ✔️ SHOULD: Return a value that has to be validated through a nameref, with an `*_into` helper, or validate the input before the substitution
 > - ✔️ SHOULD: Check the status of a substitution whose function can stop the script: `value="$(fn)" || return $?`
+> - ✔️ SHOULD: Call a function that changes state — a global, a cache or memo, a counter, a secret registration — in the caller's shell, and return its value through a nameref
 > - ❌ AVOID: Do not call a function that can stop the script, through `dybatpho::die` or `exit`, inside `$(...)` and carry on unconditionally
+> - ❌ AVOID: Do not call such a function inside `$(...)`: every change it makes is lost with the subshell
 
 `$(...)` runs in a subshell, so `dybatpho::die` or `exit` inside it ends only that subshell. Under `set -e` the failed assignment still stops the script, but wherever errexit is suspended — inside `if`, after `||`, `&&` or `!`, or under bats' `run` — the caller carries on with an empty value, right after a fatal error that claimed the script was stopping. A helper that validates in the caller's shell stops the script where it should.
 
@@ -1160,6 +1162,33 @@ function net::connect {
 if ! net::connect "${raw_port}"; then
   dybatpho::warn "Could not connect"
 fi
+```
+
+The subshell discards side effects as well as refusals. A memo set inside `$(...)` is never seen again, so the expensive probe it was meant to cache runs on every call; a token registered for masking inside `$(...)` is printed unmasked afterwards; a counter never moves.
+
+**Recommended**
+
+```sh
+function __date_flavor_into {
+  local -n __date_flavor_ref="$1"
+  if [[ -z "${__DATE_FLAVOR-}" ]]; then
+    if date --version > /dev/null 2>&1; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
+  fi
+  __date_flavor_ref="${__DATE_FLAVOR}"
+}
+
+local flavor
+__date_flavor_into flavor
+```
+
+**Discouraged**
+
+```sh
+# The memo is set in the subshell, so every call probes again
+flavor="$(date::flavor)"
+
+# Registered for masking in the subshell: the caller's logs show the token
+token="$(secret::read API_TOKEN)"
 ```
 
 ### Test Expression

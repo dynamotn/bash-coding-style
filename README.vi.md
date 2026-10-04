@@ -1113,7 +1113,9 @@ Quy tắc tùy chỉnh
 >
 > - ✔️ NÊN: Trả về một giá trị cần kiểm tra qua nameref, bằng một helper `*_into`, hoặc kiểm tra đầu vào trước khi thay thế lệnh
 > - ✔️ NÊN: Kiểm tra mã thoát của một lệnh thay thế mà hàm bên trong có thể dừng script: `value="$(fn)" || return $?`
+> - ✔️ NÊN: Gọi một hàm thay đổi trạng thái — biến toàn cục, cache hay memo, bộ đếm, việc đăng ký bí mật — trong shell của bên gọi, và trả giá trị qua nameref
 > - ❌ TRÁNH: Không gọi một hàm có thể dừng script, qua `dybatpho::die` hay `exit`, bên trong `$(...)` rồi chạy tiếp vô điều kiện
+> - ❌ TRÁNH: Không gọi hàm như vậy bên trong `$(...)`: mọi thay đổi nó tạo ra đều mất cùng subshell
 
 `$(...)` chạy trong một subshell, nên `dybatpho::die` hay `exit` bên trong chỉ kết thúc subshell đó. Dưới `set -e`, phép gán thất bại vẫn dừng script, nhưng ở bất kỳ chỗ nào errexit bị tạm tắt — trong `if`, sau `||`, `&&` hay `!`, hoặc dưới `run` của bats — bên gọi vẫn chạy tiếp với một giá trị rỗng, ngay sau một thông báo lỗi nghiêm trọng nói rằng script sắp dừng. Một helper kiểm tra ngay trong shell của bên gọi sẽ dừng script đúng chỗ.
 
@@ -1156,6 +1158,33 @@ function net::connect {
 if ! net::connect "${raw_port}"; then
   dybatpho::warn "Could not connect"
 fi
+```
+
+Subshell bỏ đi cả tác dụng phụ lẫn lời từ chối. Một memo được đặt trong `$(...)` không bao giờ được thấy lại, nên phép dò tốn kém mà nó định cache vẫn chạy ở mọi lần gọi; một token được đăng ký để che bên trong `$(...)` sau đó vẫn bị in ra nguyên vẹn; một bộ đếm thì không bao giờ tăng.
+
+**Nên dùng**
+
+```sh
+function __date_flavor_into {
+  local -n __date_flavor_ref="$1"
+  if [[ -z "${__DATE_FLAVOR-}" ]]; then
+    if date --version > /dev/null 2>&1; then __DATE_FLAVOR=gnu; else __DATE_FLAVOR=bsd; fi
+  fi
+  __date_flavor_ref="${__DATE_FLAVOR}"
+}
+
+local flavor
+__date_flavor_into flavor
+```
+
+**Không nên dùng**
+
+```sh
+# Memo được đặt trong subshell, nên lần gọi nào cũng dò lại
+flavor="$(date::flavor)"
+
+# Được đăng ký để che trong subshell: log của bên gọi vẫn hiện token
+token="$(secret::read API_TOKEN)"
 ```
 
 ### Biểu thức kiểm tra
