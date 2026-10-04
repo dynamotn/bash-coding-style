@@ -1163,9 +1163,9 @@ echo "${1}0${2}0${3}0"
 # Preferred style for other variables:
 echo "PATH=${PATH}, PWD=${PWD}, mine=${some_var}"
 echo "${PATH}"
-while IFS= read -r f || [[ -n "${f}" ]]; do
-  echo "file=${f}"
-done < <(find /tmp)
+while IFS= read -r -d '' file; do
+  echo "file=${file}"
+done < <(command find /tmp -print0)
 ```
 
 **Discouraged**
