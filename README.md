@@ -845,7 +845,9 @@ Custom rule
 >
 > - ✔️ SHOULD: Use consistent variable expansion
 > - ✔️ SHOULD: Enclose variable expansions in double quotes. Single quotes do not expand variables
+> - ✔️ SHOULD: Read an environment variable that may be unset with a default under `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}`
 > - ❌ AVOID: Avoid bracing shell special variables/positional parameters unless explicitly necessary or to avoid serious confusion
+> - ❌ AVOID: Do not read an optional environment variable bare under `set -u`
 
 Variables should be quoted. Use `${var}` instead of `$var`, except variable is entire string in quotes.
 This is a strongly recommended guideline but not an absolute regulation. However, even though it is not mandatory, do not disregard it.
@@ -886,6 +888,26 @@ echo a=$avar "b=$bvar" "PID=${$}" "${1}"
 # not "${10}${20}${30}
 set -- a b c
 echo "$10$20$30"
+```
+
+`set -u` stops the script on the first read of an unset variable. Variables the caller may or may not export — `NO_COLOR`, `TMPDIR`, `XDG_*`, `CI` — are as often unset as set, so a bare `${NO_COLOR}` works on the developer's machine and stops every script whose user ran `unset NO_COLOR`. `${NAME-}` reads an unset variable as empty; `${NAME:-default}` also replaces an empty value.
+
+**Recommended**
+
+```sh
+if [[ -n "${NO_COLOR-}" ]]; then
+  color=false
+fi
+cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}"
+```
+
+**Discouraged**
+
+```sh
+# `NO_COLOR: unbound variable` as soon as it is not exported
+if [[ -n "${NO_COLOR}" ]]; then
+  color=false
+fi
 ```
 
 ### Quoting

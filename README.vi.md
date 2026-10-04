@@ -844,7 +844,9 @@ esac
 >
 > - ✔️ NÊN: Sử dụng kiểu khai triển biến nhất quán
 > - ✔️ NÊN: Đặt các khai triển biến trong dấu nháy kép. Dấu nháy đơn không khai triển biến
+> - ✔️ NÊN: Đọc một biến môi trường có thể chưa được đặt kèm giá trị mặc định khi có `set -u`: `${NO_COLOR-}`, `${TMPDIR:-/tmp}`
 > - ❌ TRÁNH: Tránh đặt các biến đặc biệt/tham số vị trí của shell trong dấu ngoặc nhọn trừ khi thực sự cần thiết hoặc để tránh nhầm lẫn nghiêm trọng
+> - ❌ TRÁNH: Không đọc trơn một biến môi trường tùy chọn khi có `set -u`
 
 Các biến nên được đặt trong dấu nháy kép. Sử dụng `${var}` thay vì `$var`, trừ khi biến là toàn bộ chuỗi trong dấu nháy kép.
 Đây là một hướng dẫn được khuyến nghị mạnh mẽ nhưng không phải là một quy định tuyệt đối. Tuy nhiên, mặc dù nó không bắt buộc, đừng bỏ qua nó.
@@ -885,6 +887,26 @@ echo a=$avar "b=$bvar" "PID=${$}" "${1}"
 # không phải "${10}${20}${30}
 set -- a b c
 echo "$10$20$30"
+```
+
+`set -u` dừng script ngay lần đầu đọc một biến chưa được đặt. Những biến mà bên gọi có thể xuất hoặc không — `NO_COLOR`, `TMPDIR`, `XDG_*`, `CI` — chưa được đặt cũng thường như đã đặt, nên một `${NO_COLOR}` trơn chạy được trên máy người viết nhưng dừng mọi script mà người dùng đã chạy `unset NO_COLOR`. `${NAME-}` đọc biến chưa đặt thành chuỗi rỗng; `${NAME:-default}` còn thay luôn cả giá trị rỗng.
+
+**Nên dùng**
+
+```sh
+if [[ -n "${NO_COLOR-}" ]]; then
+  color=false
+fi
+cache_dir="${XDG_CACHE_HOME:-${HOME}/.cache}"
+```
+
+**Không nên dùng**
+
+```sh
+# `NO_COLOR: unbound variable` ngay khi nó không được xuất
+if [[ -n "${NO_COLOR}" ]]; then
+  color=false
+fi
 ```
 
 ### Dấu nháy
