@@ -26,6 +26,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [STDOUT and STDERR](#stdout-and-stderr)
   - [Common Function Scripts](#common-function-scripts)
   - [Ambient Environment](#ambient-environment)
+  - [Library Side Effects](#library-side-effects)
 - [Naming Conventions](#naming-conventions)
   - [Function Names](#function-names)
   - [Variable Names](#variable-names)
@@ -538,6 +539,38 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "${repo}" status --porc
 ```sh
 # With CDPATH set, the captured path is printed twice or names another directory
 dir="$(cd "${relative}" && pwd)"
+```
+
+### Library Side Effects
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Return a status from a library function, or stop through the library's die helper, which reports the failure. (dybatpho)
+> - ❌ AVOID: Do not call `exit` in a library function: it ends the script that sourced the library
+
+A library runs in its caller's shell. `exit` there ends the whole script — skipping the caller's error handling, its cleanup decisions and the message that would have said why — and inside `$(...)` it ends only the subshell, so the caller cannot tell a failure from an empty answer.
+
+**Recommended**
+
+```sh
+function net::fetch {
+  local url
+  dybatpho::expect_args url -- "$@"
+  [[ -n "${url}" ]] || dybatpho::die "net::fetch: no URL given"
+  curl --fail -sS "${url}" || return 4
+}
+```
+
+**Discouraged**
+
+```sh
+function net::fetch {
+  # Ends the caller's script with no message and no chance to recover
+  curl --fail -sS "$1" || exit 1
+}
 ```
 
 ## Naming Conventions

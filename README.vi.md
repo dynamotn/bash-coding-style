@@ -27,6 +27,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [STDOUT và STDERR](#stdout-v%C3%A0-stderr)
   - [Hàm sử dụng chung](#h%C3%A0m-s%E1%BB%AD-d%E1%BB%A5ng-chung)
   - [Môi trường kế thừa](#m%C3%B4i-tr%C6%B0%E1%BB%9Dng-k%E1%BA%BF-th%E1%BB%ABa)
+  - [Tác dụng phụ của thư viện](#t%C3%A1c-d%E1%BB%A5ng-ph%E1%BB%A5-c%E1%BB%A7a-th%C6%B0-vi%E1%BB%87n)
 - [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-%C4%91%E1%BA%B7t-t%C3%AAn)
   - [Tên hàm](#t%C3%AAn-h%C3%A0m)
   - [Tên biến](#t%C3%AAn-bi%E1%BA%BFn)
@@ -540,6 +541,38 @@ env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "${repo}" status --porc
 ```sh
 # Khi có CDPATH, đường dẫn bắt được bị in hai lần hoặc trỏ tới thư mục khác
 dir="$(cd "${relative}" && pwd)"
+```
+
+### Tác dụng phụ của thư viện
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Trả về một trạng thái từ hàm thư viện, hoặc dừng qua helper die của thư viện, thứ báo rõ lỗi. (dybatpho)
+> - ❌ TRÁNH: Không gọi `exit` trong hàm thư viện: nó kết thúc script đã source thư viện
+
+Một thư viện chạy trong shell của bên gọi. `exit` ở đó kết thúc cả script — bỏ qua phần xử lý lỗi của bên gọi, quyết định dọn dẹp của nó và thông báo lẽ ra phải nói lý do — còn bên trong `$(...)` thì nó chỉ kết thúc subshell, nên bên gọi không phân biệt được lỗi với một câu trả lời rỗng.
+
+**Nên dùng**
+
+```sh
+function net::fetch {
+  local url
+  dybatpho::expect_args url -- "$@"
+  [[ -n "${url}" ]] || dybatpho::die "net::fetch: no URL given"
+  curl --fail -sS "${url}" || return 4
+}
+```
+
+**Không nên dùng**
+
+```sh
+function net::fetch {
+  # Kết thúc script của bên gọi mà không có thông báo hay cơ hội phục hồi
+  curl --fail -sS "$1" || exit 1
+}
 ```
 
 ## Quy ước đặt tên
