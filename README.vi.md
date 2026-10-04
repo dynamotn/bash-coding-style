@@ -1172,10 +1172,13 @@ Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc
 > - ✔️ NÊN: Thụt lề bằng hai dấu cách. Không sử dụng dấu tab. `BSG071`
 > - ✔️ NÊN: Chèn dòng trống giữa các khối mã để tăng tính dễ đọc.
 > - ✔️ NÊN: Không bao gồm khoảng trắng ở cuối dòng. (tùy chỉnh) `BSG072`
+> - ❌ TRÁNH: Không để quá một dòng trống liên tiếp
 
 Thụt lề nên dùng hai dấu cách. Tuyệt đối không được sử dụng dấu tab.
 
 Nhiều trình soạn thảo không thể chuyển đổi giữa thụt lề thực tế và hiển thị dấu cách/tab theo tùy chọn của người dùng. Cài đặt trình soạn thảo của người khác có thể không giống với của bạn. Sử dụng dấu cách đảm bảo rằng mã trông giống nhau trong mọi trình soạn thảo.
+
+Một dòng trống là đủ để tách hai khối; dòng trống thứ hai không nói thêm điều gì mà chỉ đẩy phần mã bên dưới ra khỏi màn hình. shfmt gộp một chuỗi dòng trống thành một.
 
 ### Độ dài dòng code và chuỗi dài
 

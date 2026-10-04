@@ -1170,10 +1170,13 @@ Use TODO comments for temporary, short-term solutions, or code that is good enou
 > - ✔️ SHOULD: Indent with two spaces. Do not use tabs `BSG071`
 > - ✔️ SHOULD: Include blank lines between blocks for readability
 > - ✔️ SHOULD: Do not include trailing spaces. (custom) `BSG072`
+> - ❌ AVOID: Do not leave more than one blank line in a row
 
 Indentation should be two spaces. Under no circumstances should tabs be used.
 
 Many editors cannot switch between actual indentation and displayed spaces/tabs according to user preference. Another person's editor may not have the same settings as yours. Using spaces ensures that code looks the same in any editor.
+
+One blank line is enough to separate two blocks; a second one says nothing more and pushes the code below it off the screen. shfmt joins a run of blank lines into one.
 
 ### Line Length and Long Strings
 
