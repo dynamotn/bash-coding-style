@@ -1775,9 +1775,11 @@ Custom rule
 > - ✔️ SHOULD: Use `mktemp` when the library is not available, and remove the file with `trap 'rm -f "${temp_file}"' EXIT`
 > - ✔️ SHOULD: Give the temporary file the suffix the content needs, so tools that dispatch on extension still work
 > - ✔️ SHOULD: Derive a staging file next to its destination only from a path checked to be non-empty and not a directory, and create it exclusively: `set -C`, or `mktemp` in the destination's directory
+> - ✔️ SHOULD: Create a file in a shared directory with `mktemp`, or by hand with a random suffix under noclobber (`set -C`), so a name that already exists is refused
 > - ❌ AVOID: Do not build a temporary path yourself from `$$`, a timestamp or a fixed name
 > - ❌ AVOID: Do not leave cleanup to the last line of the script, which an error never reaches
 > - ❌ AVOID: Do not let an empty or failed path turn a staging file into one in the working directory
+> - ❌ AVOID: Do not open a name in a shared directory with a plain `>`: it follows a symlink planted there, even when the name carries `$$` or `$BASHPID`
 
 A predictable name in a world-writable directory is both a collision and a symlink attack. Registering the cleanup at creation time is the only way to have it run on the paths that matter: the error path and the interrupt.
 
@@ -1814,6 +1816,29 @@ rm -f "$temp_file"
 staging="$(dirname "${path}")/.staging.$$"
 printf '%s\n' "${content}" > "${staging}"
 ```
+
+`$$` and `$BASHPID` are visible to every user and easy to guess before the script runs, so a name built from them can be taken in advance — as a symlink to a file the script is allowed to write. `>` follows that link. `mktemp` creates the file exclusively, under a random name; where a name has to be chosen by hand, noclobber makes `>` refuse a name that exists, link or not.
+
+**Recommended**
+
+```sh
+local report
+report="$(mktemp "${TMPDIR:-/tmp}/report.XXXXXXXX")"
+
+# By hand: a random suffix, and noclobber refuses a name that already exists
+local name="${dir}/.part.${RANDOM}${RANDOM}"
+if (set -C && : > "${name}") 2> /dev/null; then
+  write_report > "${name}"
+fi
+```
+
+**Discouraged**
+
+```sh
+# Guessable before the script runs, and `>` follows a link planted at the name
+printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
+```
+
 ## Testing
 
 > [!NOTE]

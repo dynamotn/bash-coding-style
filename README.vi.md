@@ -1771,9 +1771,11 @@ Quy tắc tùy chỉnh
 > - ✔️ NÊN: Dùng `mktemp` khi không có thư viện, và xóa tệp bằng `trap 'rm -f "${temp_file}"' EXIT`
 > - ✔️ NÊN: Đặt cho tệp tạm đúng phần mở rộng mà nội dung cần, để các công cụ phân loại theo đuôi tệp vẫn hoạt động
 > - ✔️ NÊN: Chỉ dựng tệp staging cạnh đích từ một đường dẫn đã kiểm tra là không rỗng và không phải thư mục, và tạo nó độc quyền: `set -C`, hoặc `mktemp` trong thư mục của đích
+> - ✔️ NÊN: Tạo tệp trong thư mục dùng chung bằng `mktemp`, hoặc tự đặt tên với hậu tố ngẫu nhiên dưới noclobber (`set -C`), để một tên đã tồn tại bị từ chối
 > - ❌ TRÁNH: Không tự dựng đường dẫn tạm từ `$$`, từ dấu thời gian hay từ một tên cố định
 > - ❌ TRÁNH: Không để việc dọn dẹp ở dòng cuối script, nơi mà một lỗi sẽ không bao giờ chạy tới
 > - ❌ TRÁNH: Không để một đường dẫn rỗng hay hỏng biến tệp staging thành một tệp trong thư mục làm việc
+> - ❌ TRÁNH: Không mở một tên trong thư mục dùng chung bằng `>` trơn: nó đi theo liên kết tượng trưng được đặt sẵn ở đó, kể cả khi tên có `$$` hay `$BASHPID`
 
 Một cái tên đoán trước được trong thư mục ai cũng ghi được vừa dễ đụng nhau vừa mở đường cho tấn công liên kết tượng trưng. Đăng ký việc dọn dẹp ngay lúc tạo là cách duy nhất để nó chạy trên những nhánh quan trọng: nhánh lỗi và nhánh bị ngắt.
 
@@ -1810,6 +1812,29 @@ rm -f "$temp_file"
 staging="$(dirname "${path}")/.staging.$$"
 printf '%s\n' "${content}" > "${staging}"
 ```
+
+`$$` và `$BASHPID` ai cũng thấy được và dễ đoán trước khi script chạy, nên một cái tên dựng từ chúng có thể bị chiếm trước — bằng một liên kết tượng trưng trỏ tới một tệp mà script được quyền ghi. `>` sẽ đi theo liên kết đó. `mktemp` tạo tệp độc quyền với một tên ngẫu nhiên; khi buộc phải tự chọn tên, noclobber làm `>` từ chối một tên đã tồn tại, dù có là liên kết hay không.
+
+**Nên dùng**
+
+```sh
+local report
+report="$(mktemp "${TMPDIR:-/tmp}/report.XXXXXXXX")"
+
+# Tự đặt tên: hậu tố ngẫu nhiên, và noclobber từ chối tên đã tồn tại
+local name="${dir}/.part.${RANDOM}${RANDOM}"
+if (set -C && : > "${name}") 2> /dev/null; then
+  write_report > "${name}"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Đoán được trước khi script chạy, và `>` đi theo liên kết đặt sẵn ở tên đó
+printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
+```
+
 ## Kiểm thử
 
 > [!NOTE]
