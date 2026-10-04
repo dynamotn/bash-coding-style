@@ -481,8 +481,10 @@ New rule
 > - ✔️ SHOULD: Put common functions as libraries in `lib` sub-folder
 > - ✔️ SHOULD: Guard a library against being sourced a second time before it declares `readonly` constants
 > - ✔️ SHOULD: Locate a library from inside it with `${BASH_SOURCE[0]}`
+> - ✔️ SHOULD: Check that a computed library path exists before sourcing it, and say how to get the library when it does not
 > - ❌ AVOID: Do not declare `readonly` at the top level of a library that may be sourced twice
 > - ❌ AVOID: Do not use `$0` inside a library: it names the script that sourced it
+> - ❌ AVOID: Do not source a computed path unchecked
 
 When calling common functions, use `.` instead of `source`. This is because `.` is POSIX compliant.
 
@@ -533,6 +535,26 @@ NET_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # scripts/lib/net.sh: $0 is the caller, so this looks for http.sh next to it
 NET_LIB_DIR="$(dirname "$0")"
 . "${NET_LIB_DIR}/http.sh"
+```
+
+A submodule that was never initialised, or a clone made without it, leaves the library missing. `.` on a missing file prints `No such file or directory` and, without `set -e`, the script carries on and fails later on a function that does not exist. A check with a message turns that into one line telling the user what to run.
+
+**Recommended**
+
+```sh
+if [[ ! -f "${SCRIPT_DIR}/lib/dybatpho/init.sh" ]]; then
+  echo "dybatpho is missing. Run: git submodule update --init scripts/lib/dybatpho" >&2
+  exit 1
+fi
+# shellcheck source=lib/dybatpho/init.sh
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh"
+```
+
+**Discouraged**
+
+```sh
+# Missing submodule: "No such file", then "command not found" further down
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh"
 ```
 
 ### Ambient Environment

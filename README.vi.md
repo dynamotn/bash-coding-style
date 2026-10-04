@@ -483,8 +483,10 @@ Quy tắc mới
 > - ✔️ NÊN: Các hàm chung nên được để chung dưới dạng library trong thư mục con `lib`
 > - ✔️ NÊN: Chặn việc một thư viện bị source lần thứ hai trước khi nó khai báo các hằng `readonly`
 > - ✔️ NÊN: Xác định vị trí một thư viện từ bên trong nó bằng `${BASH_SOURCE[0]}`
+> - ✔️ NÊN: Kiểm tra đường dẫn thư viện được tính ra có tồn tại trước khi source, và nói cách lấy thư viện khi nó không có
 > - ❌ TRÁNH: Không khai báo `readonly` ở cấp cao nhất của một thư viện có thể bị source hai lần
 > - ❌ TRÁNH: Không dùng `$0` trong thư viện: nó là tên của script đã source thư viện
+> - ❌ TRÁNH: Không source một đường dẫn tính ra mà không kiểm tra
 
 Khi gọi các hàm chung, hãy sử dụng `.` thay vì `source`. Điều này là do `.` tuân thủ POSIX.
 
@@ -535,6 +537,26 @@ NET_LIB_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # scripts/lib/net.sh: $0 là bên gọi, nên câu này tìm http.sh cạnh bên gọi
 NET_LIB_DIR="$(dirname "$0")"
 . "${NET_LIB_DIR}/http.sh"
+```
+
+Một submodule chưa từng được khởi tạo, hoặc một bản clone không kèm nó, khiến thư viện bị thiếu. `.` trên một tệp không tồn tại in ra `No such file or directory` và, khi không có `set -e`, script chạy tiếp rồi hỏng muộn hơn ở một hàm không tồn tại. Một bước kiểm tra kèm thông báo biến chuyện đó thành một dòng chỉ cho người dùng lệnh cần chạy.
+
+**Nên dùng**
+
+```sh
+if [[ ! -f "${SCRIPT_DIR}/lib/dybatpho/init.sh" ]]; then
+  echo "dybatpho is missing. Run: git submodule update --init scripts/lib/dybatpho" >&2
+  exit 1
+fi
+# shellcheck source=lib/dybatpho/init.sh
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh"
+```
+
+**Không nên dùng**
+
+```sh
+# Thiếu submodule: "No such file", rồi "command not found" ở đoạn sau
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh"
 ```
 
 ### Môi trường kế thừa
