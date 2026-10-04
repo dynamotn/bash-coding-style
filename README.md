@@ -2817,7 +2817,7 @@ A library function is only testable if it has no side effects of its own: it tak
 
 ```sh
 # scripts/test/chezmoi_attrs.bats
-setup() {
+function setup {
   load test_helper
   setup_dotfiles_test_env
   . "${DOTFILES_DIR}/scripts/lib/chezmoi_attrs.sh"

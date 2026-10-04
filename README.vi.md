@@ -2813,7 +2813,7 @@ Một hàm thư viện chỉ kiểm thử được nếu bản thân nó không 
 
 ```sh
 # scripts/test/chezmoi_attrs.bats
-setup() {
+function setup {
   load test_helper
   setup_dotfiles_test_env
   . "${DOTFILES_DIR}/scripts/lib/chezmoi_attrs.sh"
