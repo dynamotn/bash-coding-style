@@ -99,7 +99,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 
 ## Giới thiệu
 
-Phong cách này cung cấp các hướng dẫn để viết kịch bản Bash. Nó được lập nên dựa trên [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) và [icy/bash-coding-style](https://github.com/icy/bash-coding-style) với một vài quy tắc được điều chỉnh.
+Phong cách này được lập nên dựa trên các hướng dẫn trong [Tài liệu tham khảo](#t%C3%A0i-li%E1%BB%87u-tham-kh%E1%BA%A3o) với một vài quy tắc được điều chỉnh.
 Các mục được thực hiện có chủ ý tùy chỉnh được đánh dấu rõ ràng là `(tùy chỉnh)`.
 
 Các ký hiệu sau được sử dụng trong hướng dẫn này:
@@ -167,7 +167,7 @@ Sử dụng Bash. Hạn chế tất cả các script shell có thể thực thi 
 
 Các tệp thực thi phải bắt đầu bằng `#!/usr/bin/env bash` và các cờ tối thiểu. Sử dụng `#!/usr/bin/env bash` cung cấp một số lợi thế đáng chú ý: hoạt động trên các môi trường (như Fedora hoặc Termux), mặc dù có một chút ảnh hưởng đến hiệu suất từ việc gọi env để tìm kiếm PATH.
 
-Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay cả khi script được gọi bằng `bash script_name`, chức năng của nó không bị suy giảm. `set -euo pipefail` tự động phát hiện lỗi sớm và kết thúc script nếu xảy ra lỗi. `set -e` kết thúc script nếu xảy ra lỗi. `set -u` kích hoạt lỗi khi tham chiếu đến các biến không xác định. `set -o pipefail` kết thúc script nếu xảy ra lỗi ở giữa pipeline. Chỉ thêm `-E` khi script tự cài trap `ERR`, để các hàm và subshell kế thừa nó; `dybatpho::register_common_handlers` tự bật cờ này.
+Sử dụng `set` cho cài đặt tùy chọn shell đảm bảo rằng ngay cả khi script được gọi bằng `bash script_name`, chức năng của nó không bị suy giảm. `set -e` kết thúc script nếu xảy ra lỗi. `set -u` kích hoạt lỗi khi tham chiếu đến các biến không xác định. `set -o pipefail` kết thúc script nếu xảy ra lỗi ở giữa pipeline. Chỉ thêm `-E` khi script tự cài trap `ERR`, để các hàm và subshell kế thừa nó; `dybatpho::register_common_handlers` tự bật cờ này.
 
 **Nên dùng**
 
@@ -262,9 +262,8 @@ Mức tối thiểu 5.2 thỏa mãn với mọi major lớn hơn 5 bất kể mi
 > - ⚠️ CÂN NHẮC: Nếu viết một script trên 100 dòng hoặc sử dụng logic điều khiển phức tạp, hãy viết lại nó bằng một ngôn ngữ có cấu trúc càng sớm càng tốt. Nên dự kiến trước rằng script sẽ phát triển. Viết lại sớm có thể tránh được việc viết lại tốn thời gian sau này
 > - ⚠️ CÂN NHẮC: Khi đánh giá độ phức tạp của code (ví dụ: quyết định có nên chuyển đổi ngôn ngữ hay không), hãy xem xét liệu code có thể dễ dàng được bảo trì bởi người khác ngoài tác giả ban đầu hay không
 
-Shell là một lựa chọn phù hợp cho các tác vụ chủ yếu liên quan đến việc gọi các tiện ích khác và thực hiện tương đối ít thao tác dữ liệu. Mặc dù shell script không phải là một ngôn ngữ phát triển, chúng được sử dụng để tạo ra các script tiện ích khác nhau trong CI hoặc triển khai tới máy người dùng. Hướng dẫn về phong cách này không khuyến nghị triển khai rộng rãi các shell script, nhưng thừa nhận việc sử dụng chúng.
+Shell là một lựa chọn phù hợp cho các tác vụ chủ yếu liên quan đến việc gọi các tiện ích khác và thực hiện tương đối ít thao tác dữ liệu. Mặc dù shell script không phải là một ngôn ngữ phát triển, chúng được sử dụng để tạo ra các script tiện ích khác nhau trong CI hoặc triển khai tới máy người dùng.
 
-Sử dụng shell script cho các tiện ích nhỏ hoặc các script wrapper đơn giản. Đặc biệt, sử dụng shell script cho "xử lý đa dòng" hoặc "xử lý có thể tái sử dụng trong nhiều workflow" trong GitHub Actions hay Gitlab CI. Mặc dù Bash giúp dễ dàng xử lý văn bản, nhưng nó không phù hợp cho việc xử lý quá phức tạp hoặc xử lý dành riêng cho ngôn ngữ/ứng dụng. Hãy cân nhắc sử dụng một ngôn ngữ có cấu trúc trong những trường hợp như vậy.
 
 ## Tệp shell và cách thực thi trình thông dịch
 
@@ -440,7 +439,6 @@ done
 > - ✔️ NÊN: Bật theo vết lệnh bằng `dybatpho::start_trace` thay vì viết `set -x` trực tiếp, và tắt bằng `dybatpho::end_trace`. (dybatpho) `BSG034`
 > - ✔️ NÊN: Chạy mọi lệnh làm thay đổi trạng thái qua `dybatpho::dry_run`, để chế độ chạy thử chỉ in ra lệnh thay vì thực thi nó. (dybatpho) `BSG095`
 > - ✔️ NÊN: Ưu tiên chế độ chạy thử do chính công cụ cung cấp, như `chezmoi diff` hay `kubectl --dry-run=server`, hơn là tự in lệnh ra
-> - ✔️ NÊN: Đưa mọi tác dụng phụ qua wrapper chạy thử trong một script có hỗ trợ chạy thử: tải về, ghi, xóa, thay đổi gói và dịch vụ. (dybatpho)
 > - ❌ TRÁNH: Không thực hiện trực tiếp một tác dụng phụ trong script có hỗ trợ chạy thử, kể cả một lần tải về hay ghi cache "vô hại"
 > - ⚠️ CÂN NHẮC: Đặt chạy thử làm mặc định cho script mà lần chạy thật có tính phá hủy. (tùy chỉnh)
 
@@ -1419,9 +1417,6 @@ esac
 > - ❌ TRÁNH: Không đọc trơn một biến môi trường tùy chọn khi có `set -u`
 
 Các biến nên được đặt trong dấu nháy kép. Sử dụng `${var}` thay vì `$var`, kể cả khi biến là toàn bộ chuỗi trong dấu nháy kép: một dạng duy nhất ở mọi nơi dễ đọc và dễ kiểm tra hơn một quy tắc có ngoại lệ.
-Đây là một hướng dẫn được khuyến nghị mạnh mẽ nhưng không phải là một quy định tuyệt đối. Tuy nhiên, mặc dù nó không bắt buộc, đừng bỏ qua nó.
-
-Tất cả các biến khác nên được đặt trong dấu ngoặc nhọn.
 
 **Nên dùng**
 
@@ -1488,7 +1483,6 @@ fi
 > [!TIP]
 >
 > - ✔️ NÊN: Luôn luôn đặt các biến, command substitution, các chuỗi chứa dấu cách hoặc các ký tự meta của shell trong dấu nháy kép, trừ khi cần một khai triển không được đặt trong nháy kép hoặc shell internal là một số nguyên
-> - ✔️ NÊN: Sử dụng mảng để trích dẫn an toàn nhiều phần tử, đặc biệt là cho các flag dòng lệnh
 > - ✔️ NÊN: Dùng dấu nháy các biến đặc biệt nội bộ chỉ đọc của shell được định nghĩa là số nguyên là tùy chọn: `$?`, `$#`, `$$`, `$!` (xem `man bash`). Ưu tiên dùng dấu nháy cho biến nội bộ là số nguyên được định danh, ví dụ PPID
 > - ✔️ NÊN: Đóng nháy các từ ngữ dạng chuỗi mà không phải là tùy chọn câu lệnh hoặc tên đường dẫn
 > - ✔️ NÊN: Đóng nháy toàn bộ chuỗi có chứa biến, thay vì chỉ đóng nháy riêng lẻ từng biến (tùy chỉnh)
@@ -2781,7 +2775,6 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ✔️ NÊN: Để `set -euo pipefail`, hoặc `dybatpho::register_common_handlers`, dừng script khi có lỗi không được xử lý. (dybatpho)
 > - ✔️ NÊN: Kiểm tra trực tiếp trên lệnh: `if ! command; then ... fi`
 > - ✔️ NÊN: Thêm `|| true` cho lệnh mà việc thất bại là điều thực sự được dự liệu, và ghi chú lý do
-> - ✔️ NÊN: Thoát với mã có ý nghĩa: `0` khi thành công, khác `0` khi thất bại
 > - ✔️ NÊN: Kết thúc một hàm, hay một script, bằng một câu lệnh mà mã thoát chính là kết quả: viết `if cond; then action; fi` hoặc `cond || return 0`, không phải một `cond && action` trơn
 > - ✔️ NÊN: Chỉ tắt tiếng đúng lệnh mà thất bại của nó là đã lường trước, không phải cả hàm hay vòng lặp bao quanh
 > - ❌ TRÁNH: Không kiểm tra `$?` trong một câu lệnh riêng `BSG044`

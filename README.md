@@ -98,7 +98,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 
 ## Introduction
 
-This style guide provides guidelines for writing Bash scripts. It is based on the [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html) and [icy/bash-coding-style](https://github.com/icy/bash-coding-style), with some custom rules. Items that are intentionally made custom are explicitly marked as `(custom)`.
+This style guide is based on the guides listed in [References](#references), with some custom rules. Items that are intentionally made custom are explicitly marked as `(custom)`.
 
 The following symbols are used:
 
@@ -165,7 +165,7 @@ Use Bash. Restricting all executable shell scripts to `bash` ensures a consisten
 
 Executable files should start with `#!/usr/bin/env bash` and minimal flags. Using `#!/usr/bin/env bash` provides several notable advantages: works across environments (like Fedora or Termux), although slight performance hit from invoking env to search PATH.
 
-Using `set` for shell option settings ensures that even if the script is called with `bash script_name`, its functionality is not impaired. `set -euo pipefail` automatically detects errors early and terminates the script if an error occurs. `set -e` terminates the script if an error occurs. `set -u` triggers an error when referencing undefined variables. `set -o pipefail` terminates the script if an error occurs in the middle of a pipeline. Add `-E` only when the script installs its own `ERR` trap, so that functions and subshells inherit it; `dybatpho::register_common_handlers` turns it on itself.
+Using `set` for shell option settings ensures that even if the script is called with `bash script_name`, its functionality is not impaired. `set -e` terminates the script if an error occurs. `set -u` triggers an error when referencing undefined variables. `set -o pipefail` terminates the script if an error occurs in the middle of a pipeline. Add `-E` only when the script installs its own `ERR` trap, so that functions and subshells inherit it; `dybatpho::register_common_handlers` turns it on itself.
 
 **Recommended**
 
@@ -260,9 +260,8 @@ A floor of 5.2 holds for every major above 5 whatever its minor, and for 5 only 
 > - ⚠️ CONSIDER: If writing a script over 100 lines or using complex control flow logic, rewrite it in a more structured language as soon as possible. Anticipate that the script will grow. Rewriting early can avoid a time-consuming rewrite later
 > - ⚠️ CONSIDER: When evaluating code complexity (e.g., deciding whether to switch languages), consider whether the code can be easily maintained by someone other than the original author
 
-Shell is a suitable choice for tasks that mainly involve calling other utilities and performing relatively few data manipulations. Although shell scripts are not a development language, they are used to create various utility scripts in CI or run on end-user's machines. This style guide does not suggest extensive deployment of shell scripts but acknowledges their use.
+Shell is a suitable choice for tasks that mainly involve calling other utilities and performing relatively few data manipulations. Although shell scripts are not a development language, they are used to create various utility scripts in CI or run on end-user's machines.
 
-Use shell scripts for small utilities or simple wrapper scripts. In particular, use shell scripts for "multi-line processing" or "reusable processing in multiple workflows" in GitHub Actions or Gitlab CI. While Bash makes it easy to handle text, it is not suitable for overly complex processing or language/app-specific processing. Consider using a structured language in such cases.
 
 ## Shell Files and Interpreter Invocation
 
@@ -438,7 +437,6 @@ done
 > - ✔️ SHOULD: Turn command tracing on with `dybatpho::start_trace` rather than writing `set -x` inline, and close it with `dybatpho::end_trace`. (dybatpho) `BSG034`
 > - ✔️ SHOULD: Run every command that changes state through `dybatpho::dry_run`, so a dry run reports the command instead of running it. (dybatpho) `BSG095`
 > - ✔️ SHOULD: Prefer the dry-run mode a tool provides itself, such as `chezmoi diff` or `kubectl --dry-run=server`, over echoing the command
-> - ✔️ SHOULD: Send every side effect through the dry-run wrapper in a script that offers dry-run: downloads, writes, deletes, package and service changes. (dybatpho)
 > - ❌ AVOID: Do not perform a side effect directly in a script that offers dry-run, even a "harmless" download or a cache write
 > - ⚠️ CONSIDER: Make dry run the default for a script whose real run is destructive. (custom)
 
@@ -1417,9 +1415,6 @@ For simple commands, place the pattern and `;;` on the same line if readability 
 > - ❌ AVOID: Do not read an optional environment variable bare under `set -u`
 
 Variables should be quoted. Use `${var}` instead of `$var`, also when the variable is the whole quoted string: one form everywhere is easier to read and to check than a rule with an exception.
-This is a strongly recommended guideline but not an absolute regulation. However, even though it is not mandatory, do not disregard it.
-
-All other variables should preferably be enclosed in braces.
 
 **Recommended**
 
@@ -1486,7 +1481,6 @@ fi
 > [!TIP]
 >
 > - ✔️ SHOULD: Always quote strings containing variables, command substitutions, spaces or shell meta characters, unless careful unquoted expansion is required or it’s a shell-internal integer
-> - ✔️ SHOULD:Use arrays to safely quoting multiple elements, especially for command line flags
 > - ✔️ SHOULD: Quoting shell internal read-only special variables defined as integers is optional: `$?`, `$#`, `$$`, `$!` (see `man bash`). Prefer quoting of "named" internal integer variables, e.g. PPID etc for consistency.
 > - ✔️ SHOULD: Prefer quoting strings that are “words” (as opposed to command options or path names)
 > - ✔️ SHOULD: Use canonical quoting. (custom)
@@ -2779,7 +2773,6 @@ newest="$(printf '%s\n' 2.0.0-rc1 2.0.0 | sort -V | tail -n 1)"
 > - ✔️ SHOULD: Let `set -euo pipefail`, or `dybatpho::register_common_handlers`, stop the script on an unhandled failure. (dybatpho)
 > - ✔️ SHOULD: Test a command directly: `if ! command; then ... fi`
 > - ✔️ SHOULD: Append `|| true` to a command whose failure is genuinely expected, and say in a comment why
-> - ✔️ SHOULD: Exit with a meaningful status: `0` on success, non-zero on failure
 > - ✔️ SHOULD: End a function, or a script, with a statement whose status is the result: write `if cond; then action; fi` or `cond || return 0`, not a bare `cond && action`
 > - ✔️ SHOULD: Silence the one command whose failure is expected, not the function or loop around it
 > - ❌ AVOID: Do not inspect `$?` in a separate statement `BSG044`
