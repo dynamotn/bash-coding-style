@@ -70,6 +70,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-d%C6%B0%E1%BB%A3c)
   - [Kiểm tra trạng thái trước khi thay đổi](#ki%E1%BB%83m-tra-tr%E1%BA%A1ng-thai-tr%C6%B0%E1%BB%9Bc-khi-thay-d%E1%BB%95i)
   - [Tạo tệp tạm an toàn](#t%E1%BA%A1o-t%E1%BB%87p-t%E1%BA%A1m-an-toan)
+  - [Lock](#lock)
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
   - [Assertion output nghiêm ngặt](#assertion-output-nghiem-ng%E1%BA%B7t)
   - [Cô lập test](#co-l%E1%BA%ADp-test)
@@ -2060,6 +2061,53 @@ fi
 ```sh
 # Đoán được trước khi script chạy, và `>` đi theo liên kết đặt sẵn ở tên đó
 printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
+```
+
+### Lock
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Chiếm lock bằng một lời gọi nguyên tử đồng thời ghi lại người giữ: `ln -s "<pid>:<host>" "${lock}"`
+> - ✔️ NÊN: Thu hồi lock cũ bằng cách đổi tên nó sang chỗ khác rồi kiểm tra bản đã chuyển đúng là người giữ mà bạn đã xác định là chết
+> - ✔️ NÊN: Đánh giá người giữ mà bạn đã đọc được, không phải bất kỳ ai đang giữ tên đó vào lúc kiểm tra
+> - ❌ TRÁNH: Không xóa một lock cũ rồi mới chiếm nó: hai tiến trình có thể cùng làm vậy và cùng giữ lock
+> - ❌ TRÁNH: Không tạo lock trước rồi mới ghi chủ sở hữu sau
+
+Mọi khoảng trống giữa hai bước đều là một race. Một lock tạo bằng `mkdir` rồi mới ghi pid sẽ không có chủ trong chốc lát, và một tiến trình khác đọc nó thành lock cũ; xóa lock cũ rồi mới chiếm thì để một tiến trình thu hồi thứ hai xóa mất lock vừa được chiếm. Một liên kết tượng trưng mang theo chủ sở hữu ngay trong cùng lời gọi hệ thống tạo ra nó, và `rename()` chỉ thành công cho đúng một tiến trình thu hồi.
+
+**Nên dùng**
+
+```sh
+if ln -s "$$:$(hostname)" "${lock}" 2> /dev/null; then
+  holding=true
+fi
+
+# Thu hồi: chuyển nó sang chỗ khác, rồi kiểm tra thứ đã chuyển đúng là người giữ đã chết
+local aside="${lock}.stale.$$" moved
+if mv -- "${lock}" "${aside}" 2> /dev/null; then
+  moved="$(readlink -- "${aside}")"
+  if [[ "${moved}" == "${dead_holder}" ]]; then
+    rm -f -- "${aside}"
+  else
+    ln -s "${moved}" "${lock}" 2> /dev/null && rm -f -- "${aside}"
+  fi
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Không có chủ giữa mkdir và lần ghi: tiến trình khác thu hồi nó
+mkdir "${lock}" && echo "$$" > "${lock}/pid"
+
+# Hai tiến trình thu hồi cùng xóa, và cùng chiếm lock
+if ! kill -0 "$(cat "${lock}/pid")"; then
+  rm -rf -- "${lock}"
+  mkdir "${lock}"
+fi
 ```
 
 ## Kiểm thử

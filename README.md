@@ -69,6 +69,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
   - [Check State Before Changing](#check-state-before-changing)
   - [Safely Creating Temporary Files](#safely-creating-temporary-files)
+  - [Locks](#locks)
 - [Testing](#testing)
   - [Strict Output Assertions](#strict-output-assertions)
   - [Test Isolation](#test-isolation)
@@ -2064,6 +2065,53 @@ fi
 ```sh
 # Guessable before the script runs, and `>` follows a link planted at the name
 printf '%s\n' "${report}" > "${TMPDIR:-/tmp}/report.${BASHPID}"
+```
+
+### Locks
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Claim a lock in one atomic call that also records the holder: `ln -s "<pid>:<host>" "${lock}"`
+> - ✔️ SHOULD: Reclaim a stale lock by renaming it aside and checking that the moved copy is the holder you judged dead
+> - ✔️ SHOULD: Judge the holder you read, not whatever holds the name by the time the check runs
+> - ❌ AVOID: Do not delete a stale lock and then take it: two processes can both do so and both hold it
+> - ❌ AVOID: Do not create a lock first and write its owner afterwards
+
+Every gap between two steps is a race. A lock created with `mkdir` and given its pid afterwards is ownerless for a moment, and another process reads it as stale; deleting a stale lock and then claiming it lets a second reclaimer delete the fresh claim. A symbolic link carries its owner in the same system call that creates it, and `rename()` succeeds for exactly one reclaimer.
+
+**Recommended**
+
+```sh
+if ln -s "$$:$(hostname)" "${lock}" 2> /dev/null; then
+  holding=true
+fi
+
+# Reclaim: move it aside, then check that what moved is the holder judged dead
+local aside="${lock}.stale.$$" moved
+if mv -- "${lock}" "${aside}" 2> /dev/null; then
+  moved="$(readlink -- "${aside}")"
+  if [[ "${moved}" == "${dead_holder}" ]]; then
+    rm -f -- "${aside}"
+  else
+    ln -s "${moved}" "${lock}" 2> /dev/null && rm -f -- "${aside}"
+  fi
+fi
+```
+
+**Discouraged**
+
+```sh
+# Ownerless between mkdir and the write: another process reclaims it
+mkdir "${lock}" && echo "$$" > "${lock}/pid"
+
+# Two reclaimers both delete, and both take the lock
+if ! kill -0 "$(cat "${lock}/pid")"; then
+  rm -rf -- "${lock}"
+  mkdir "${lock}"
+fi
 ```
 
 ## Testing
