@@ -907,6 +907,7 @@ function text::split_into {
 > - ✔️ NÊN: Chỉ hỏi khi standard input là terminal, hoặc tôn trọng chế độ không tương tác, và nếu không thì dùng một mặc định an toàn
 > - ✔️ NÊN: Đặt timeout và câu trả lời mặc định cho một lời nhắc
 > - ✔️ NÊN: Hỏi một câu có hay không bằng `dybatpho::confirm`, hàm chỉ hỏi khi có terminal, trả lời không khi không có, và nhận một câu trả lời mặc định. (dybatpho)
+> - ✔️ NÊN: Nhận biết một lần chạy CI bằng `dybatpho::is_ci`, hàm tôn trọng `CI=false` và biết các dịch vụ không đặt `CI`. (dybatpho)
 > - ❌ TRÁNH: Không gọi `read` hay một lời nhắc vô điều kiện trong script có thể chạy trong CI, cron hay một pipe `BSG098`
 
 Khi không có terminal, `read` chờ một đầu vào không bao giờ tới — một job CI treo cho tới khi hết thời gian — hoặc đọc dòng tiếp theo của một pipe vốn dành cho thứ khác. Kiểm tra `[[ -t 0 ]]` và có sẵn một mặc định giúp lần chạy không người trông tự quyết định, còn timeout giới hạn lần chạy có tương tác.
@@ -936,6 +937,16 @@ read -r -p "Overwrite ${file}? [y/N] " answer
 ```sh
 dybatpho::confirm "Overwrite ${file}?" || return 1
 dybatpho::confirm "Keep the backup?" yes || rm -f -- "${file}.bak"
+```
+
+`dybatpho::is_ci` đọc `CI` trước, nên `CI=false`, `0` hay `no` nghĩa là chạy cục bộ ngay cả trên máy CI, và chỉ khi `CI` chưa đặt nó mới tìm một dịch vụ tự xưng tên, như `GITHUB_ACTIONS` hay `GITLAB_CI`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+if dybatpho::is_ci; then
+  DYBATPHO_INTERACTIVE=false
+fi
 ```
 
 ## Quy ước đặt tên
