@@ -2239,6 +2239,7 @@ dybatpho::curl_auth_bearer "${api}/v1/me" "${API_TOKEN}" "${response}" || dybatp
 > - ✔️ NÊN: Dựng JSON và YAML bằng `jq` hoặc `yq` với `--arg`, hoặc qua một helper escape duy nhất mà mọi module dùng chung
 > - ✔️ NÊN: Dựng một object JSON bằng `dybatpho::json_object`, và quote một giá trị bằng `dybatpho::json_string`. (dybatpho)
 > - ✔️ NÊN: Ghi các trường CSV qua một helper duy nhất, nhân đôi dấu nháy và đặt trong nháy những trường chứa dấu phân cách, dấu nháy hay ký tự xuống dòng
+> - ⚠️ CÂN NHẮC: Ghi CSV bằng `dybatpho::csv_write`, hàm đặt trong nháy đúng những trường cần. (dybatpho)
 > - ❌ TRÁNH: Không ghép một giá trị vào văn bản có cấu trúc bằng `printf '{"key":"%s"}'` `BSG086`
 
 Một giá trị chứa dấu nháy, dấu gạch chéo ngược hay ký tự xuống dòng sẽ làm hỏng một tài liệu dựng tay, hoặc đổi nghĩa của nó — phía nhận đọc ra thêm một khóa hay một chuỗi bị cắt cụt. Module nào tự dựng JSON cũng sẽ mọc ra bộ escape riêng, và mỗi bộ lại bỏ sót một ký tự điều khiển khác nhau.
@@ -2264,6 +2265,17 @@ printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 ```sh
 local payload
 payload="$(dybatpho::json_object text "${message}" channel "${channel}" tags:json '["deploy"]')" || return 1
+```
+
+`dybatpho::csv_write` ghi các bản ghi của một mảng theo dạng mà `dybatpho::csv_read` điền vào: mỗi phần tử là một bản ghi, các trường nối với nhau bằng ký tự ASCII unit separator. Một dòng dựng bằng tay nối các trường bằng `$'\x1f'`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local -a rows=()
+dybatpho::csv_read "${input}" rows
+rows+=("total"$'\x1f'"${sum}")
+dybatpho::csv_write rows > "${output}"
 ```
 
 ### In dữ liệu

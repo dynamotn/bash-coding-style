@@ -2237,6 +2237,7 @@ dybatpho::curl_auth_bearer "${api}/v1/me" "${API_TOKEN}" "${response}" || dybatp
 > - ✔️ SHOULD: Build JSON and YAML with `jq` or `yq` and `--arg`, or through one escaping helper that every module uses
 > - ✔️ SHOULD: Build a JSON object with `dybatpho::json_object`, and quote one value with `dybatpho::json_string`. (dybatpho)
 > - ✔️ SHOULD: Write CSV fields through one helper that doubles quotes and quotes a field holding the delimiter, a quote or a line break
+> - ⚠️ CONSIDER: Write CSV with `dybatpho::csv_write`, which quotes exactly the fields that need it. (dybatpho)
 > - ❌ AVOID: Do not splice a value into structured text with `printf '{"key":"%s"}'` `BSG086`
 
 A value holding a quote, a backslash or a line break breaks a hand-built document, or changes what it means — the receiving end reads an extra key or a cut-off string. Every module that builds JSON by hand grows its own escaper, and each one misses a different control character.
@@ -2262,6 +2263,17 @@ printf '{"text":"%s","channel":"%s"}\n' "${message}" "${channel}"
 ```sh
 local payload
 payload="$(dybatpho::json_object text "${message}" channel "${channel}" tags:json '["deploy"]')" || return 1
+```
+
+`dybatpho::csv_write` writes the records of an array in the form `dybatpho::csv_read` fills it: one element per record, its fields joined by the ASCII unit separator. A row built by hand joins its fields with `$'\x1f'`. (dybatpho)
+
+**Recommended**
+
+```sh
+local -a rows=()
+dybatpho::csv_read "${input}" rows
+rows+=("total"$'\x1f'"${sum}")
+dybatpho::csv_write rows > "${output}"
 ```
 
 ### Printing Data
