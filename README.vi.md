@@ -51,6 +51,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Biểu thức kiểm tra](#bi%E1%BB%83u-th%E1%BB%A9c-ki%E1%BB%83m-tra)
   - [Kiểm tra chuỗi](#ki%E1%BB%83m-tra-chu%E1%BB%97i)
   - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-ky-t%E1%BB%B1-d%E1%BA%A1i-di%E1%BB%87n-cho-ten-t%E1%BB%87p)
+  - [Locale và thứ tự sắp xếp](#locale-va-th%E1%BB%A9-t%E1%BB%B1-s%E1%BA%AFp-x%E1%BA%BFp)
   - [Eval là xấu xa](#eval-la-x%E1%BA%A5u-xa)
   - [Bí mật và thông tin xác thực](#bi-m%E1%BA%ADt-va-thong-tin-xac-th%E1%BB%B1c)
   - [Dựng output có cấu trúc](#d%E1%BB%B1ng-output-co-c%E1%BA%A5u-truc)
@@ -1308,6 +1309,39 @@ mapfile -t matches < <(compgen -G "${search_pattern}" || true)
 ```sh
 # Một tệp tên '-rf' hay '--force' sẽ trở thành tùy chọn
 rm -f *.tmp
+```
+
+### Locale và thứ tự sắp xếp
+
+> [!NOTE]
+Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đặt `LC_ALL=C` cục bộ khi một thứ tự hay một phép so sánh phải theo từng byte và ổn định
+> - ✔️ NÊN: So sánh số như số: tách hoặc đệm số 0 cho khóa số trước khi sắp xếp các tên có mang nó
+> - ❌ TRÁNH: Không dựa vào việc thứ tự glob, `[[ a < b ]]`, `sort` hay `printf '%f'` hoạt động giống nhau dưới mọi locale
+
+Khai triển glob, `[[ < ]]` và `sort` sắp xếp chuỗi theo quy tắc so sánh hiện hành, còn `printf '%f'` đọc và ghi dấu thập phân của locale. Cùng một script lại xếp `backup-1` trước hoặc sau `backup` tùy theo `LANG` của người dùng, và mọi locale đều xếp `-10` trước `-2`. Một chính sách lưu giữ dựa trên thứ tự đó sẽ xóa nhầm bản sao lưu.
+
+**Nên dùng**
+
+```sh
+local LC_ALL=C
+local -a backups=("${dir}"/backup-*)
+# So sánh hậu tố số như một con số
+if ((10#${a_suffix} < 10#${b_suffix})); then
+  older="${a}"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Thứ tự phụ thuộc LANG, và -10 luôn đứng trước -2
+for backup in "${dir}"/backup-*; do
+  newest="${backup}"
+done
 ```
 
 ### Eval là xấu xa

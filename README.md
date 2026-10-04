@@ -50,6 +50,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Test Expression](#test-expression)
   - [Testing Strings](#testing-strings)
   - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
+  - [Locale and Collation](#locale-and-collation)
   - [Eval is Evil](#eval-is-evil)
   - [Secrets and Credentials](#secrets-and-credentials)
   - [Building Structured Output](#building-structured-output)
@@ -1312,6 +1313,39 @@ mapfile -t matches < <(compgen -G "${search_pattern}" || true)
 ```sh
 # A file named '-rf' or '--force' becomes an option
 rm -f *.tmp
+```
+
+### Locale and Collation
+
+> [!NOTE]
+Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Set `LC_ALL=C` locally when an order or a comparison has to be byte-wise and stable
+> - ✔️ SHOULD: Compare numbers as numbers: extract or zero-pad a numeric key before ordering names that carry one
+> - ❌ AVOID: Do not rely on glob order, `[[ a < b ]]`, `sort` or `printf '%f'` behaving the same under every locale
+
+Glob expansion, `[[ < ]]` and `sort` order strings by the current collation, and `printf '%f'` reads and writes the locale's decimal separator. The same script orders `backup-1` before or after `backup` depending on the user's `LANG`, and every locale orders `-10` before `-2`. A retention policy built on that order deletes the wrong backup.
+
+**Recommended**
+
+```sh
+local LC_ALL=C
+local -a backups=("${dir}"/backup-*)
+# Compare the numeric suffix as a number
+if ((10#${a_suffix} < 10#${b_suffix})); then
+  older="${a}"
+fi
+```
+
+**Discouraged**
+
+```sh
+# The order depends on LANG, and -10 sorts before -2 everywhere
+for backup in "${dir}"/backup-*; do
+  newest="${backup}"
+done
 ```
 
 ### Eval is Evil
