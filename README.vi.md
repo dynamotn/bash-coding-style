@@ -762,6 +762,7 @@ PATH="/tmp/tools:${PATH}"
 >
 > - ✔️ NÊN: Đọc tệp cấu hình như dữ liệu: phân tích các dòng `key=value`, chỉ chấp nhận những khóa mà script biết, và kiểm tra từng giá trị
 > - ✔️ NÊN: Nạp các tệp theo một thứ tự cố định, của hệ thống trước và của người dùng sau cùng, và ghi rõ trong `--help` những đường dẫn nào được đọc
+> - ✔️ NÊN: Nạp cấu hình bằng `dybatpho::config_load`, khai báo từng khóa bằng `dybatpho::config_schema`, và kiểm tra mọi giá trị bằng `dybatpho::config_validate`. (dybatpho)
 > - ⚠️ CÂN NHẮC: Chỉ `.` một tệp cấu hình khi nó thuộc về người dùng đang chạy script, hoặc root, và không ai khác ghi được vào nó
 > - ❌ TRÁNH: Không `.` một tệp mà người dùng khác, một thư mục ai cũng ghi được hay một lần tải về có thể thay đổi: mọi dòng của nó chạy như chính script `BSG115`
 
@@ -795,6 +796,17 @@ function app::load_config {
 . "${XDG_CONFIG_HOME:-${HOME}/.config}/app/config"
 # Một thư mục ai cũng ghi được: bất kỳ ai cũng có thể đặt sẵn tệp này
 . "/tmp/app-${USER}.conf"
+```
+
+`dybatpho::config_load` đọc dotenv, JSON, YAML hay TOML như dữ liệu, tệp sau đè lên tệp trước, và `--optional` bỏ qua tệp không tồn tại. `dybatpho::config_schema` khai báo kiểu, lựa chọn, giới hạn, giá trị mặc định của một khóa và việc nó có bắt buộc hay không, còn `dybatpho::config_validate` điền giá trị mặc định và báo mọi vi phạm kèm khóa gây ra nó. Hàm không từ chối một khóa chưa từng được khai báo: hãy so các khóa đã nạp với các khóa đã khai báo khi một lỗi gõ phải làm dừng script. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::config_load --optional /etc/app.env "${XDG_CONFIG_HOME:-${HOME}/.config}/app.env"
+dybatpho::config_schema port port required:true
+dybatpho::config_schema mode enum choices:dev,prod default:dev
+dybatpho::config_validate || dybatpho::die "Invalid configuration"
 ```
 
 ### Tác dụng phụ của thư viện

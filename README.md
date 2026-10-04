@@ -760,6 +760,7 @@ PATH="/tmp/tools:${PATH}"
 >
 > - ✔️ SHOULD: Read a configuration file as data: parse `key=value` lines, accept only the keys the script knows, and validate each value
 > - ✔️ SHOULD: Load the files in a fixed order, system first and user last, and say in `--help` which paths are read
+> - ✔️ SHOULD: Load configuration with `dybatpho::config_load`, declare each key with `dybatpho::config_schema`, and check every value with `dybatpho::config_validate`. (dybatpho)
 > - ⚠️ CONSIDER: `.` a configuration file only when it is owned by the user running the script, or by root, and nobody else can write to it
 > - ❌ AVOID: Do not `.` a file that another user, a world-writable directory or a download can change: every line of it runs as the script `BSG115`
 
@@ -793,6 +794,17 @@ function app::load_config {
 . "${XDG_CONFIG_HOME:-${HOME}/.config}/app/config"
 # A world-writable directory: anyone can plant this file
 . "/tmp/app-${USER}.conf"
+```
+
+`dybatpho::config_load` reads dotenv, JSON, YAML or TOML as data, later files over earlier ones, and `--optional` skips a file that does not exist. `dybatpho::config_schema` declares a key's type, choices, bounds, default and whether it is required, and `dybatpho::config_validate` fills the defaults and reports every violation with its key. It does not reject a key that was never declared: compare the loaded keys with the declared ones when a typo must stop the script. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::config_load --optional /etc/app.env "${XDG_CONFIG_HOME:-${HOME}/.config}/app.env"
+dybatpho::config_schema port port required:true
+dybatpho::config_schema mode enum choices:dev,prod default:dev
+dybatpho::config_validate || dybatpho::die "Invalid configuration"
 ```
 
 ### Library Side Effects
