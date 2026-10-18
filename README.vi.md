@@ -1600,7 +1600,7 @@ git send-email --to "${reviewers}" ${ccs:+"--cc" "${ccs}"}
 
 # Các biện pháp phòng ngừa tham số vị trí: $1 có thể không được set
 # Dấu ngoặc đơn để regex như cũ.
-grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
+grep -cE '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 
 # Để chuyển các đối số,
 # "$@" là đúng hầu hết mọi lúc, và
@@ -2922,10 +2922,11 @@ fi
 
 newest="$(dybatpho::semver_max "${a}" "${b}")"
 
-# Khi không có thư viện: sort -V, cho các phiên bản chỉ gồm số và dấu chấm
-[[ "${a}" =~ ^[0-9]+(\.[0-9]+)*$ && "${b}" =~ ^[0-9]+(\.[0-9]+)*$ ]] \
+# Khi không có thư viện: sắp xếp số theo từng trường, cho các phiên bản tối đa
+# bốn số cách nhau bởi dấu chấm; sort -V cũng làm được, nhưng chỉ có ở bộ GNU
+[[ "${a}" =~ ^[0-9]+(\.[0-9]+){0,3}$ && "${b}" =~ ^[0-9]+(\.[0-9]+){0,3}$ ]] \
   || dybatpho::die "Not a plain version: ${a} ${b}"
-newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
+newest="$(printf '%s\n' "${a}" "${b}" | sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n | tail -n 1)"
 ```
 
 **Không nên dùng**

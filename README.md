@@ -1598,7 +1598,7 @@ git send-email --to "${reviewers}" ${ccs:+"--cc" "${ccs}"}
 
 # Positional parameter precautions: $1 might be unset
 # Single quotes leave regex as-is.
-grep -cP '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
+grep -cE '([Ss]pecial|\|?characters*)$' ${1:+"$1"}
 
 # For passing on arguments,
 # "$@" is right almost every time, and
@@ -2920,10 +2920,11 @@ fi
 
 newest="$(dybatpho::semver_max "${a}" "${b}")"
 
-# Without a library: sort -V, for versions that are only dotted numbers
-[[ "${a}" =~ ^[0-9]+(\.[0-9]+)*$ && "${b}" =~ ^[0-9]+(\.[0-9]+)*$ ]] \
+# Without a library: a numeric sort per field, for versions of up to four
+# dotted numbers; sort -V would do it too, but only in the GNU tools
+[[ "${a}" =~ ^[0-9]+(\.[0-9]+){0,3}$ && "${b}" =~ ^[0-9]+(\.[0-9]+){0,3}$ ]] \
   || dybatpho::die "Not a plain version: ${a} ${b}"
-newest="$(printf '%s\n' "${a}" "${b}" | sort -V | tail -n 1)"
+newest="$(printf '%s\n' "${a}" "${b}" | sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n | tail -n 1)"
 ```
 
 **Discouraged**
