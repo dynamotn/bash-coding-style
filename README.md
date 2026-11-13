@@ -23,13 +23,25 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Environment](#environment)
   - [Script Invocation](#script-invocation)
   - [Script Argument Control](#script-argument-control)
+  - [Shell Completion](#shell-completion)
+  - [Versions and Distribution](#versions-and-distribution)
   - [Debug and Dry-run Mode](#debug-and-dry-run-mode)
+  - [Trace Output](#trace-output)
+  - [Self-check Command](#self-check-command)
   - [STDOUT and STDERR](#stdout-and-stderr)
+  - [Progress Output](#progress-output)
+  - [System Logging](#system-logging)
   - [Common Function Scripts](#common-function-scripts)
   - [Ambient Environment](#ambient-environment)
   - [Configuration Files](#configuration-files)
   - [Library Side Effects](#library-side-effects)
   - [Interactive Input](#interactive-input)
+  - [Menus and Choices](#menus-and-choices)
+  - [Unattended Runs](#unattended-runs)
+  - [Container Entrypoints](#container-entrypoints)
+  - [Current User](#current-user)
+  - [Resource Limits](#resource-limits)
+  - [Long-running Processes](#long-running-processes)
 - [Naming Conventions](#naming-conventions)
   - [Function Names](#function-names)
   - [Variable Names](#variable-names)
@@ -39,11 +51,15 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Function Comments](#function-comments)
   - [Implementation Comments](#implementation-comments)
   - [TODO Comments](#todo-comments)
+  - [Commented-out Code](#commented-out-code)
 - [Formatting](#formatting)
   - [Tabs and Spaces](#tabs-and-spaces)
+  - [Line Endings and Encoding](#line-endings-and-encoding)
   - [Line Length and Long Strings](#line-length-and-long-strings)
   - [Pipelines](#pipelines)
   - [Control Flow](#control-flow)
+  - [Nesting Depth](#nesting-depth)
+  - [Function Size](#function-size)
   - [Case statement](#case-statement)
   - [Variable Expansion](#variable-expansion)
   - [Quoting](#quoting)
@@ -54,6 +70,7 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Validation in Command Substitution](#validation-in-command-substitution)
   - [Test Expression](#test-expression)
   - [Testing Strings](#testing-strings)
+  - [Case Conversion](#case-conversion)
   - [Regular Expressions](#regular-expressions)
   - [Wildcard Expansion of Filenames](#wildcard-expansion-of-filenames)
   - [Locale and Collation](#locale-and-collation)
@@ -66,9 +83,12 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Associative Arrays](#associative-arrays)
   - [Pipes to While](#pipes-to-while)
   - [Process Substitution](#process-substitution)
+  - [File Descriptors](#file-descriptors)
   - [For Loops](#for-loops)
   - [Local Variables](#local-variables)
+  - [Returning Values](#returning-values)
   - [Arithmetic](#arithmetic)
+  - [Dates and Durations](#dates-and-durations)
   - [Portability](#portability)
   - [Comparing Versions](#comparing-versions)
 - [Calling Commands](#calling-commands)
@@ -79,9 +99,14 @@ When in doubt, prioritize consistency. By using a single style consistently thro
   - [Builtin Commands vs External Commands](#builtin-commands-vs-external-commands)
   - [Signal Handlers](#signal-handlers)
   - [Child Processes](#child-processes)
+  - [Bounded Parallelism](#bounded-parallelism)
+  - [Functions in Child Processes](#functions-in-child-processes)
+  - [Changing Directory](#changing-directory)
   - [End of Options](#end-of-options)
   - [Network Requests](#network-requests)
+  - [Waiting for a Condition](#waiting-for-a-condition)
   - [Remote Commands](#remote-commands)
+  - [Host Key Verification](#host-key-verification)
   - [Deprecated Commands](#deprecated-commands)
 - [Script Stabilization](#script-stabilization)
   - [Writing Rerunnable Scripts](#writing-rerunnable-scripts)
@@ -93,6 +118,10 @@ When in doubt, prioritize consistency. By using a single style consistently thro
 - [Testing](#testing)
   - [Strict Output Assertions](#strict-output-assertions)
   - [Test Isolation](#test-isolation)
+  - [Mocking Commands](#mocking-commands)
+  - [Bash Version Matrix](#bash-version-matrix)
+  - [Coverage](#coverage)
+  - [Pinned Tool Versions](#pinned-tool-versions)
 - [References](#references)
 
 <!-- tocstop -->
@@ -436,6 +465,158 @@ while [[ $# -gt 0 ]]; do
 done
 ```
 
+### Shell Completion
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Print completion with `dybatpho::generate_completion <spec> <shell> [name]`, for `bash`, `zsh` or `fish`, from a `completion` subcommand or a display option of the root spec, so subcommands and their options are included. (dybatpho)
+> - ⚠️ CONSIDER: Generate completion from the `_spec_*` function that parses the arguments, not a hand-written `complete` function <kbd>BSG133</kbd>
+> - ✔️ SHOULD: Generate the help and the man page from the same spec, with `dybatpho::generate_help` and `dybatpho::generate_man`. (dybatpho)
+> - ✔️ SHOULD: Declare a fixed list of values with `choices:`, which the parser checks and the completion offers
+> - ⚠️ CONSIDER: Keep the completion cache on: dybatpho keys it on the script, the file that declares the spec and the library version, under `DYBATPHO_CLI_CACHE_DIR`, so an edit never serves a stale one; `DYBATPHO_CLI_CACHE=false` regenerates every time. (dybatpho)
+
+A completion function written by hand is a second list of the options. The parser drops `--region`, the completion keeps offering it, and nothing fails until a user presses tab and gets an option the script refuses. Generated from the `_spec_*` function that the parser is built from, the completion, the help text and the man page change in the same commit as the option, because there is nothing else to change.
+
+The script prints the completion and the user's shell loads it, so installing it is one redirect per shell. A shell that sources the completion at every start would walk the whole spec tree each time; dybatpho caches the output, and the key changes on its own when the script, the file of the spec or the library changes. (dybatpho)
+
+**Recommended**
+
+```sh
+#######################################
+# @description Spec of deploy.sh
+# @noargs
+#######################################
+function _spec_main {
+  dybatpho::opts::setup "Deploy a service" MAIN_ARGS action:"_main"
+  dybatpho::opts::param "Target environment" DEPLOY_ENV --env -e init:="staging" \
+    choices:staging,production
+  dybatpho::opts::cmd completion _spec_completion
+  dybatpho::opts::disp "Show the man page" --man action:"dybatpho::generate_man _spec_main deploy.sh"
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_main"
+}
+
+#######################################
+# @description Spec of deploy.sh completion
+# @noargs
+#######################################
+function _spec_completion {
+  dybatpho::opts::setup "Print the shell completion" COMPLETION_ARGS args:none action:"_completion"
+  dybatpho::opts::param "Shell to complete for" COMPLETION_SHELL --shell \
+    choices:bash,zsh,fish required:true
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_completion"
+}
+
+#######################################
+# @description Print the completion of the whole command, from the root spec
+# @noargs
+#######################################
+function _completion {
+  dybatpho::generate_completion _spec_main "${COMPLETION_SHELL}" deploy.sh
+}
+```
+
+```sh
+deploy.sh completion --shell bash > "${XDG_DATA_HOME:-${HOME}/.local/share}/bash-completion/completions/deploy.sh"
+deploy.sh completion --shell fish > "${XDG_CONFIG_HOME:-${HOME}/.config}/fish/completions/deploy.sh.fish"
+```
+
+**Discouraged**
+
+```sh
+function _spec_main {
+  dybatpho::opts::setup "Deploy a service" MAIN_ARGS action:"_main"
+  dybatpho::opts::param "Target environment" DEPLOY_ENV --env -e init:="staging"
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_main"
+}
+
+# A second list of the options: --region, gone from the spec, is still offered
+function _complete_deploy {
+  mapfile -t COMPREPLY < <(compgen -W "--env --region --help" -- "${COMP_WORDS[COMP_CWORD]-}")
+}
+complete -F _complete_deploy deploy.sh
+```
+
+### Versions and Distribution
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Offer `--version` in the spec of an entrypoint, printing a version read from a `VERSION` file or a constant. (dybatpho) <kbd>BSG159</kbd>
+> - ✔️ SHOULD: Deprecate an option for one release before removing it: keep it working and have it warn, with `deprecated:"Use --new instead"` on its `dybatpho::opts::*` line. (dybatpho)
+> - ⚠️ CONSIDER: Verify a download against a checksum or a signature before running, installing or unpacking it <kbd>BSG160</kbd>
+> - ✔️ SHOULD: Have a self-update or an installer check the signature of the checksum file, then the new file against it with `dybatpho::verify_checksum`, before it replaces anything. (dybatpho)
+> - ✔️ SHOULD: Publish a `SHA256SUMS` file with every release and sign it, with `dybatpho::release_checksums` and `dybatpho::release_sign`. (dybatpho)
+
+A script that is copied to other machines needs to say which copy it is: a bug report that starts with the output of `--version` names the code that failed. Reading the version from one `VERSION` file, or one constant, keeps the release, the help and that output in agreement. Removing an option breaks every caller that still passes it, often in a cron job nobody watches; marking it `deprecated:` for one release keeps them working and tells them, on every run, what to use instead.
+
+**Recommended**
+
+```sh
+#######################################
+# @description Print the version of this script
+# @noargs
+# @stdout The version, from the VERSION file next to the script
+#######################################
+function _print_version {
+  local version
+  read -r version < "${SCRIPT_DIR}/VERSION"
+  printf '%s\n' "${version}"
+}
+
+#######################################
+# @description Spec of deploy.sh
+# @noargs
+#######################################
+function _spec_main {
+  dybatpho::opts::setup "Deploy the app" MAIN_ARGS action:"_main"
+  dybatpho::opts::param "Target environment" TARGET --target init:="staging"
+  # Still accepted for one release, with a warning, then removed
+  dybatpho::opts::param "Target environment" TARGET --env hidden:true deprecated:"Use --target instead"
+  dybatpho::opts::disp "Show help" --help action:"dybatpho::generate_help _spec_main"
+  dybatpho::opts::disp "Show version" --version action:"_print_version"
+}
+```
+
+A download is whatever the server, a mirror or a proxy in between sent, cut short when the connection dropped. Running it, installing it or unpacking it before checking it hands that decision to them. A checksum published next to the file only catches a truncated or corrupted download, since whoever can change the file can change the checksum beside it; a signature made with a key the script already holds catches a forged one too. Sign the checksum file rather than each artifact: one signature then covers every file it lists.
+
+**Recommended**
+
+```sh
+# The release key ships with the script; a forged checksum file stops here
+local dir expected
+dybatpho::create_temp_dir dir "update"
+dybatpho::curl_download "${release_url}/SHA256SUMS" "${dir}/SHA256SUMS"
+dybatpho::curl_download "${release_url}/SHA256SUMS.asc" "${dir}/SHA256SUMS.asc"
+dybatpho::curl_download "${release_url}/deploy.sh" "${dir}/deploy.sh"
+gpgv --keyring "${SCRIPT_DIR}/release.gpg" "${dir}/SHA256SUMS.asc" "${dir}/SHA256SUMS"
+expected="$(awk '$2 == "deploy.sh" { print $1 }' "${dir}/SHA256SUMS")"
+dybatpho::verify_checksum "${dir}/deploy.sh" "sha256:${expected}"
+install -m 0755 -- "${dir}/deploy.sh" "${SCRIPT_DIR}/deploy.sh"
+```
+
+**Discouraged**
+
+```sh
+# Replaces the script with whatever the server sent
+curl --fail -sSL --max-time 60 "${release_url}/deploy.sh" -o "${SCRIPT_DIR}/deploy.sh"
+chmod +x "${SCRIPT_DIR}/deploy.sh"
+```
+
+`dybatpho::verify_checksum` takes the expected digest as `algorithm:hex`, with `sha256`, `sha1` or `md5`, computes it with whichever tool the system has, and returns 7 on a mismatch; an empty or malformed digest stops the script. On the publishing side, `dybatpho::release_checksums` writes a `SHA256SUMS` file in the layout `sha256sum -c` reads and prints its path, and `dybatpho::release_sign` signs a file with `gpg`, or with the command in `DYBATPHO_RELEASE_SIGN_CMD`, such as `minisign`, and prints the path of the signature. (dybatpho)
+
+**Recommended**
+
+```sh
+local sums
+sums="$(dybatpho::release_checksums ./dist)"
+dybatpho::release_sign "${sums}"
+```
+
 ### Debug and Dry-run Mode
 
 > [!NOTE]
@@ -501,6 +682,143 @@ dybatpho::dry_run systemctl --user restart app.service
 # --dry-run still downloads and writes the file
 curl --fail -sSL "${url}" -o "${target}"
 dybatpho::dry_run systemctl --user restart app.service
+```
+
+### Trace Output
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Make `PS4` show where each traced line comes from: file, `${LINENO}` and function <kbd>BSG156</kbd>
+> - ✔️ SHOULD: Turn tracing on with `dybatpho::start_trace`, which already sets a `PS4` with the file, the line and the function. (dybatpho)
+> - ✔️ SHOULD: Send the trace to a file of its own with `BASH_XTRACEFD` (Bash 4.1), readable by its owner only, so that it neither mixes with the messages on `STDERR` nor ends up in a caller's `2>&1`
+> - ❌ AVOID: Do not trace a line that expands a secret, in a variable or in an argument: the trace prints the value, in clear, into a log that outlives the run
+> - ✔️ SHOULD: Turn the trace off in a function that handles a secret, `local -` then `{ set +x; } 2> /dev/null`; `local -` (Bash 4.4) turns it back on when the function returns
+> - ✔️ SHOULD: Read a secret with `dybatpho::secret_from_file`, `dybatpho::secret_from_env` or `dybatpho::secret_from_stdin`, which pause the trace while they hold the value, and hand it to a command with `dybatpho::secret_with_file`, which keeps the trace off while the command runs. (dybatpho)
+
+The default `PS4` is `+ `: a trace of a script that sources three libraries is then a stream of commands with no way to tell which file, line or function each one came from. `PS4` is expanded again before every traced line, so a single-quoted value with `${BASH_SOURCE[0]}`, `${LINENO}` and `${FUNCNAME[0]}` labels each line with its place.
+
+`BASH_XTRACEFD` names the descriptor the trace goes to. Unsetting it sends the trace back to `STDERR` and closes that descriptor; for that reason it never holds `2`, which unsetting would close as well.
+
+**Recommended**
+
+```sh
+PS4='+ ${BASH_SOURCE[0]##*/}:${LINENO}:${FUNCNAME[0]:-main}: '
+
+# The trace holds every value the script handles: readable by its owner only
+local trace_fd
+(umask 077 && : >> "${TRACE_FILE}")
+exec {trace_fd}>> "${TRACE_FILE}"
+BASH_XTRACEFD="${trace_fd}"
+dybatpho::start_trace
+deploy::run
+dybatpho::end_trace
+# Also closes trace_fd
+unset BASH_XTRACEFD
+```
+
+**Discouraged**
+
+```sh
+# "+ cp ..." from which file, which function?
+PS4='+ '
+```
+
+A trace prints each command after expansion, with its arguments. Every line that expands a token, in an assignment, a `curl` header or the arguments of a helper, prints the token. `dybatpho::secret_mask` masks the registered values in the text it is given, but the traced line of its own call has already been written; the only safe trace is one that is off while the value is on a command line.
+
+`dybatpho::secret_from_file`, `dybatpho::secret_from_env` and `dybatpho::secret_from_stdin` turn the trace off while they read and register the value, and turn it back on only if it was on. `dybatpho::secret_with_file` takes the name of the variable, not its value, and keeps the trace off while the command reads the secret from a `/dev/fd` path. (dybatpho)
+
+**Recommended**
+
+```sh
+local passphrase
+dybatpho::secret_from_file passphrase "${PASSPHRASE_FILE}"
+dybatpho::secret_with_file passphrase gpg --batch --passphrase-file '{}' --decrypt -- "${archive}"
+
+function api::get {
+  local url target
+  dybatpho::expect_args url target -- "$@"
+  # The trace stops here and resumes when the function returns
+  local -
+  { set +x; } 2> /dev/null
+  dybatpho::curl_auth_bearer "${url}" "${API_TOKEN}" "${target}"
+}
+```
+
+**Discouraged**
+
+```sh
+dybatpho::start_trace
+# Traced as: + dybatpho::curl_auth_bearer https://... eyJhbGciOi... /tmp/me.json
+dybatpho::curl_auth_bearer "${url}" "${API_TOKEN}" "${target}"
+```
+
+### Self-check Command
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Offer a `doctor` subcommand, or a `--check` option, that reports whether everything the script needs is in place and changes nothing
+> - ✔️ SHOULD: Check everything, report every problem it finds, and only then exit non-zero, so that one run lists all there is to fix
+> - ✔️ SHOULD: Report what the loaded dybatpho modules need with `dybatpho::doctor` (`--quiet` for the exit status only, `--json` for a machine), and add the project's own checks with `dybatpho::is command`, `dybatpho::command_version`, `dybatpho::command_exists_all` and `dybatpho::is readable`/`writeable`/`dir`. (dybatpho)
+> - ✔️ SHOULD: Keep `dybatpho::require` for the start of a real run, where stopping at the first missing command is right; a report that stops there hides the rest. (dybatpho)
+> - ❌ AVOID: Do not repair anything from the check: no install, no `mkdir`, no config written
+
+A user who runs a script on a new machine hits one missing tool, installs it, runs again, and hits the next. A self-check turns that loop into one list. It is also what a CI job or an install script can call before the real work, so it must answer with its exit status as well as with text: 0 only when a real run would find what it needs.
+
+A check that fixes what it finds is no longer a check. It needs the same permissions as the real run, it can fail halfway, and the user who asked "is this machine ready?" gets a changed machine instead of an answer. Report the problem and the command that fixes it, and leave the fix to the user or to the real run.
+
+`dybatpho::doctor` comes with the `doctor` module and covers the library itself: the commands its loaded modules call, their versions, and the Bash it runs on, against dybatpho's own floor. It knows nothing of the tools the project calls, and nothing of the project's own Bash floor (see [Bash Version Matrix](#bash-version-matrix)). (dybatpho)
+
+**Recommended**
+
+```sh
+#######################################
+# @description Report whether deploy.sh can run here, and change nothing
+# @noargs
+# @exitcode 0 Everything a run needs is in place
+# @exitcode 1 Something is missing; every problem was reported
+#######################################
+function _doctor {
+  local failed=0 tool version
+  dybatpho::doctor || failed=1
+  for tool in kubectl helm jq; do
+    if ! dybatpho::is command "${tool}"; then
+      dybatpho::error "${tool} is not installed"
+      failed=1
+    elif version="$(dybatpho::command_version "${tool}")"; then
+      dybatpho::info "${tool} ${version}"
+    fi
+  done
+  dybatpho::command_exists_all gpg age \
+    || dybatpho::warn "Encrypted backups are off: they need both gpg and age"
+  dybatpho::is readable "${CONFIG_FILE}" || {
+    dybatpho::error "Cannot read ${CONFIG_FILE}; copy config.example.yaml there"
+    failed=1
+  }
+  dybatpho::is writeable "${STATE_DIR}" || {
+    dybatpho::error "Cannot write to ${STATE_DIR}; create it with: mkdir -p ${STATE_DIR}"
+    failed=1
+  }
+  return "${failed}"
+}
+```
+
+**Discouraged**
+
+```sh
+function _doctor {
+  # Stops at the first missing command: one problem per run
+  dybatpho::require kubectl
+  dybatpho::require helm
+  # The check changes the machine it was asked about
+  mkdir -p -- "${STATE_DIR}"
+  dybatpho::success "Everything is in place"
+}
 ```
 
 ### STDOUT and STDERR
@@ -591,6 +909,114 @@ backup::run &>> "${LOG_FILE}"
 ```sh
 # Errors still go to the terminal: 2>&1 copied it before > moved stdout
 backup::run 2>&1 > "${LOG_FILE}"
+```
+
+### Progress Output
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Write progress to `STDERR`, never to `STDOUT`, where it becomes part of the result a caller captures or pipes on
+> - ⚠️ CONSIDER: Draw a progress line with `\r` or an erase-line escape only when STDERR is a terminal, `[[ -t 2 ]]` <kbd>BSG157</kbd>
+> - ✔️ SHOULD: Without a terminal, write one plain line per step, or a summary at the end, instead of redrawing
+> - ✔️ SHOULD: Leave out colours and cursor movement when `NO_COLOR` is set or `TERM` is `dumb`; `dybatpho::color_supported stderr` answers both, and `dybatpho::is_tty stderr` asks for a terminal. (dybatpho)
+> - ✔️ SHOULD: Show progress with `dybatpho::spinner` and `dybatpho::tui_progress_start`, `dybatpho::tui_progress_step` and `dybatpho::tui_progress_stop`, which draw on `STDERR` only on a terminal and write log lines otherwise. (dybatpho)
+> - ❌ AVOID: Do not show progress with `dybatpho::progress` or `dybatpho::progress_bar`: both write to `STDOUT` and never check for a terminal. (dybatpho)
+
+A progress line redraws itself: `\r` moves back to the start of the line and `\033[K` erases the rest. A terminal turns that into one line that changes; a CI log, a file or a pipe keeps every character, and a thousand updates arrive as one line of a thousand frames and control codes. On `STDOUT` the same frames also land in `value="$(fn)"` and in whatever the output is piped to.
+
+`NO_COLOR`, with any non-empty value, asks for no colour at all, and `TERM=dumb`, as in an Emacs shell buffer, is a terminal that cannot move the cursor or erase a line. Both still read plain lines well.
+
+**Recommended**
+
+```sh
+local total=${#files[@]} done_count=0 file
+for file in "${files[@]}"; do
+  upload::one "${file}"
+  done_count=$((done_count + 1))
+  if [[ -t 2 && "${TERM:-}" != dumb ]]; then
+    printf '\r\033[KUploaded %d/%d' "${done_count}" "${total}" >&2
+  fi
+done
+[[ ! -t 2 ]] || printf '\n' >&2
+dybatpho::info "Uploaded ${total} files"
+```
+
+**Discouraged**
+
+```sh
+for file in "${files[@]}"; do
+  upload::one "${file}"
+  done_count=$((done_count + 1))
+  # In a CI log, one endless line of frames; in $(...), part of the result
+  printf '\rUploaded %d/%d' "${done_count}" "${total}"
+done
+
+# The same through a helper: STDOUT, terminal or not
+dybatpho::progress_bar "$((done_count * 100 / total))"
+```
+
+`dybatpho::spinner` runs a command and animates a spinner beside a message while it runs, only when `STDERR` is a terminal; otherwise it logs the message once. The `dybatpho::tui_progress_*` helpers draw a bar on `STDERR` when standard input and `STDERR` are terminals and `TERM` is not `dumb`, and log a line at each reporting step otherwise. `dybatpho::progress` prints a banner and `dybatpho::progress_bar` a `\r` bar, both on `STDOUT` with no check: keep them out of any function whose output is captured and any script whose output is logged. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::spinner "Downloading dependencies" -- npm ci
+
+dybatpho::tui_progress_start "Uploading" "${#files[@]}"
+for file in "${files[@]}"; do
+  upload::one "${file}"
+  dybatpho::tui_progress_step
+done
+dybatpho::tui_progress_stop "Uploaded ${#files[@]} files"
+```
+
+### System Logging
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Under systemd, write messages to `STDERR`: journald stores each line with the unit, the time and the process
+> - ✔️ SHOULD: Send a message to the system log from a script that runs outside a supervisor with `logger -t <tag>`, and give it a priority with `-p`
+> - ✔️ SHOULD: Run a command whose output belongs in the journal under `systemd-cat -t <tag>`
+> - ⚠️ CONSIDER: Leave `/var/log` to the system: write to `STDERR` or use `logger` instead of appending to a file there <kbd>BSG138</kbd>
+> - ✔️ SHOULD: When a log file is required, set it up with `dybatpho::log_to_file`, which creates the directory, gives a new file mode `600` and rotates it itself; do not add `logrotate` on top. (dybatpho)
+
+A script run by systemd or cron already has somewhere to log: systemd puts what it prints on standard error into the journal, and cron mails it to the owner. `journalctl -u <unit>` then shows it with the rest of the system, filtered by unit, time and priority, with no file to find.
+
+Appending to a file under `/var/log` needs root, and the file grows until someone adds a `logrotate` rule for it. `logger` hands a line to syslog or journald, which rotate it for you, and `-t` tags it so it can be found again.
+
+**Recommended**
+
+```sh
+# Under systemd or cron, STDERR is collected
+dybatpho::info "Backing up ${source}"
+printf 'Backup of %s failed\n' "${source}" >&2
+
+# Outside a supervisor, hand the line to the system log
+logger -t backup -p user.err "Backup of ${source} failed"
+systemd-cat -t backup -p info rsync -a -- "${source}" "${target}"
+```
+
+**Discouraged**
+
+```sh
+# Needs root, and nothing rotates the file
+echo "Backing up ${source}" >> /var/log/backup.log
+rsync -av -- "${source}" "${target}" | tee -a /var/log/backup.log
+```
+
+`dybatpho::log_to_file` sends every dybatpho log message to the file as a JSON line, next to the text on standard error, with registered secrets redacted. `rotate:SIZE` renames the file once it reaches that size and `keep:N` keeps that many old copies; a `logrotate` rule on the same file would rotate it a second time. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::log_to_file "$(dybatpho::xdg_state_dir backup)/backup.log" rotate:10M keep:3
+dybatpho::info "Backing up ${source}"
 ```
 
 ### Common Function Scripts
@@ -968,6 +1394,299 @@ if dybatpho::is_ci; then
 fi
 ```
 
+### Menus and Choices
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Give every choice a menu offers a flag or an environment variable that makes the same choice without asking
+> - ⚠️ CONSIDER: Check for a terminal before a menu (`select`, `fzf`, `gum choose`, `whiptail`, `dialog`), and take the same answer from a flag or an environment variable without one <kbd>BSG161</kbd>
+> - ✔️ SHOULD: With no terminal and no answer given, fail with a message naming the flag, instead of guessing or waiting
+> - ✔️ SHOULD: Draw a menu with `dybatpho::tui_menu` or `dybatpho::tui_multi_menu`, which fall back to a numbered prompt off a terminal and to `DYBATPHO_TUI_DEFAULT` when nothing answers. (dybatpho)
+
+A menu is a question with a fixed set of answers, so a flag can always give the same answer: `--env staging` is what picking "staging" would have done. The script then runs the same way in CI, in cron and from another script, and the menu is only a convenience for the person at the keyboard.
+
+Without a terminal, a menu does not fail cleanly. `select` ends at the first end of input, or reads its answer from a pipe meant for something else; `fzf`, `gum`, `whiptail` and `dialog` stop with an error about the terminal that says nothing of the missing choice, or wait for a key that never comes. Testing `[[ -t 0 ]]` first lets the script stop with a message that says what to pass.
+
+**Recommended**
+
+```sh
+# ENVIRONMENT comes from --env, or DEPLOY_ENV, through the spec
+if [[ -z "${ENVIRONMENT}" ]]; then
+  [[ -t 0 ]] || dybatpho::die "No terminal to ask on: pass --env or set DEPLOY_ENV"
+  ENVIRONMENT="$(printf '%s\n' dev staging prod | fzf --prompt "Environment> ")"
+fi
+```
+
+**Discouraged**
+
+```sh
+# Ends, fails or waits in CI, and there is no way to answer it from a flag
+select ENVIRONMENT in dev staging prod; do
+  break
+done
+ENVIRONMENT="$(gum choose dev staging prod)"
+```
+
+`dybatpho::tui_menu` writes the choice into a named variable. It draws the menu in place when both standard input and standard error are terminals; otherwise it prints a numbered list and reads the number from standard input, so a redirect can answer it, and at the end of the input it takes `DYBATPHO_TUI_DEFAULT`, a 1-based position, or fails with an error naming that variable. `dybatpho::tui_multi_menu` does the same for several entries, into an array. (dybatpho)
+
+**Recommended**
+
+```sh
+if [[ -z "${ENVIRONMENT}" ]]; then
+  dybatpho::tui_menu ENVIRONMENT "Deploy to which environment?" dev staging prod \
+    || dybatpho::die "No environment chosen: pass --env"
+fi
+```
+
+### Unattended Runs
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Set `PATH` at the top of a script that cron, systemd or CI runs, or call its programs by absolute path
+> - ✔️ SHOULD: Expect no terminal, and perhaps no `HOME` or `USER`: ask only after `dybatpho::is_interactive` finds a terminal, and fail with a clear message when a variable the script needs is missing. (dybatpho)
+> - ✔️ SHOULD: Write messages to `STDERR`, where cron mails them, systemd stores them in the journal and CI shows them in the job log
+> - ✔️ SHOULD: Keep the settings a job needs in the script, or in a configuration file it reads by its full path
+> - ❌ AVOID: Do not source `~/.bashrc`, `~/.profile` or another login profile from a script <kbd>BSG134</kbd>
+
+A script started by cron, a systemd unit or a CI runner does not get the environment of a login shell. Cron starts it with `PATH=/usr/bin:/bin`, so a tool under `/usr/local/bin` or `/opt` is "not found"; a system service may start without `HOME` or `USER`; and there is no terminal, so anything that reads one waits or fails.
+
+Sourcing a login profile to get the missing settings back makes it worse. The file may not exist for the account the job runs as, or belong to another user under `sudo`; it is written for a terminal, with prompts, aliases and `stty` calls; and it ties the job to whatever one person last put in it. Name what the script needs in the script itself.
+
+**Recommended**
+
+```sh
+# The PATH of cron and systemd is short, and not the one a login shell has
+export PATH=/usr/local/bin:/usr/bin:/bin
+: "${BACKUP_TARGET:?BACKUP_TARGET is not set}"
+
+if dybatpho::is_interactive; then
+  dybatpho::confirm "Back up ${BACKUP_SOURCE} now?" || exit 0
+fi
+dybatpho::info "Backing up ${BACKUP_SOURCE}"
+rsync -a -- "${BACKUP_SOURCE}" "${BACKUP_TARGET}"
+```
+
+**Discouraged**
+
+```sh
+# Missing under cron, someone else's under sudo, and written for a terminal
+. ~/.bashrc
+# Fails with "No such device or address": cron has no terminal
+echo "Backing up ${BACKUP_SOURCE}" > /dev/tty
+```
+
+### Container Entrypoints
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: End a container entrypoint with `exec`, so the program it starts replaces Bash as PID 1 and receives `SIGTERM` <kbd>BSG135</kbd>
+> - ✔️ SHOULD: Run the container's command with `exec "$@"` once the setup is done, so `docker run <image> <command>` still works
+> - ✔️ SHOULD: When the command may name a function of the script, run the function and `exec` anything else: `if declare -F -- "$1" > /dev/null; then "$@"; else exec "$@"; fi`
+> - ✔️ SHOULD: Run the image with `--init`, or under `tini`, when the program as PID 1 does not handle `SIGTERM` or reap the processes it starts
+> - ✔️ SHOULD: Tell a container from a host with `dybatpho::is_container`, which looks for the marker files of Docker and Podman, the `container` and `KUBERNETES_SERVICE_HOST` variables, and the control groups of PID 1. (dybatpho)
+
+`docker stop` and Kubernetes send `SIGTERM` to PID 1 of the container, wait for the grace period (10 seconds for Docker, 30 for Kubernetes) and then send `SIGKILL`. When the entrypoint runs the server as a plain command, PID 1 is Bash: it holds the signal until the server exits, which it never does, and the server is killed without closing its connections or flushing its files. `exec` replaces Bash with the server, which then gets the signal itself.
+
+The kernel gives PID 1 no default action for a signal it does not handle, so a program that never installs a `SIGTERM` handler ignores the signal even after `exec`. Run such a program under an init that forwards signals and reaps zombies: `docker run --init`, or `tini` in the image.
+
+**Recommended**
+
+```sh
+mkdir -p /data
+if (($# == 0)); then
+  set -- gunicorn --bind 0.0.0.0:8000 app:application
+fi
+exec "$@"
+```
+
+**Discouraged**
+
+```sh
+mkdir -p /data
+# Bash stays PID 1: docker stop waits out the grace period, then kills the server
+"$@"
+```
+
+`exec` replaces the process with a program, and a shell function is not one: `exec migrate` fails with "not found". An entrypoint that also offers its own subcommands runs a function directly, and the function ends with an `exec` of its own.
+
+**Recommended**
+
+```sh
+function migrate {
+  exec /app/bin/migrate --apply
+}
+
+if (($# == 0)); then
+  set -- /app/bin/server
+fi
+if declare -F -- "$1" > /dev/null; then
+  "$@"
+else
+  exec "$@"
+fi
+```
+
+`dybatpho::is_container` answers whether the script runs inside Docker, Podman, Kubernetes or LXC, so a script shared with the host can skip what has no meaning in a container. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::is_container || systemctl daemon-reload
+```
+
+### Current User
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Check for root with `(( EUID == 0 ))`, not by comparing `$USER`, `$(whoami)` or `$(id -u)` as text <kbd>BSG136</kbd>
+> - ⚠️ CONSIDER: Find a home directory with `$HOME` or `getent passwd`, not by building `/home/${user}` <kbd>BSG137</kbd>
+> - ✔️ SHOULD: On macOS, which has no `getent`, read another user's home with `dscl . -read "/Users/${user}" NFSHomeDirectory`
+> - ✔️ SHOULD: Check for root with `dybatpho::is_root`, which tests `EUID`, and print the effective user with `dybatpho::user`, which asks `id -un`. (dybatpho)
+
+`USER` and `LOGNAME` are ordinary variables: anyone can set them, a container often sets neither, and `sudo` decides by its own policy what they hold. The name `root` is only a convention; the kernel checks the user ID, and Bash keeps the effective one in `EUID`, a variable no script can change.
+
+Home directories are under `/Users` on macOS, at `/root` for root, under `/var/lib/<service>` for many service accounts, and anywhere an administrator or a directory service put them. `/home/${user}` is right on one kind of machine; the password database, which `getent passwd` reads through every source the system is set up for, is right on all of them. Use `${HOME}` for the current user. dybatpho has no helper for another user's home.
+
+**Recommended**
+
+```sh
+((EUID == 0)) || dybatpho::die "Run this as root"
+
+local home
+if command -v getent &> /dev/null; then
+  home="$(getent passwd "${user}" | cut -d: -f6)"
+else
+  home="$(dscl . -read "/Users/${user}" NFSHomeDirectory)"
+  home="${home#NFSHomeDirectory: }"
+fi
+[[ -n "${home}" ]] || dybatpho::die "No such user: ${user}"
+```
+
+**Discouraged**
+
+```sh
+# USER is unset under cron and in many containers, and anyone can set it
+[[ "${USER}" == "root" ]] || dybatpho::die "Run this as root"
+# Wrong on macOS, for root and for service accounts
+home="/home/${user}"
+```
+
+`dybatpho::user` names the effective user, so a script run with `sudo` gets `root`, not the account that called it. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::is_root || dybatpho::die "Run this with sudo, not as $(dybatpho::user)"
+```
+
+### Resource Limits
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Run a heavy batch job at a low priority with `nice -n 10`, and on Linux also `ionice -c 3` when it is heavy on the disk
+> - ✔️ SHOULD: Set `ulimit` in a subshell around the one command it is meant for
+> - ✔️ SHOULD: Check the free space with `df -Pk` before a large write, and stop with a message that names the sizes
+> - ❌ AVOID: Do not call `ulimit` at the top of a script or a library: it binds every command the script runs afterwards
+> - ❌ AVOID: Do not read free space from `df -h`: its sizes carry units that arithmetic cannot compare
+
+A backup or a build started by cron competes with the service on the same machine. `nice` lowers its share of the CPU, and `ionice -c 3` lets it use the disk only when nothing else does. `ionice` exists only on Linux, so check for it first.
+
+A limit set with `ulimit` holds for the shell and every process it starts from then on, and an unprivileged process can lower a hard limit but never raise it again. In a subshell, the limit ends with the subshell.
+
+A write that fills the disk fails half done, and often takes the service that shares the disk down with it. `df -P` prints the one-line layout POSIX defines, the same on GNU and BSD, and `-k` counts in kibibytes whatever `BLOCKSIZE` says.
+
+**Recommended**
+
+```sh
+local -a low=(nice -n 10)
+if command -v ionice &> /dev/null; then
+  low+=(ionice -c 3)
+fi
+"${low[@]}" tar -czf "${archive}" -C "${source}" .
+
+# Only the import runs without core dumps and with a CPU budget
+(
+  ulimit -c 0
+  ulimit -t 3600
+  exec ./import.sh
+)
+
+local available
+available="$(df -Pk -- "${target_dir}" | awk 'NR == 2 { print $4 }')"
+((available >= needed_kb)) || dybatpho::die "${target_dir} has ${available} KiB free, ${needed_kb} KiB needed"
+```
+
+**Discouraged**
+
+```sh
+# Binds the rest of the script and every command it starts
+ulimit -n 256
+# "12G" or "980M": not a number to compare
+available="$(df -h "${target_dir}" | tail -n 1 | awk '{ print $4 }')"
+```
+
+### Long-running Processes
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Hand a service to systemd, launchd or a process manager instead of detaching it with `nohup` or `setsid` <kbd>BSG139</kbd>
+> - ✔️ SHOULD: Write a service as a program that stays in the foreground and logs to `STDERR`, and let the supervisor restart it, stop it and keep its output
+> - ✔️ SHOULD: Start a one-off service from a script with `systemd-run`, which makes it a unit that `systemctl` and `journalctl` know
+> - ❌ AVOID: Do not start a service with `&`, `disown` it and exit: it is the same unmanaged process as `nohup` makes, only harder to spot
+> - ✔️ SHOULD: Start the jobs the script itself waits on with `dybatpho::background_run`, find their pid with `dybatpho::background_pid`, and wait for them with `dybatpho::wait_all`. (dybatpho)
+
+A detached process has no owner. Nothing restarts it when it crashes or stops it in order at shutdown, its output goes to `nohup.out` or nowhere, and the pid the script wrote down belongs to another process after a reboot. A supervisor does all of this already: it starts the program, restarts it by policy, sends `SIGTERM` when it should stop, and keeps its output in the journal.
+
+**Recommended**
+
+```sh
+# A transient unit: systemd logs it, stops it and shows it in systemctl status
+systemd-run --user --unit=sync-watch "${HOME}/bin/sync-watch.sh"
+```
+
+```ini
+[Service]
+ExecStart=/usr/local/bin/sync-watch.sh
+Restart=on-failure
+```
+
+**Discouraged**
+
+```sh
+# Nothing restarts it, stops it at shutdown or keeps its output
+nohup ./sync-watch.sh &> /dev/null &
+setsid ./sync-watch.sh &
+```
+
+A background job the script waits on before it exits is not a service, and needs no supervisor. `dybatpho::background_run` starts it in its own process group under a name, and `dybatpho::wait_all` waits for every job and fails when one did; see [Child Processes](#child-processes). When another tool insists on a pid file, `dybatpho::pid_file_write` writes it atomically and `dybatpho::pid_file_remove` removes it only while it still names this process. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::trap dybatpho::kill_children EXIT INT TERM
+dybatpho::background_run server ./serve.sh --port 8080
+dybatpho::info "Server started as pid $(dybatpho::background_pid server)"
+./run-tests.sh
+```
+
 ## Naming Conventions
 
 ### Function Names
@@ -1141,6 +1860,7 @@ function net::retry {
 >
 > - ✔️ SHOULD: Include a comment at the beginning of the file that concisely explains the purpose or content of the file. However, do not include comments before the shebang line <kbd>BSG024</kbd>
 > - ✔️ SHOULD: Use [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) format includes: `@file`, `@brief`, `@description` to explain the file. (custom) <kbd>BSG020</kbd>
+> - ⚠️ CONSIDER: Name the license of a distributed script with `# SPDX-License-Identifier: <id>`, not a license paragraph <kbd>BSG149</kbd>
 
 All files should include a top-level comment that briefly describes their content.
 
@@ -1151,6 +1871,30 @@ All files should include a top-level comment that briefly describes their conten
 # @file backup.sh
 # @brief Perform hot backups of Oracle databases
 # @description Perform hot backups of Oracle databases
+```
+
+A script that travels on its own, away from the repository and its LICENSE file, names its license with one SPDX line in the header, right after the shebang. The identifier is what license scanners read, and one line cannot drift from the LICENSE file the way a pasted paragraph does. A copyright line may stay next to it.
+
+**Recommended**
+
+```sh
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# @file backup.sh
+# @brief Perform hot backups of Oracle databases
+# @description Perform hot backups of Oracle databases
+```
+
+**Discouraged**
+
+```sh
+#!/usr/bin/env bash
+# @file backup.sh
+# @brief Perform hot backups of Oracle databases
+# @description Perform hot backups of Oracle databases
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.
 ```
 
 ### Function Comments
@@ -1223,6 +1967,41 @@ Use TODO comments for temporary, short-term solutions, or code that is good enou
 # TODO: This code needs to be fixed due to insufficient error handling. Add error checks and exit with 1.
 ```
 
+### Commented-out Code
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Delete code instead of commenting it out; git keeps the old version. (custom) <kbd>BSG144</kbd>
+> - ✔️ SHOULD: When a line has to stay switched off for now, put a TODO above it that says why and when it comes back
+> - ✔️ SHOULD: Show example code in an shdoc `@example`, not as loose comment lines
+
+Commented-out code rots. Nobody runs it, the names it uses change under it, and the next reader cannot tell a fix waiting to land from a dead end or a debug line left behind. `git log -S '<text>'` finds the old version the day someone needs it.
+
+The linter treats a run of comment lines as code when it parses as shell and holds an assignment, an expansion, `&&`, `||`, a pipe, `[[`, a keyword such as `if` or `done`, or a `ns::` call. It leaves alone the file header, shdoc blocks and their `@example`, directives, a block that carries a TODO, and lines that continue a sentence or follow one ending in `:`.
+
+**Recommended**
+
+```sh
+mkdir -p -- "${dest}"
+# TODO: Switch back to rsync once every host has rsync 3.2 (needs --mkpath).
+# rsync -a --mkpath -- "${src}/" "${dest}/"
+cp -a -- "${src}/." "${dest}/"
+```
+
+**Discouraged**
+
+```sh
+mkdir -p -- "${dest}"
+# cp -r "${src}" "${dest}"
+# if [[ -d "${dest}.old" ]]; then
+#   rm -rf -- "${dest}.old"
+# fi
+cp -a -- "${src}/." "${dest}/"
+```
+
 ## Formatting
 
 ### Tabs and Spaces
@@ -1242,6 +2021,42 @@ Indentation should be two spaces. Under no circumstances should tabs be used.
 Many editors cannot switch between actual indentation and displayed spaces/tabs according to user preference. Another person's editor may not have the same settings as yours. Using spaces ensures that code looks the same in any editor.
 
 One blank line is enough to separate two blocks; a second one says nothing more and pushes the code below it off the screen. shfmt joins a run of blank lines into one.
+
+### Line Endings and Encoding
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Save shell files with LF line endings, in UTF-8 without a byte order mark <kbd>BSG140</kbd>
+> - ✔️ SHOULD: Pin the line endings in `.gitattributes`: `*.sh text eol=lf` and `*.bats text eol=lf`
+> - ✔️ SHOULD: Set `end_of_line = lf` and `charset = utf-8` in `.editorconfig`, so editors save the file that way from the start
+> - ❌ AVOID: Do not leave the line endings to each clone's `core.autocrlf`: with `true`, a checkout on Windows writes CRLF, and a script copied from it into a container or WSL breaks
+
+Bash ends a line at LF and keeps a CR as part of the last word on it. A file saved with CRLF then asks for `bash\r` in its shebang, reads `then\r` as a command, and `cd`s into a directory whose name ends in an invisible character; every error message looks as if nothing were wrong. A byte order mark puts three bytes before `#!`, so the kernel no longer sees a shebang at all.
+
+`text eol=lf` in `.gitattributes` makes Git check the files out with LF on every machine, whatever its own settings say, and store them with LF in the repository.
+
+**Recommended**
+
+```gitattributes
+*.sh text eol=lf
+*.bats text eol=lf
+```
+
+```ini
+[*.{sh,bats}]
+charset = utf-8
+end_of_line = lf
+```
+
+**Discouraged**
+
+```text
+$ ./deploy.sh
+/usr/bin/env: 'bash\r': No such file or directory
+```
 
 ### Line Length and Long Strings
 
@@ -1435,6 +2250,88 @@ name="dotfiles";
 printf '%s\n' "${name}";
 ```
 
+### Nesting Depth
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Return early from a guard clause instead of wrapping the rest of the function in an `if`
+> - ✔️ SHOULD: `continue` early in a loop to skip an item, instead of nesting the work under an `if`
+> - ⚠️ CONSIDER: Keep `if`, loops and `case` nested at most 3 levels deep in a function; move the inner part into a function of its own. (custom) <kbd>BSG142</kbd>
+
+Every level of nesting is one more condition the reader has to keep in mind to know when a line runs, and the `fi` that closes it is a screen away. A guard clause states a precondition once and gets it out of the way, so the real work of the function sits on the first level. An `if` with no `else` whose only statement leaves — `return`, `continue`, `break`, `exit` or `dybatpho::die` — is such a guard and does not count as a level.
+
+**Recommended**
+
+```sh
+function deploy::sync_hosts {
+  local host
+  for host in "$@"; do
+    [[ -n "${host}" ]] || continue
+    if ! ping -c 1 "${host}" &> /dev/null; then
+      printf 'Skipping %s: unreachable\n' "${host}" >&2
+      continue
+    fi
+    deploy::sync_host "${host}"
+  done
+}
+```
+
+**Discouraged**
+
+```sh
+function deploy::sync_hosts {
+  local host
+  for host in "$@"; do
+    if [[ -n "${host}" ]]; then
+      if ping -c 1 "${host}" &> /dev/null; then
+        if [[ -d "/srv/${host}" ]]; then
+          if rsync -a -- "/srv/${host}/" "${host}:/srv/"; then
+            printf 'Synced %s\n' "${host}"
+          fi
+        fi
+      fi
+    fi
+  done
+}
+```
+
+### Function Size
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Give a function one job, the one its name says
+> - ✔️ SHOULD: Keep deciding what to do apart from doing it: one function works out the plan and prints it, another one carries it out
+> - ⚠️ CONSIDER: Split a function longer than 50 lines of code. (custom) <kbd>BSG143</kbd>
+
+A function that does one thing can be named, tested and reused; one that checks, decides and acts at once can only be run whole. Splitting the decision from the side effects pays twice: the decision can be tested without touching the system, and a dry run only has to skip the part that acts.
+
+The linter counts the lines of the body that are neither blank nor a comment, and warns past 50, about one screen. It is a signal, not a limit: a long `case` that dispatches subcommands, or a table of options, can be fine as one piece, and says so with `# dyshellint disable=BSG143 # <reason>` above the function.
+
+**Recommended**
+
+```sh
+function backup::plan {
+  local source
+  source="${1:?}"
+  find "${source}" -type f -newer "${STAMP_FILE}" -print0
+}
+
+function backup::run {
+  local source file
+  source="${1:?}"
+  while IFS= read -r -d '' file; do
+    cp -p -- "${file}" "${BACKUP_DIR}/${file#"${source}"/}"
+  done < <(backup::plan "${source}")
+  touch -- "${STAMP_FILE}"
+}
+```
+
 ### Case statement
 
 > [!TIP]
@@ -1542,7 +2439,7 @@ fi
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Always quote strings containing variables, command substitutions, spaces or shell meta characters, unless careful unquoted expansion is required or it’s a shell-internal integer
+> - ✔️ SHOULD: Always quote strings containing variables, command substitutions, spaces or shell meta characters, unless careful unquoted expansion is required or it’s a shell-internal integer <kbd>BSG131</kbd>
 > - ✔️ SHOULD: Quoting shell internal read-only special variables defined as integers is optional: `$?`, `$#`, `$$`, `$!` (see `man bash`). Prefer quoting of "named" internal integer variables, e.g. PPID etc for consistency.
 > - ✔️ SHOULD: Prefer quoting strings that are “words” (as opposed to command options or path names)
 > - ✔️ SHOULD: Use canonical quoting. (custom)
@@ -1590,7 +2487,7 @@ echo "Process $$: Done making \$\$\$."
 
 # "command options or path names"
 # ($1 is assumed to contain a value here)
-grep -li Hugo /dev/null "$1"
+grep -li -- Hugo /dev/null "$1"
 
 # Less simple examples
 # "quote variables, unless proven false": ccs might be empty
@@ -1980,6 +2877,63 @@ if [[ "x${answer}" == "xyes" ]]; then
 fi
 ```
 
+### Case Conversion
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Change the case of a variable with `${var,,}` or `${var^^}`, not `tr`. Keep `tr` for a file or a stream <kbd>BSG145</kbd>
+> - ✔️ SHOULD: Compare without case by lowering both sides, `[[ "${answer,,}" == yes ]]`, rather than by turning on `nocasematch`
+> - ⚠️ CONSIDER: Turn `shopt -s nocasematch` off again with `shopt -u`, or set it in a subshell: `local -` does not restore `shopt` options. (custom) <kbd>BSG146</kbd>
+> - ✔️ SHOULD: Pass `dybatpho::lower` or `dybatpho::upper` where a command is needed rather than an expansion, such as a mapper function. (dybatpho)
+
+`${var,,}` lowers every letter, `${var^^}` raises every letter and `${var^}` only the first. They run inside the shell, while `$(echo "${var}" | tr '[:upper:]' '[:lower:]')` starts a pipe and two processes for one value, and `echo` mangles a value such as `-n`. All three are Bash 4.0; on the Bash 3.2 of macOS there is no expansion for it, which is one more reason to check the version up front, see [Bash Version](#bash-version).
+
+`shopt -s nocasematch` is not a property of one comparison: every `[[ == ]]`, `=~` and `case` after it, in the function, in everything it calls and in the rest of the script, ignores case until it is turned off. `local -` does not help here: it restores the `set` options only, not the `shopt` ones. Lower the value instead, or turn the option off again right after the comparison. In a library, BSG092 already asks for the same.
+
+**Recommended**
+
+```sh
+local level="${LOG_LEVEL:-info}"
+case "${level,,}" in
+  debug | info) printf '%s\n' "${level^^}" ;;
+  *) printf 'Unknown level: %s\n' "${level}" >&2 ;;
+esac
+
+function config::is_true {
+  [[ "${1,,}" == @(1|true|yes|on) ]]
+}
+
+function config::is_false {
+  local status=0
+  shopt -s nocasematch
+  [[ "${1-}" == @(0|false|no|off) ]] || status=1
+  shopt -u nocasematch
+  return "${status}"
+}
+```
+
+**Discouraged**
+
+```sh
+level="$(echo "${LOG_LEVEL}" | tr '[:upper:]' '[:lower:]')"
+
+shopt -s nocasematch
+[[ "${answer}" == yes ]] && confirmed=true
+```
+
+`dybatpho::lower` and `dybatpho::upper` print `${1,,}` and `${1^^}`. They are no faster than the expansion, and no help on Bash 3.2, but they are commands: they fit where a function name is expected, such as the mapper of `dybatpho::array_map`. (dybatpho)
+
+**Recommended**
+
+```sh
+local -a tags=(Linux macOS BSD)
+dybatpho::array_map tags dybatpho::lower
+printf '%s\n' "${tags[@]}"
+```
+
 ### Regular Expressions
 
 > [!TIP]
@@ -2129,7 +3083,7 @@ done
 
 > [!TIP]
 >
-> - ✔️ SHOULD: Quote every value spliced into a string for `eval`, or for a one-string `dybatpho::dry_run`, with `printf %q`; better, pass an argument list <kbd>BSG080</kbd>
+> - ✔️ SHOULD: Quote every value spliced into a string for `eval`, or for a one-string `dybatpho::dry_run`, with `printf %q`; better, pass an argument list <kbd>BSG080</kbd> <kbd>BSG130</kbd>
 > - ❌ AVOID: Do not use `eval` <kbd>BSG040</kbd>
 > - ❌ AVOID: Do not build a command string for `eval` or `dybatpho::dry_run "<string>"` from data that is not escaped
 
@@ -2597,6 +3551,67 @@ local -a entries=()
 mapfile -t entries < <(tar -tzf "${archive}")
 ```
 
+### File Descriptors
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Let Bash pick the descriptor with `exec {fd}> "${file}"`, instead of a fixed number such as `exec 3>` <kbd>BSG152</kbd>
+> - ✔️ SHOULD: Close a descriptor as soon as the work with it is done, `exec {fd}>&-`: until then every command the script starts inherits it
+> - ✔️ SHOULD: Write through the descriptor with a quoted variable: `printf '%s\n' "${line}" >&"${fd}"`
+> - ⚠️ CONSIDER: Redirect a loop once, `done >> "${out}"`, instead of appending to the same file on every iteration <kbd>BSG153</kbd>
+> - ✔️ SHOULD: Group the commands that write one file, `{ ...; } > "${file}"`, so it is opened, and truncated, once
+
+A fixed number is a name shared with everything else in the process. A library that keeps its log on descriptor 3 loses it, without a word, the moment the script runs `exec 3> "${file}"`, and its lines go into the script's file from then on. `exec {fd}> "${file}"` (Bash 4.1) takes a free number of 10 or more and stores it in `fd`. A fixed number on one command, as in the swap `3>&1 1>&2 2>&3`, only lasts for that command and is fine.
+
+A descriptor opened with `exec` stays open until it is closed, also across function returns, and a background job or a daemon started meanwhile keeps a copy: a log file still held open after it was rotated away, a pipe whose reader never sees the end.
+
+**Recommended**
+
+```sh
+local log_fd
+exec {log_fd}>> "${LOG_FILE}"
+printf 'sync started for %s\n' "${name}" >&"${log_fd}"
+sync::all >&"${log_fd}" 2>&1
+exec {log_fd}>&-
+```
+
+**Discouraged**
+
+```sh
+# Closes whatever a sourced library had on 3, and stays open after the work
+exec 3>> "${LOG_FILE}"
+printf 'sync started for %s\n' "${name}" >&3
+sync::all >&3 2>&1
+```
+
+A `>>` inside a loop opens the file, writes one line and closes it again on every iteration: on a list of ten thousand hosts, ten thousand opens of the same file. Redirecting the loop, or a `{ }` group around the lines that write, opens it once; it also means a `>` truncates once, at the start, and not before every line.
+
+**Recommended**
+
+```sh
+local host
+for host in "${hosts[@]}"; do
+  printf '%s\t%s\n' "${host}" "$(inventory::role "${host}")"
+done >> "${report}"
+
+{
+  printf '# Generated %s\n' "${stamp}"
+  printf '%s\n' "${hosts[@]}"
+} > "${inventory}"
+```
+
+**Discouraged**
+
+```sh
+local host
+for host in "${hosts[@]}"; do
+  printf '%s\t%s\n' "${host}" "$(inventory::role "${host}")" >> "${report}"
+done
+```
+
 ### For Loops
 
 > [!TIP]
@@ -2704,6 +3719,66 @@ function fs::count_lines {
 }
 ```
 
+### Returning Values
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Use the status of a function for success or failure only, and document each status with `@exitcode`
+> - ✔️ SHOULD: Print the data a function returns on STDOUT, for the caller to capture with `$(...)`
+> - ✔️ SHOULD: Write into a variable the caller names, with `local -n`, when the data is an array or the call sits in a hot loop, and check the name with `dybatpho::expect_ref`. (dybatpho)
+> - ❌ AVOID: Do not mix log messages into STDOUT: they end up in the caller's value. Send them to STDERR
+> - ❌ AVOID: Do not return data through the status: `return` takes a number from 0 to 255, never a word or `$(...)`. (custom) <kbd>BSG148</kbd>
+
+A function has two ways to hand something back. Its status is a number from 0 to 255 that says whether it worked, and is what `if`, `||` and `set -e` read. Its STDOUT is the data. Data squeezed into the status is cut modulo 256, so a count of 256 reads as success with nothing found, and `return true` stops the function with "numeric argument required". A message printed to STDOUT is just as wrong the other way: it becomes part of the value the caller captured, see [STDOUT and STDERR](#stdout-and-stderr).
+
+**Recommended**
+
+```sh
+function fs::count_lines {
+  local file count
+  dybatpho::expect_args file -- "$@"
+  [[ -f "${file}" ]] || return 1
+  dybatpho::info "Counting ${file}"
+  count="$(wc -l < "${file}")"
+  printf '%s\n' "${count// /}"
+}
+
+local lines
+lines="$(fs::count_lines "${log_file}")" || dybatpho::die "No ${log_file}"
+```
+
+**Discouraged**
+
+```sh
+function fs::count_lines {
+  echo "Counting ${1}"
+  return $(wc -l < "$1")
+}
+
+fs::count_lines "${log_file}"
+lines=$?
+```
+
+Capturing STDOUT runs the function in a subshell, which costs a process on every call, cannot fill an array, and cannot change anything else for the caller. When that matters, take the name of the caller's variable and write into it through a nameref. `dybatpho::expect_ref` stops the script when the name is not an identifier or is one of the library's own, and the `__<namespace>_<function>_` prefix keeps the function's other locals from catching the name, see [Local Names in Nameref and Callback Functions](#local-names-in-nameref-and-callback-functions). dybatpho's `*_into` helpers, such as `dybatpho::math_add_into total "${total}" "${price}"`, follow this shape. (dybatpho)
+
+**Recommended**
+
+```sh
+function fs::read_lines_into {
+  local __fs_read_lines_into_var __fs_read_lines_into_file
+  dybatpho::expect_args __fs_read_lines_into_var __fs_read_lines_into_file -- "$@"
+  dybatpho::expect_ref "${__fs_read_lines_into_var}"
+  local -n __fs_read_lines_into_ref="${__fs_read_lines_into_var}"
+  mapfile -t __fs_read_lines_into_ref < "${__fs_read_lines_into_file}"
+}
+
+local -a hosts
+fs::read_lines_into hosts "${hosts_file}"
+```
+
 ### Arithmetic
 
 > [!TIP]
@@ -2711,7 +3786,7 @@ function fs::count_lines {
 > - ✔️ SHOULD: Use `(( ... ))` for arithmetic conditions and `$(( ... ))` for arithmetic values
 > - ✔️ SHOULD: Omit the `$` on variables inside `(( ... ))`
 > - ✔️ SHOULD: Declare counters with `local -i` when the variable only ever holds an integer
-> - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))`
+> - ✔️ SHOULD: Validate a number from input with a regular expression, and force base 10 in arithmetic: `$((10#${count}))` <kbd>BSG129</kbd>
 > - ✔️ SHOULD: Check a decimal number with `dybatpho::math_is_number`, and an integer with `dybatpho::is int`. (dybatpho)
 > - ✔️ SHOULD: Increment with `((count += 1))` or `count=$((count + 1))`
 > - ✔️ SHOULD: Compute with fractions in `awk`, passing the values with `-v`: Bash arithmetic is integer only
@@ -2829,6 +3904,69 @@ fi
 ```sh
 dybatpho::is int "${count}" || dybatpho::die "Not an integer: ${count}"
 dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
+```
+
+### Dates and Durations
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Measure how long a step took with `SECONDS`, or with `EPOCHREALTIME` (Bash 5.0) when a second is too coarse
+> - ⚠️ CONSIDER: Read the clock with `SECONDS` or `printf '%(%s)T' -1`, not by forking `date +%s` <kbd>BSG150</kbd>
+> - ✔️ SHOULD: Write a timestamp that leaves the script in UTC and ISO 8601: `TZ=UTC printf -v stamp '%(%Y-%m-%dT%H:%M:%SZ)T' -1`
+> - ✔️ SHOULD: Time a step with `dybatpho::timer_start` and `dybatpho::timer_end`, which log how long it took, and show a number of seconds as `H:MM:SS` with `dybatpho::date_seconds_to_hms`. (dybatpho)
+> - ❌ AVOID: Do not parse a date with the BSD `date -j -f` alone: it fails on Linux as `date -d` fails on macOS, so go through `dybatpho::date_parse` or keep both branches, as [Portability](#portability) shows
+
+Bash keeps the clock itself. `SECONDS` counts the seconds since the script started, `printf '%(%s)T' -1` (Bash 4.2) reads the epoch, and `EPOCHSECONDS` and `EPOCHREALTIME` (Bash 5.0) hold the epoch in seconds and in microseconds. Each `$(date +%s)` forks a process to read the same number, which inside a loop costs more than the work it measures. `dybatpho::date_now` does not help here: it runs `date` too.
+
+`EPOCHREALTIME` is written with the decimal separator of the locale, `1700000000,123456` under a German one, so take the separator out rather than splitting on a dot. A timestamp that leaves the script, in a log line, a file name or a report, is read on machines in other time zones: UTC with a `Z` says which moment it was, and ISO 8601 sorts as text in time order.
+
+**Recommended**
+
+```sh
+# A duration: SECONDS counts on its own, nothing is forked
+local started="${SECONDS}"
+backup::run
+dybatpho::info "Backup took $((SECONDS - started))s"
+
+# The epoch, and a UTC timestamp for a log line or a file name
+local now stamp
+printf -v now '%(%s)T' -1
+TZ=UTC printf -v stamp '%(%Y-%m-%dT%H:%M:%SZ)T' -1
+
+# Microseconds (Bash 5.0): drop the separator, whichever one the locale uses
+local start_us="${EPOCHREALTIME//[!0-9]/}"
+cache::warm
+dybatpho::debug "Warm-up took $(((${EPOCHREALTIME//[!0-9]/} - start_us) / 1000))ms"
+```
+
+**Discouraged**
+
+```sh
+# Two processes to learn a number Bash already has
+local started
+started="$(date +%s)"
+backup::run
+dybatpho::info "Backup took $(($(date +%s) - started))s"
+
+# Local time with no zone: which hour was it?
+stamp="$(date '+%Y-%m-%d %H:%M')"
+```
+
+`dybatpho::timer_start <name>` and `dybatpho::timer_end <name> [level]` log the time between them in milliseconds, with the name and the duration as fields of their own in a structured log, and leave the number in `DYBATPHO_TIMER_LAST_MS`. `dybatpho::date_seconds_to_hms` prints a span as `H:MM:SS` without wrapping at a day. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::timer_start migration
+./migrate.sh
+dybatpho::timer_end migration
+
+local started="${SECONDS}"
+sync::all
+dybatpho::info "Sync took $(dybatpho::date_seconds_to_hms "$((SECONDS - started))")"
 ```
 
 ### Portability
@@ -3467,6 +4605,7 @@ kill "${pid}"
 
 **Recommended**
 
+<!-- lint: allow BSG155 -->
 ```sh
 local -a pids=()
 local host pid failed=0
@@ -3501,6 +4640,169 @@ dybatpho::trap dybatpho::kill_children EXIT INT TERM
 dybatpho::background_run api ./serve.sh --port 8080
 dybatpho::background_run worker ./worker.sh
 dybatpho::wait_all || dybatpho::die "A background job failed"
+```
+
+### Bounded Parallelism
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Limit how many jobs run at once: a loop that starts a job with `&` waits for one before starting the next <kbd>BSG155</kbd>
+> - ✔️ SHOULD: Count the running jobs, and `wait -n` (Bash 4.3) for one to end when the count reaches the limit, counting its failure: `wait -n || failed=$((failed + 1))`
+> - ✔️ SHOULD: Hand a list of files to `xargs -0 -P "${jobs}"` when each job is one program, not a shell function
+> - ✔️ SHOULD: Pick the limit from what the jobs use up: the number of CPUs for work on the CPU, a small fixed number for requests to one server or writes to one disk
+> - ✔️ SHOULD: Run one function over a list with `dybatpho::parallel_map <jobs> <function> <items...>`, and different commands with `dybatpho::parallel_run --argv <jobs> <arrays...>`; `0` jobs means one per CPU, as `dybatpho::cpu_count` reports. (dybatpho)
+
+One job per item, all at once, works on the five hosts of a test and fails on the five hundred of production: five hundred ssh sessions, the open files of the user used up, a server that rate-limits the script, a laptop that swaps. A limit keeps the load the same whatever the length of the list, and the work ends no later, since the machine or the server could not do more at once anyway.
+
+Every job still has a status to collect. A bare `wait` with no argument returns 0 whatever the jobs returned, and a `wait` on each pid under `set -e` stops at the first failure, as [Child Processes](#child-processes) explains and <kbd>BSG112</kbd> reports: count the failures, then fail once at the end.
+
+**Recommended**
+
+```sh
+local max_jobs running=0 failed=0 file
+max_jobs="$(dybatpho::cpu_count || printf '4')"
+for file in "${files[@]}"; do
+  if ((running >= max_jobs)); then
+    wait -n || failed=$((failed + 1))
+    running=$((running - 1))
+  fi
+  image::convert "${file}" &
+  running=$((running + 1))
+done
+while ((running > 0)); do
+  wait -n || failed=$((failed + 1))
+  running=$((running - 1))
+done
+((failed == 0)) || dybatpho::die "${failed} of ${#files[@]} conversions failed"
+
+# One program per file, four at a time
+printf '%s\0' "${files[@]}" | xargs -0 -n 1 -P 4 gzip --
+```
+
+**Discouraged**
+
+```sh
+# Five hundred hosts: five hundred ssh sessions at once, and every failure lost
+for host in "${hosts[@]}"; do
+  check::host "${host}" &
+done
+wait
+```
+
+`dybatpho::parallel_map` runs a command or a shell function once per item, a given number at a time, replays the output of each job in the order of the items, and fails when any job failed; `dybatpho::parallel_status <index>` then tells each status. `dybatpho::parallel_run --argv` does the same for jobs that differ, each one an array holding a command and its arguments. A job count of `0` uses `DYBATPHO_PARALLEL_JOBS`, or else one job per CPU. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::parallel_map 8 check::host "${hosts[@]}" || dybatpho::die "Some hosts failed the check"
+
+local -a build=(npm run build) vet=(go vet ./...)
+dybatpho::parallel_run --argv 0 build vet || dybatpho::die "The build failed"
+```
+
+### Functions in Child Processes
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Run the script itself with a subcommand, as in `xargs -n1 "$0" _worker`, instead of handing a function to a child with `export -f` <kbd>BSG141</kbd>
+> - ✔️ SHOULD: Run a function over many items at once with `dybatpho::parallel_map`, or different commands with `dybatpho::parallel_run --argv`: every job is a subshell of the script and sees all of its functions and variables. (dybatpho)
+> - ✔️ SHOULD: When a child Bash really needs the library, call `dybatpho::export_functions`, which points `BASH_ENV` at the library so every non-interactive child Bash sources it first. (dybatpho)
+> - ❌ AVOID: Do not expect `dybatpho::export_functions` to carry what the script changed at run time, such as registered secrets or variables it did not export, or to reach Bash started as `sh`, which ignores `BASH_ENV`. (dybatpho)
+
+`export -f` and `declare -fx` put the function into the environment as a `BASH_FUNC_name%%` variable. It reaches every process the script starts from then on, not only the one meant to run it, and arrives alone: without the variables the script did not export, without `set -euo pipefail`, and without the other functions it calls. A child that is not Bash, such as `sh -c`, does not see it at all.
+
+The script already has everything the worker needs. Started again with a subcommand, it sources its own libraries, sets its own options and then runs the one function.
+
+**Recommended**
+
+```sh
+function _worker {
+  local file="$1"
+  gzip -9 -- "${file}"
+}
+
+function main {
+  case "${1-}" in
+    _worker)
+      shift
+      _worker "$@"
+      ;;
+    *)
+      printf '%s\0' "${files[@]}" | xargs -0 -P4 -n1 -- "$0" _worker
+      ;;
+  esac
+}
+
+main "$@"
+```
+
+**Discouraged**
+
+```sh
+function _worker {
+  local file="$1"
+  gzip -9 -- "${file}"
+}
+
+# Reaches every child, without the variables, options and helpers it relies on
+export -f _worker
+printf '%s\0' "${files[@]}" | xargs -0 -P4 -n1 bash -c '_worker "$1"' _
+```
+
+`dybatpho::parallel_map` runs a command once per item, a given number at a time, in subshells of the calling shell, so a function needs no export; it replays the output of each job in order and fails when any job failed. `dybatpho::export_functions` is for a child Bash the script cannot avoid, one that `find -exec` or another program starts: the child sources the whole library afresh, with the same modules, and pays a few tens of milliseconds for it. (dybatpho)
+
+**Recommended**
+
+```sh
+dybatpho::parallel_map 4 _worker "${files[@]}"
+
+dybatpho::export_functions
+find "${dir}" -name '*.tar.gz' -exec bash -c 'for file; do dybatpho::file_hash "${file}"; done' _ {} +
+```
+
+### Changing Directory
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Change directory inside a subshell, `( cd -P -- "${dir}" && make )`, so the rest of the script stays where it was
+> - ✔️ SHOULD: Pass the directory to a tool that takes one, such as `git -C`, `make -C` or `tar -C`, instead of moving
+> - ✔️ SHOULD: Write `cd -P -- "${dir}"`, and stop when it fails: the commands after a failed `cd` run in the wrong place
+> - ⚠️ CONSIDER: Change directory in a subshell, or pass the directory to the tool, instead of `pushd`, `popd` or `cd -`. (custom) <kbd>BSG147</kbd>
+
+The current directory is state the whole script shares. `pushd` and `popd` print the directory stack on STDOUT, which ends up in whatever captures the output, and under `set -e` a command that fails between `pushd` and `popd` leaves the script, and its `EXIT` handler, in the wrong place. `cd -` prints the directory too, and goes back to wherever `OLDPWD` points, which any other `cd` in between has moved. A subshell needs no way back: the move ends with it.
+
+`-P` resolves symbolic links, so `pwd` and `..` mean what the file system says, and `--` keeps a directory named `-x` from being read as an option. A library function that has to move uses a subshell too, see [Library Side Effects](#library-side-effects).
+
+**Recommended**
+
+```sh
+(cd -P -- "${build_dir}" && make install)
+
+git -C "${repo_dir}" pull --ff-only
+tar -C "${dest_dir}" -xzf "${archive}"
+
+cd -P -- "${work_dir}" || dybatpho::die "Cannot enter ${work_dir}"
+```
+
+**Discouraged**
+
+```sh
+pushd "${build_dir}"
+make install
+popd
+
+cd "${repo_dir}"
+git pull --ff-only
+cd -
 ```
 
 ### End of Options
@@ -3634,6 +4936,59 @@ if ((status == 124)); then
 fi
 ```
 
+### Waiting for a Condition
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ⚠️ CONSIDER: Give every wait a deadline: a loop that sleeps until a condition holds must also stop after a time or a number of tries <kbd>BSG154</kbd>
+> - ✔️ SHOULD: Measure the deadline against `SECONDS`, `deadline=$((SECONDS + 60))`, rather than by adding up the sleeps, which leaves out the time the checks take
+> - ✔️ SHOULD: Check less often the longer the wait lasts, up to a cap: `((delay >= 8)) || delay=$((delay * 2))`
+> - ✔️ SHOULD: Prefer a command that waits on its own, with its own limit, to a polling loop: `kubectl wait --timeout=60s`, `wait "${pid}"`
+> - ✔️ SHOULD: Wait for a port with `dybatpho::wait_port <host> <port> [seconds] [interval]`, repeat a check with `dybatpho::retry_until <retries> <delay> [description] -- <command>`, and bound a command that may block with `dybatpho::run_with_timeout`. (dybatpho)
+> - ❌ AVOID: Do not keep a service running, or repeat a job every few minutes, with a `while true` loop in a script: leave that to systemd, cron or the restart policy of the platform
+
+A wait without a deadline turns every failure into a hang. The service that never starts, the file that is never written, the lock that is never released: the script sleeps through them, a CI job runs until the runner kills it, and nothing says what it was waiting for. A deadline turns the same failure into an error that names the condition, at a time the caller chose.
+
+A check that runs every second for a minute is sixty checks, most of them while nothing has changed yet. Doubling the pause up to a cap answers quickly when the condition comes soon and stops hammering a database or an API that is still starting when it comes late.
+
+**Recommended**
+
+```sh
+# The socket of a service just started: 60 seconds at most, checked less often as time goes on
+local deadline=$((SECONDS + 60)) delay=1
+until [[ -S "${socket}" ]]; do
+  ((SECONDS < deadline)) || dybatpho::die "${socket} did not appear within 60 seconds"
+  sleep "${delay}"
+  ((delay >= 8)) || delay=$((delay * 2))
+done
+```
+
+**Discouraged**
+
+```sh
+# Waits forever when the service never starts
+until [[ -S "${socket}" ]]; do
+  sleep 1
+done
+```
+
+A `while true; do sync::all; sleep 300; done` is a scheduler written by hand. It stops with the terminal or the SSH session that started it, nothing restarts it after a crash or a reboot, two copies of it run side by side when it is started twice, and its output goes nowhere. A systemd timer, a cron entry or the restart policy of a container already does all of that; the script does one run and exits.
+
+`dybatpho::wait_port` opens a TCP connection until one succeeds or the seconds run out, and gives each attempt no more time than the wait has left. `dybatpho::retry_until` runs a command until it succeeds, at most the given number of retries, with a fixed delay between them, and returns the last status of the command. `dybatpho::run_with_timeout` ends a command that is still running when its limit elapses and returns 124. (dybatpho)
+
+**Recommended**
+
+```sh
+docker compose up -d
+dybatpho::wait_port localhost 5432 60 || dybatpho::die "The database never came up"
+dybatpho::retry_until 10 3 "wait for the socket" -- test -S "${socket}" \
+  || dybatpho::die "${socket} did not appear"
+dybatpho::run_with_timeout 300 ./migrate.sh || dybatpho::die "The migration failed or ran over 5 minutes"
+```
+
 ### Remote Commands
 
 > [!TIP]
@@ -3675,6 +5030,57 @@ function report::disk_usage {
 timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" du -sh -- "${dir}"
 # A copy of the function that the next change to it will miss
 timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" "du -sh -- ${dir}"
+```
+
+### Host Key Verification
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Pin the key of every host in a `known_hosts` file shipped with the script, and pass `-o UserKnownHostsFile=<file> -o StrictHostKeyChecking=yes`
+> - ✔️ SHOULD: Pin a new host once: fetch its key with `ssh-keyscan`, and compare the fingerprint `ssh-keygen -lf` prints with one obtained over a trusted channel, such as the provisioning output or the cloud console
+> - ⚠️ CONSIDER: `StrictHostKeyChecking=accept-new` only for the first contact with a host on a network you trust; it still refuses a key that changed later
+> - ❌ AVOID: Do not turn off host key checking with `StrictHostKeyChecking=no` or `UserKnownHostsFile=/dev/null`, whether on `ssh`, `scp`, `rsync -e`, in `GIT_SSH_COMMAND` or in an ssh config <kbd>BSG158</kbd>
+
+The host key is how ssh knows it reached the host and not a machine in between. With checking turned off, whoever answers on that address — a spoofed DNS entry, a rogue access point, a compromised router — gets the session: it reads every password and key forwarded through it, sees the commands, and answers them. `UserKnownHostsFile=/dev/null` does the same quietly, since a key never recorded can never be found to have changed.
+
+A `known_hosts` file kept next to the script, and reviewed like the code, turns the trust into something visible: `StrictHostKeyChecking=yes` then refuses a host that is missing from the file instead of asking, which a script cannot answer anyway. `accept-new` records the first key it sees and refuses a different one afterwards, so it protects every connection but the first; keep it for a host just created on a network you control.
+
+**Recommended**
+
+```sh
+# The keys ship with the script, reviewed like the code
+local -a ssh_opts=(
+  -o UserKnownHostsFile="${SCRIPT_DIR}/known_hosts"
+  -o StrictHostKeyChecking=yes
+  -o ConnectTimeout=10
+  -o BatchMode=yes
+)
+timeout 300 ssh "${ssh_opts[@]}" -- "${host}" 'systemctl is-active app'
+GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=${SCRIPT_DIR@Q}/known_hosts -o StrictHostKeyChecking=yes" \
+  git fetch --quiet origin
+```
+
+```sh
+# Once, to pin a new host: the fingerprint comes from its owner, not from the network
+local scanned fingerprint
+dybatpho::create_temp scanned ".keys"
+timeout 30 ssh-keyscan -t ed25519 -- "${host}" > "${scanned}"
+fingerprint="$(ssh-keygen -lf "${scanned}")"
+[[ "${fingerprint}" == *" ${expected_fingerprint} "* ]] \
+  || dybatpho::die "The key of ${host} does not match ${expected_fingerprint}"
+cat -- "${scanned}" >> "${SCRIPT_DIR}/known_hosts"
+```
+
+**Discouraged**
+
+```sh
+# Trusts whatever machine answers on that address, now and every time
+timeout 300 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" 'systemctl is-active app'
+GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no' git fetch --quiet origin
 ```
 
 ### Deprecated Commands
@@ -4178,6 +5584,257 @@ unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR FORCE_COLOR
   git -C "${BATS_TEST_TMPDIR}/repo" tag v1.0.0
   run bash -c ". ${LIB}; release::latest ${BATS_TEST_TMPDIR}/repo"
 }
+```
+
+### Mocking Commands
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Fake an external command with an executable stub in a directory of the test's own, put first on `PATH`, so that every process the code starts finds the fake
+> - ✔️ SHOULD: Fake a command with `dybatpho::mock_command` or `dybatpho::mock_command_script`, the environment with `dybatpho::mock_env`, the clock with `dybatpho::mock_time` and an HTTP answer with `dybatpho::mock_http`, and undo them all with `dybatpho::unmock_all` in `teardown`. (dybatpho)
+> - ✔️ SHOULD: Assert how the fake was called, with `dybatpho::assert_mock_called` or `dybatpho::mock_calls`, not only what the code printed. (dybatpho)
+> - ⚠️ CONSIDER: Fake an external command with a stub on `PATH`, not a shell function of the same name <kbd>BSG132</kbd>
+> - ✔️ SHOULD: Write a fake as a function only when it has to keep state in the test's own shell, such as counting `sleep` calls or moving a fake clock, and say why on the line before it: `# dyshellint disable=BSG132 # <why>`
+
+A function named `curl` exists only in the shell that defined it. The code under test reaches the real program as soon as it runs a child script, calls `command curl`, or names `/usr/bin/curl`, and the test then talks to the network while it looks as if it did not. A stub on `PATH` is a real executable: every process finds it, and it can write down each call so the test can check the arguments as well as the output.
+
+dybatpho writes such stubs into a directory of its own at the front of `PATH`, records every call, and clears the hash Bash keeps of where it last found a command, so a command that already ran in the shell does not go past the fake. `dybatpho::mock_time` puts a `date` there that answers from a frozen moment, and `dybatpho::mock_http` replaces `curl` with one that serves a canned answer to `dybatpho::curl_do` and every helper built on it. (dybatpho)
+
+**Recommended**
+
+```sh
+function teardown {
+  dybatpho::unmock_all
+}
+
+@test "deploy::status lists the pods of the namespace" {
+  dybatpho::mock_command_script kubectl 'printf "pod/api Running\n"'
+  dybatpho::mock_env KUBE_NAMESPACE=prod
+  run deploy::status
+  assert_success
+  assert_output "pod/api Running"
+  dybatpho::assert_mock_called kubectl get pods --namespace prod
+}
+
+@test "fetch_status reads the answer of the API" {
+  local bin="${BATS_TEST_TMPDIR}/bin"
+  mkdir -p -- "${bin}"
+  cat > "${bin}/curl" << EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "${bin}/curl.calls"
+printf '{"ok":true}\n'
+EOF
+  chmod +x -- "${bin}/curl"
+  PATH="${bin}:${PATH}"
+  run fetch_status
+  assert_output "ok"
+  run cat -- "${bin}/curl.calls"
+  assert_output --partial "https://api.example.test/status"
+}
+```
+
+**Discouraged**
+
+```sh
+@test "fetch_status reads the answer of the API" {
+  # Only this shell sees it: `command curl`, a child script and /usr/bin/curl reach the real one
+  function curl {
+    printf '{"ok":true}\n'
+  }
+  run fetch_status
+  assert_output "ok"
+}
+```
+
+Some fakes cannot be a separate process. A fake `sleep` that records each delay, or one that moves a fake clock forward, has to change a variable of the test's own shell, which a stub on `PATH` never sees. Keep those as functions, call the code under test directly rather than through `run`, which would start a subshell, and give the reason in the directive, so the next reader knows the function is not an oversight.
+
+**Recommended**
+
+```sh
+@test "retry::run waits longer before each attempt" {
+  local -a waits=()
+  # dyshellint disable=BSG132 # records each delay in this shell, which a stub on PATH cannot reach
+  function sleep {
+    waits+=("$1")
+  }
+  dybatpho::mock_command curl 7
+  retry::run 3 curl --fail "${url}" || true
+  assert_equal "${waits[*]}" "1 2"
+}
+```
+
+### Bash Version Matrix
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Run the whole suite in CI on the oldest Bash the project supports and on the newest, each in the official `bash:<version>` image
+> - ✔️ SHOULD: Check, in the job, that the `bash` it runs is the version the job is named after, before running the suite
+> - ✔️ SHOULD: Keep the project's own `BASH_VERSINFO` guard when it uses dybatpho: `dybatpho::doctor_bash_supported`, like the check dybatpho makes when it is sourced, knows only dybatpho's own floor, 4.3. (dybatpho)
+> - ⚠️ CONSIDER: Run macOS `/bin/bash` (3.2) only to see the guard stop with its message, not to run the suite
+> - ❌ AVOID: Do not test only on the Bash that the runner image ships, which is close to the newest
+
+A suite that runs on one Bash proves the floor in the README only for that Bash. Namerefs, `mapfile -d`, `wait -n`, `${var@Q}` and what `set -u` says about an empty array all changed between 4.3 and 5.1, and a runner image ships 5.2 or newer, so a script that breaks on the floor passes every check until a user runs it. The `bash:<version>` images build each release from source, with the interpreter in `/usr/local/bin`; a package installed later can still bring another `bash` along, so the job asks the one it runs for its version.
+
+Bash 3.2 cannot run a script written for this guide, and that is the point of the guard in [Bash Version](#bash-version). One job on macOS runs the entrypoint with `/bin/bash` and checks that it stops with the message, rather than with `invalid option` from deep inside. dybatpho cannot do this for the project: it checks for the version it needs itself, and a project that needs 4.4 is not served by a check that passes on 4.3. (dybatpho)
+
+**Recommended**
+
+```yaml
+jobs:
+  test:
+    name: "Bash ${{ matrix.bash }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bash: ["4.4", "5.3"]
+    container:
+      image: bash:${{ matrix.bash }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Check the Bash under test"
+        env:
+          WANT: ${{ matrix.bash }}
+        run: |
+          have="$(bash -c 'printf %s.%s "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}"')"
+          [ "${have}" = "${WANT}" ] || { echo "bash is ${have}, expected ${WANT}"; exit 1; }
+      - run: bash ./scripts/test.sh --all
+
+  old-bash:
+    name: "Bash 3.2 stops with a message"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if /bin/bash ./bin/deploy.sh --help 2> err.txt; then exit 1; fi
+          grep -q 'needs Bash 4.4 or newer' err.txt
+```
+
+```sh
+#!/usr/bin/env bash
+# dybatpho checks for 4.3, its own floor; this project needs 4.4
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'deploy.sh needs Bash 4.4 or newer, found %s\n' "${BASH_VERSION}" >&2
+  exit 1
+fi
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh" || exit 1
+```
+
+**Discouraged**
+
+```sh
+#!/usr/bin/env bash
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh" --modules doctor || exit 1
+# Passes on Bash 4.3, and `mapfile -d` fails further down
+dybatpho::doctor_bash_supported || exit 1
+```
+
+### Coverage
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Measure the coverage of a library with [kcov](https://github.com/SimonKagstrom/kcov) around the bats suite, limited to the library's own files with `--include-path`
+> - ✔️ SHOULD: Read the report for the branches no test reaches, such as an error path, a fallback or a `case` arm, and write the test that reaches them
+> - ✔️ SHOULD: Mark a line the tracer cannot see with a comment that gives the reason, `# kcov(skip) <why>`, and leave it out with `--exclude-line="# kcov(skip)"`
+> - ⚠️ CONSIDER: Run kcov once per chunk of test files and join the parts with `kcov --merge`, when one run over a large suite grows too big for the machine
+> - ❌ AVOID: Do not turn the percentage into a goal or a gate, and do not write a test only to reach a line
+
+Coverage answers one useful question: which lines did no test run? The answer is a list of places to look, and what is found there is usually an error path that nobody tried, or a branch that cannot happen and should go. The figure at the top of the report answers nothing on its own. A gate on it rewards a test that runs a line without checking what it did, and such a test keeps the figure up while the behaviour it pretends to cover breaks.
+
+kcov follows Bash through its trace output, so it sees what runs in a child started from a script file but not in `bash -c` (see [Test Isolation](#test-isolation)), and it misses a few lines it cannot attribute, such as the closing line of a redirected group. Exclude those by name, with the reason next to them, rather than lowering a threshold. kcov also keeps its trace state until it exits, so a large suite in one run can exhaust the memory of a CI runner; one run per chunk of files, merged afterwards, keeps the peak to the largest chunk.
+
+**Recommended**
+
+```sh
+kcov --clean \
+  --include-path="${PROJECT_DIR}/src" \
+  --exclude-line="# kcov(skip)" \
+  "${PROJECT_DIR}/coverage" \
+  bats "${PROJECT_DIR}/test"
+
+kcov --include-path="${PROJECT_DIR}/src" coverage/part0 bats test/cli.bats test/config.bats
+kcov --include-path="${PROJECT_DIR}/src" coverage/part1 bats test/network.bats
+kcov --merge --include-path="${PROJECT_DIR}/src" coverage/merged coverage/part0 coverage/part1
+```
+
+```sh
+mkdir -p -- "${dir}" \
+  || dybatpho::die "Cannot create ${dir}" # kcov(skip) mkdir only fails on a read-only or full disk
+```
+
+**Discouraged**
+
+```sh
+@test "config::load reads a missing file" {
+  # Runs every line of the error path, and checks none of it
+  run config::load "${BATS_TEST_TMPDIR}/missing.yaml"
+}
+```
+
+### Pinned Tool Versions
+
+> [!NOTE]
+> Custom rule
+
+> [!TIP]
+>
+> - ✔️ SHOULD: Pin the version of every tool that judges the code, `shellcheck`, `shfmt`, `bats` and `dyshellint`, in one file that both a laptop and CI read, such as `mise.toml`
+> - ✔️ SHOULD: Pin the `rev` of every hook repository in `.pre-commit-config.yaml`, which prek reads, to a tag
+> - ✔️ SHOULD: Upgrade a tool in a commit of its own, together with the fixes its new findings ask for
+> - ❌ AVOID: Do not install a tool at its latest version in CI, `go install ...@latest` or a download of the latest release: the check then changes without a commit
+> - ❌ AVOID: Do not rely on the version that a runner image or a package manager happens to ship
+
+A linter release adds a rule, and a formatter release changes how a line is wrapped. When CI takes whatever is newest, a pull request that touches one line fails on a hundred lines it never changed, and a laptop with last month's version passes what CI refuses. Pinned in a file under version control, the toolchain changes only in a commit that says so, and that commit carries the fixes for what the new version finds.
+
+One file read by both sides keeps them equal. `mise install` reads `mise.toml` on a laptop, and the same file sets up the CI job; prek reads the `rev` of each hook from `.pre-commit-config.yaml`. A library vendored as a git submodule, such as bats under `test/lib`, is pinned by the submodule commit already.
+
+**Recommended**
+
+```toml
+# mise.toml, read by `mise install` on a laptop and by the CI job
+[tools]
+shellcheck = "0.11.0"
+shfmt = "3.14.1"
+bats = "1.12.0"
+"go:gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint" = "1.2.1"
+```
+
+```yaml
+# .github/workflows/ci.yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: jdx/mise-action@v2
+  - run: bash ./scripts/test.sh --all
+
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+```
+
+**Discouraged**
+
+```yaml
+steps:
+  # Whatever was released this morning decides whether the build passes
+  - run: go install gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint@latest
+  # Whatever the image ships, which differs from every laptop
+  - run: sudo apt-get install -y shellcheck shfmt bats
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: main
 ```
 
 ## References

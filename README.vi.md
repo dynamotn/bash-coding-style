@@ -24,13 +24,25 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Môi trường](#m%C3%B4i-tr%C6%B0%E1%BB%9Dng)
   - [Cách gọi script](#c%C3%A1ch-g%E1%BB%8Di-script)
   - [Kiểm soát tham số của script](#ki%E1%BB%83m-so%C3%A1t-tham-s%E1%BB%91-c%E1%BB%A7a-script)
+  - [Tự hoàn thành trong shell](#t%E1%BB%B1-ho%C3%A0n-th%C3%A0nh-trong-shell)
+  - [Phiên bản và phân phối](#phi%C3%AAn-b%E1%BA%A3n-v%C3%A0-ph%C3%A2n-ph%E1%BB%91i)
   - [Chế độ gỡ lỗi và chạy thử](#ch%E1%BA%BF-%C4%91%E1%BB%99-g%E1%BB%A1-l%E1%BB%97i-v%C3%A0-ch%E1%BA%A1y-th%E1%BB%AD)
+  - [Output theo vết](#output-theo-v%E1%BA%BFt)
+  - [Lệnh tự kiểm tra](#l%E1%BB%87nh-t%E1%BB%B1-ki%E1%BB%83m-tra)
   - [STDOUT và STDERR](#stdout-v%C3%A0-stderr)
+  - [Hiển thị tiến độ](#hi%E1%BB%83n-th%E1%BB%8B-ti%E1%BA%BFn-%C4%91%E1%BB%99)
+  - [Ghi log hệ thống](#ghi-log-h%E1%BB%87-th%E1%BB%91ng)
   - [Hàm sử dụng chung](#h%C3%A0m-s%E1%BB%AD-d%E1%BB%A5ng-chung)
   - [Môi trường kế thừa](#m%C3%B4i-tr%C6%B0%E1%BB%9Dng-k%E1%BA%BF-th%E1%BB%ABa)
   - [Tệp cấu hình](#t%E1%BB%87p-c%E1%BA%A5u-h%C3%ACnh)
   - [Tác dụng phụ của thư viện](#t%C3%A1c-d%E1%BB%A5ng-ph%E1%BB%A5-c%E1%BB%A7a-th%C6%B0-vi%E1%BB%87n)
   - [Nhập liệu tương tác](#nh%E1%BA%ADp-li%E1%BB%87u-t%C6%B0%C6%A1ng-t%C3%A1c)
+  - [Menu và lựa chọn](#menu-v%C3%A0-l%E1%BB%B1a-ch%E1%BB%8Dn)
+  - [Chạy không người trông](#ch%E1%BA%A1y-kh%C3%B4ng-ng%C6%B0%E1%BB%9Di-tr%C3%B4ng)
+  - [Entrypoint của container](#entrypoint-c%E1%BB%A7a-container)
+  - [Người dùng hiện tại](#ng%C6%B0%E1%BB%9Di-d%C3%B9ng-hi%E1%BB%87n-t%E1%BA%A1i)
+  - [Giới hạn tài nguyên](#gi%E1%BB%9Bi-h%E1%BA%A1n-t%C3%A0i-nguy%C3%AAn)
+  - [Tiến trình chạy lâu dài](#ti%E1%BA%BFn-tr%C3%ACnh-ch%E1%BA%A1y-l%C3%A2u-d%C3%A0i)
 - [Quy ước đặt tên](#quy-%C6%B0%E1%BB%9Bc-%C4%91%E1%BA%B7t-t%C3%AAn)
   - [Tên hàm](#t%C3%AAn-h%C3%A0m)
   - [Tên biến](#t%C3%AAn-bi%E1%BA%BFn)
@@ -40,11 +52,15 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Chú thích hàm](#ch%C3%BA-th%C3%ADch-h%C3%A0m)
   - [Chú thích triển khai](#ch%C3%BA-th%C3%ADch-tri%E1%BB%83n-khai)
   - [TODO Comments](#todo-comments)
+  - [Code bị comment lại](#code-b%E1%BB%8B-comment-l%E1%BA%A1i)
 - [Định dạng](#%C4%91%E1%BB%8Bnh-d%E1%BA%A1ng)
   - [Dấu tab và dấu cách](#d%E1%BA%A5u-tab-v%C3%A0-d%E1%BA%A5u-c%C3%A1ch)
+  - [Kết thúc dòng và mã hóa ký tự](#k%E1%BA%BFt-th%C3%BAc-d%C3%B2ng-v%C3%A0-m%C3%A3-h%C3%B3a-k%C3%BD-t%E1%BB%B1)
   - [Độ dài dòng code và chuỗi dài](#%C4%91%E1%BB%99-d%C3%A0i-d%C3%B2ng-code-v%C3%A0-chu%E1%BB%97i-d%C3%A0i)
   - [Pipelines (Đường ống)](#pipelines-%C4%91%C6%B0%E1%BB%9Dng-%E1%BB%91ng)
   - [Luồng điều khiển](#lu%E1%BB%93ng-%C4%91i%E1%BB%81u-khi%E1%BB%83n)
+  - [Độ sâu lồng nhau](#%C4%91%E1%BB%99-s%C3%A2u-l%E1%BB%93ng-nhau)
+  - [Kích thước hàm](#k%C3%ADch-th%C6%B0%E1%BB%9Bc-h%C3%A0m)
   - [Câu lệnh case](#c%C3%A2u-l%E1%BB%87nh-case)
   - [Khai triển biến](#khai-tri%E1%BB%83n-bi%E1%BA%BFn)
   - [Dấu nháy](#d%E1%BA%A5u-nh%C3%A1y)
@@ -55,6 +71,7 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Kiểm tra đầu vào trong thay thế lệnh](#ki%E1%BB%83m-tra-%C4%91%E1%BA%A7u-v%C3%A0o-trong-thay-th%E1%BA%BF-l%E1%BB%87nh)
   - [Biểu thức kiểm tra](#bi%E1%BB%83u-th%E1%BB%A9c-ki%E1%BB%83m-tra)
   - [Kiểm tra chuỗi](#ki%E1%BB%83m-tra-chu%E1%BB%97i)
+  - [Chuyển đổi chữ hoa chữ thường](#chuy%E1%BB%83n-%C4%91%E1%BB%95i-ch%E1%BB%AF-hoa-ch%E1%BB%AF-th%C6%B0%E1%BB%9Dng)
   - [Biểu thức chính quy](#bi%E1%BB%83u-th%E1%BB%A9c-ch%C3%ADnh-quy)
   - [Khai triển ký tự đại diện cho tên tệp](#khai-tri%E1%BB%83n-k%C3%BD-t%E1%BB%B1-%C4%91%E1%BA%A1i-di%E1%BB%87n-cho-t%C3%AAn-t%E1%BB%87p)
   - [Locale và thứ tự sắp xếp](#locale-v%C3%A0-th%E1%BB%A9-t%E1%BB%B1-s%E1%BA%AFp-x%E1%BA%BFp)
@@ -67,9 +84,12 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Mảng kết hợp](#m%E1%BA%A3ng-k%E1%BA%BFt-h%E1%BB%A3p)
   - [Đường ống vào while](#%C4%91%C6%B0%E1%BB%9Dng-%E1%BB%91ng-v%C3%A0o-while)
   - [Thay thế tiến trình](#thay-th%E1%BA%BF-ti%E1%BA%BFn-tr%C3%ACnh)
+  - [File descriptor](#file-descriptor)
   - [Vòng lặp for](#v%C3%B2ng-l%E1%BA%B7p-for)
   - [Biến cục bộ](#bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99)
+  - [Trả về giá trị](#tr%E1%BA%A3-v%E1%BB%81-gi%C3%A1-tr%E1%BB%8B)
   - [Số học](#s%E1%BB%91-h%E1%BB%8Dc)
+  - [Ngày giờ và khoảng thời gian](#ng%C3%A0y-gi%E1%BB%9D-v%C3%A0-kho%E1%BA%A3ng-th%E1%BB%9Di-gian)
   - [Tính di động](#t%C3%ADnh-di-%C4%91%E1%BB%99ng)
   - [So sánh phiên bản](#so-s%C3%A1nh-phi%C3%AAn-b%E1%BA%A3n)
 - [Gọi lệnh](#g%E1%BB%8Di-l%E1%BB%87nh)
@@ -80,9 +100,14 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
   - [Lệnh dựng sẵn và lệnh bên ngoài](#l%E1%BB%87nh-d%E1%BB%B1ng-s%E1%BA%B5n-v%C3%A0-l%E1%BB%87nh-b%C3%AAn-ngo%C3%A0i)
   - [Trình xử lý tín hiệu](#tr%C3%ACnh-x%E1%BB%AD-l%C3%BD-t%C3%ADn-hi%E1%BB%87u)
   - [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con)
+  - [Song song có giới hạn](#song-song-c%C3%B3-gi%E1%BB%9Bi-h%E1%BA%A1n)
+  - [Hàm trong tiến trình con](#h%C3%A0m-trong-ti%E1%BA%BFn-tr%C3%ACnh-con)
+  - [Đổi thư mục](#%C4%91%E1%BB%95i-th%C6%B0-m%E1%BB%A5c)
   - [Kết thúc tùy chọn](#k%E1%BA%BFt-th%C3%BAc-t%C3%B9y-ch%E1%BB%8Dn)
   - [Request mạng](#request-m%E1%BA%A1ng)
+  - [Chờ một điều kiện](#ch%E1%BB%9D-m%E1%BB%99t-%C4%91i%E1%BB%81u-ki%E1%BB%87n)
   - [Lệnh trên máy remote](#l%E1%BB%87nh-tr%C3%AAn-m%C3%A1y-remote)
+  - [Xác minh host key](#x%C3%A1c-minh-host-key)
   - [Lệnh đã lỗi thời](#l%E1%BB%87nh-%C4%91%C3%A3-l%E1%BB%97i-th%E1%BB%9Di)
 - [Ổn định hóa script](#%E1%BB%95n-%C4%91%E1%BB%8Bnh-h%C3%B3a-script)
   - [Viết script chạy lại được](#vi%E1%BA%BFt-script-ch%E1%BA%A1y-l%E1%BA%A1i-%C4%91%C6%B0%E1%BB%A3c)
@@ -94,6 +119,10 @@ Khi cảm thấy không chắc chắn thì hãy ưu tiên tính nhất quán tr�
 - [Kiểm thử](#ki%E1%BB%83m-th%E1%BB%AD)
   - [Assertion output nghiêm ngặt](#assertion-output-nghi%C3%AAm-ng%E1%BA%B7t)
   - [Cô lập test](#c%C3%B4-l%E1%BA%ADp-test)
+  - [Giả lập lệnh](#gi%E1%BA%A3-l%E1%BA%ADp-l%E1%BB%87nh)
+  - [Ma trận phiên bản Bash](#ma-tr%E1%BA%ADn-phi%C3%AAn-b%E1%BA%A3n-bash)
+  - [Coverage](#coverage)
+  - [Ghim phiên bản công cụ](#ghim-phi%C3%AAn-b%E1%BA%A3n-c%C3%B4ng-c%E1%BB%A5)
 - [Tài liệu tham khảo](#t%C3%A0i-li%E1%BB%87u-tham-kh%E1%BA%A3o)
 
 <!-- tocstop -->
@@ -438,6 +467,158 @@ while [[ $# -gt 0 ]]; do
 done
 ```
 
+### Tự hoàn thành trong shell
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: In phần tự hoàn thành bằng `dybatpho::generate_completion <spec> <shell> [name]`, cho `bash`, `zsh` hoặc `fish`, từ một lệnh con `completion` hoặc một tùy chọn hiển thị của spec gốc, để có đủ các lệnh con và tùy chọn của chúng. (dybatpho)
+> - ⚠️ CÂN NHẮC: Sinh phần tự hoàn thành từ hàm `_spec_*` phân tích tham số, không phải từ một hàm `complete` viết tay <kbd>BSG133</kbd>
+> - ✔️ NÊN: Sinh văn bản trợ giúp và trang man từ cùng spec đó, bằng `dybatpho::generate_help` và `dybatpho::generate_man`. (dybatpho)
+> - ✔️ NÊN: Khai báo một danh sách giá trị cố định bằng `choices:`, thứ mà bộ phân tích kiểm tra và phần tự hoàn thành gợi ý
+> - ⚠️ CÂN NHẮC: Giữ bộ nhớ đệm của phần tự hoàn thành: dybatpho đặt khóa của nó theo script, tệp khai báo spec và phiên bản thư viện, trong `DYBATPHO_CLI_CACHE_DIR`, nên một lần sửa không bao giờ trả về bản cũ; `DYBATPHO_CLI_CACHE=false` sinh lại mỗi lần. (dybatpho)
+
+Một hàm tự hoàn thành viết tay là danh sách tùy chọn thứ hai. Bộ phân tích bỏ `--region`, phần tự hoàn thành vẫn tiếp tục gợi ý nó, và không có gì thất bại cho tới khi người dùng nhấn tab và nhận được một tùy chọn mà script từ chối. Khi được sinh ra từ hàm `_spec_*` mà bộ phân tích được dựng từ đó, phần tự hoàn thành, văn bản trợ giúp và trang man thay đổi trong cùng commit với tùy chọn, vì không còn chỗ nào khác phải sửa.
+
+Script in ra phần tự hoàn thành và shell của người dùng nạp nó, nên cài đặt chỉ là một lần chuyển hướng cho mỗi shell. Một shell source phần tự hoàn thành mỗi lần khởi động sẽ phải duyệt cả cây spec mỗi lần như vậy; dybatpho lưu output vào bộ nhớ đệm, và khóa tự thay đổi khi script, tệp chứa spec hay thư viện thay đổi. (dybatpho)
+
+**Nên dùng**
+
+```sh
+#######################################
+# @description Spec of deploy.sh
+# @noargs
+#######################################
+function _spec_main {
+  dybatpho::opts::setup "Deploy a service" MAIN_ARGS action:"_main"
+  dybatpho::opts::param "Target environment" DEPLOY_ENV --env -e init:="staging" \
+    choices:staging,production
+  dybatpho::opts::cmd completion _spec_completion
+  dybatpho::opts::disp "Show the man page" --man action:"dybatpho::generate_man _spec_main deploy.sh"
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_main"
+}
+
+#######################################
+# @description Spec of deploy.sh completion
+# @noargs
+#######################################
+function _spec_completion {
+  dybatpho::opts::setup "Print the shell completion" COMPLETION_ARGS args:none action:"_completion"
+  dybatpho::opts::param "Shell to complete for" COMPLETION_SHELL --shell \
+    choices:bash,zsh,fish required:true
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_completion"
+}
+
+#######################################
+# @description Print the completion of the whole command, from the root spec
+# @noargs
+#######################################
+function _completion {
+  dybatpho::generate_completion _spec_main "${COMPLETION_SHELL}" deploy.sh
+}
+```
+
+```sh
+deploy.sh completion --shell bash > "${XDG_DATA_HOME:-${HOME}/.local/share}/bash-completion/completions/deploy.sh"
+deploy.sh completion --shell fish > "${XDG_CONFIG_HOME:-${HOME}/.config}/fish/completions/deploy.sh.fish"
+```
+
+**Không nên dùng**
+
+```sh
+function _spec_main {
+  dybatpho::opts::setup "Deploy a service" MAIN_ARGS action:"_main"
+  dybatpho::opts::param "Target environment" DEPLOY_ENV --env -e init:="staging"
+  dybatpho::opts::disp "Show help" --help -h action:"dybatpho::generate_help _spec_main"
+}
+
+# Danh sách tùy chọn thứ hai: --region, đã bị bỏ khỏi spec, vẫn được gợi ý
+function _complete_deploy {
+  mapfile -t COMPREPLY < <(compgen -W "--env --region --help" -- "${COMP_WORDS[COMP_CWORD]-}")
+}
+complete -F _complete_deploy deploy.sh
+```
+
+### Phiên bản và phân phối
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Cung cấp `--version` trong spec của một entrypoint, in ra phiên bản đọc từ tệp `VERSION` hoặc từ một hằng số. (dybatpho) <kbd>BSG159</kbd>
+> - ✔️ NÊN: Đánh dấu một tùy chọn là lỗi thời trong một bản phát hành trước khi xóa nó: giữ cho nó vẫn chạy và in cảnh báo, bằng `deprecated:"Use --new instead"` trên dòng `dybatpho::opts::*` của nó. (dybatpho)
+> - ⚠️ CÂN NHẮC: Kiểm tra một tệp tải về với checksum hoặc chữ ký trước khi chạy, cài đặt hay giải nén nó <kbd>BSG160</kbd>
+> - ✔️ NÊN: Để một bước tự cập nhật hay một trình cài đặt kiểm tra chữ ký của tệp checksum, rồi kiểm tra tệp mới với tệp đó bằng `dybatpho::verify_checksum`, trước khi thay thế bất cứ thứ gì. (dybatpho)
+> - ✔️ NÊN: Phát hành kèm mỗi bản một tệp `SHA256SUMS` và ký nó, bằng `dybatpho::release_checksums` và `dybatpho::release_sign`. (dybatpho)
+
+Một script được chép sang máy khác cần nói được nó là bản nào: một báo cáo lỗi bắt đầu bằng output của `--version` chỉ ra đúng đoạn code đã lỗi. Đọc phiên bản từ một tệp `VERSION` duy nhất, hoặc một hằng số duy nhất, giữ cho bản phát hành, phần trợ giúp và output đó khớp nhau. Xóa một tùy chọn làm hỏng mọi nơi gọi vẫn còn truyền nó, thường là trong một cron job không ai theo dõi; đánh dấu nó `deprecated:` trong một bản phát hành giúp các nơi đó vẫn chạy và, ở mỗi lần chạy, cho họ biết nên dùng gì thay thế.
+
+**Nên dùng**
+
+```sh
+#######################################
+# @description Print the version of this script
+# @noargs
+# @stdout The version, from the VERSION file next to the script
+#######################################
+function _print_version {
+  local version
+  read -r version < "${SCRIPT_DIR}/VERSION"
+  printf '%s\n' "${version}"
+}
+
+#######################################
+# @description Spec of deploy.sh
+# @noargs
+#######################################
+function _spec_main {
+  dybatpho::opts::setup "Deploy the app" MAIN_ARGS action:"_main"
+  dybatpho::opts::param "Target environment" TARGET --target init:="staging"
+  # Vẫn được nhận trong một bản phát hành, kèm cảnh báo, rồi bị xóa
+  dybatpho::opts::param "Target environment" TARGET --env hidden:true deprecated:"Use --target instead"
+  dybatpho::opts::disp "Show help" --help action:"dybatpho::generate_help _spec_main"
+  dybatpho::opts::disp "Show version" --version action:"_print_version"
+}
+```
+
+Một tệp tải về là bất cứ thứ gì mà server, một mirror hay một proxy ở giữa đã gửi, bị cắt ngắn khi kết nối rớt. Chạy, cài đặt hay giải nén nó trước khi kiểm tra là trao quyết định đó cho họ. Một checksum công bố cạnh tệp chỉ bắt được tệp tải về bị cắt ngắn hay hỏng, vì ai sửa được tệp thì cũng sửa được checksum bên cạnh; một chữ ký tạo bằng khóa mà script đã giữ sẵn thì bắt được cả tệp giả mạo. Hãy ký tệp checksum thay vì ký từng artifact: khi đó một chữ ký bao phủ mọi tệp mà nó liệt kê.
+
+**Nên dùng**
+
+```sh
+# Khóa phát hành đi kèm script; một tệp checksum giả mạo dừng lại ở đây
+local dir expected
+dybatpho::create_temp_dir dir "update"
+dybatpho::curl_download "${release_url}/SHA256SUMS" "${dir}/SHA256SUMS"
+dybatpho::curl_download "${release_url}/SHA256SUMS.asc" "${dir}/SHA256SUMS.asc"
+dybatpho::curl_download "${release_url}/deploy.sh" "${dir}/deploy.sh"
+gpgv --keyring "${SCRIPT_DIR}/release.gpg" "${dir}/SHA256SUMS.asc" "${dir}/SHA256SUMS"
+expected="$(awk '$2 == "deploy.sh" { print $1 }' "${dir}/SHA256SUMS")"
+dybatpho::verify_checksum "${dir}/deploy.sh" "sha256:${expected}"
+install -m 0755 -- "${dir}/deploy.sh" "${SCRIPT_DIR}/deploy.sh"
+```
+
+**Không nên dùng**
+
+```sh
+# Thay script bằng bất cứ thứ gì server gửi về
+curl --fail -sSL --max-time 60 "${release_url}/deploy.sh" -o "${SCRIPT_DIR}/deploy.sh"
+chmod +x "${SCRIPT_DIR}/deploy.sh"
+```
+
+`dybatpho::verify_checksum` nhận digest mong đợi dưới dạng `algorithm:hex`, với `sha256`, `sha1` hoặc `md5`, tính nó bằng công cụ nào mà hệ thống có, và trả về 7 khi không khớp; một digest rỗng hay sai dạng sẽ dừng script. Ở phía phát hành, `dybatpho::release_checksums` ghi một tệp `SHA256SUMS` theo đúng bố cục mà `sha256sum -c` đọc và in ra đường dẫn của nó, còn `dybatpho::release_sign` ký một tệp bằng `gpg`, hoặc bằng lệnh trong `DYBATPHO_RELEASE_SIGN_CMD`, như `minisign`, và in ra đường dẫn của chữ ký. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local sums
+sums="$(dybatpho::release_checksums ./dist)"
+dybatpho::release_sign "${sums}"
+```
+
 ### Chế độ gỡ lỗi và chạy thử
 
 > [!NOTE]
@@ -503,6 +684,143 @@ dybatpho::dry_run systemctl --user restart app.service
 # --dry-run vẫn tải về và ghi tệp
 curl --fail -sSL "${url}" -o "${target}"
 dybatpho::dry_run systemctl --user restart app.service
+```
+
+### Output theo vết
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Để `PS4` cho biết mỗi dòng theo vết đến từ đâu: tệp, `${LINENO}` và hàm <kbd>BSG156</kbd>
+> - ✔️ NÊN: Bật theo vết lệnh bằng `dybatpho::start_trace`, hàm đã đặt sẵn một `PS4` gồm tệp, dòng và hàm. (dybatpho)
+> - ✔️ NÊN: Gửi output theo vết vào một tệp riêng bằng `BASH_XTRACEFD` (Bash 4.1), chỉ chủ sở hữu đọc được, để nó không lẫn với các thông báo trên `STDERR` và không rơi vào `2>&1` của bên gọi
+> - ❌ TRÁNH: Không theo vết một dòng có khai triển một bí mật, trong một biến hay trong một tham số: output theo vết in ra giá trị đó, ở dạng rõ, vào một log tồn tại lâu hơn lần chạy
+> - ✔️ NÊN: Tắt theo vết trong một hàm xử lý bí mật, `local -` rồi `{ set +x; } 2> /dev/null`; `local -` (Bash 4.4) bật lại nó khi hàm trả về
+> - ✔️ NÊN: Đọc bí mật bằng `dybatpho::secret_from_file`, `dybatpho::secret_from_env` hoặc `dybatpho::secret_from_stdin`, các hàm tạm dừng theo vết trong lúc giữ giá trị, và đưa nó cho một lệnh bằng `dybatpho::secret_with_file`, hàm giữ theo vết ở trạng thái tắt trong lúc lệnh chạy. (dybatpho)
+
+`PS4` mặc định là `+ `: khi đó output theo vết của một script source ba thư viện là một chuỗi lệnh không cách nào biết mỗi lệnh đến từ tệp, dòng hay hàm nào. `PS4` được khai triển lại trước mỗi dòng theo vết, nên một giá trị trong nháy đơn có `${BASH_SOURCE[0]}`, `${LINENO}` và `${FUNCNAME[0]}` gắn cho mỗi dòng vị trí của nó.
+
+`BASH_XTRACEFD` chỉ ra descriptor mà output theo vết đi tới. Unset nó sẽ đưa output theo vết về lại `STDERR` và đóng descriptor đó; vì lý do này nó không bao giờ giữ giá trị `2`, vì unset sẽ đóng luôn cả descriptor này.
+
+**Nên dùng**
+
+```sh
+PS4='+ ${BASH_SOURCE[0]##*/}:${LINENO}:${FUNCNAME[0]:-main}: '
+
+# Output theo vết chứa mọi giá trị script xử lý: chỉ chủ sở hữu đọc được
+local trace_fd
+(umask 077 && : >> "${TRACE_FILE}")
+exec {trace_fd}>> "${TRACE_FILE}"
+BASH_XTRACEFD="${trace_fd}"
+dybatpho::start_trace
+deploy::run
+dybatpho::end_trace
+# Đồng thời đóng trace_fd
+unset BASH_XTRACEFD
+```
+
+**Không nên dùng**
+
+```sh
+# "+ cp ..." từ tệp nào, hàm nào?
+PS4='+ '
+```
+
+Theo vết in ra mỗi lệnh sau khi khai triển, kèm các tham số của nó. Mọi dòng khai triển một token, trong một phép gán, một header của `curl` hay các tham số của một helper, đều in ra token đó. `dybatpho::secret_mask` che các giá trị đã đăng ký trong văn bản nó nhận, nhưng dòng theo vết của chính lời gọi nó đã được ghi ra rồi; output theo vết an toàn duy nhất là output được tắt trong lúc giá trị nằm trên một dòng lệnh.
+
+`dybatpho::secret_from_file`, `dybatpho::secret_from_env` và `dybatpho::secret_from_stdin` tắt theo vết trong lúc đọc và đăng ký giá trị, và chỉ bật lại nếu trước đó nó đang bật. `dybatpho::secret_with_file` nhận tên của biến, không phải giá trị của nó, và giữ theo vết ở trạng thái tắt trong lúc lệnh đọc bí mật từ một đường dẫn `/dev/fd`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local passphrase
+dybatpho::secret_from_file passphrase "${PASSPHRASE_FILE}"
+dybatpho::secret_with_file passphrase gpg --batch --passphrase-file '{}' --decrypt -- "${archive}"
+
+function api::get {
+  local url target
+  dybatpho::expect_args url target -- "$@"
+  # Theo vết dừng ở đây và tiếp tục khi hàm trả về
+  local -
+  { set +x; } 2> /dev/null
+  dybatpho::curl_auth_bearer "${url}" "${API_TOKEN}" "${target}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+dybatpho::start_trace
+# Bị theo vết thành: + dybatpho::curl_auth_bearer https://... eyJhbGciOi... /tmp/me.json
+dybatpho::curl_auth_bearer "${url}" "${API_TOKEN}" "${target}"
+```
+
+### Lệnh tự kiểm tra
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Cung cấp một lệnh con `doctor`, hoặc một tùy chọn `--check`, báo cáo mọi thứ script cần đã sẵn sàng hay chưa và không thay đổi gì
+> - ✔️ NÊN: Kiểm tra hết, báo cáo mọi vấn đề tìm thấy, và chỉ khi đó mới thoát với mã khác 0, để một lần chạy liệt kê đủ mọi thứ cần sửa
+> - ✔️ NÊN: Báo cáo những gì các module dybatpho đã nạp cần bằng `dybatpho::doctor` (`--quiet` để chỉ lấy mã thoát, `--json` cho máy đọc), rồi thêm các bước kiểm tra riêng của dự án bằng `dybatpho::is command`, `dybatpho::command_version`, `dybatpho::command_exists_all` và `dybatpho::is readable`/`writeable`/`dir`. (dybatpho)
+> - ✔️ NÊN: Giữ `dybatpho::require` cho phần đầu của một lần chạy thật, nơi dừng lại ở lệnh thiếu đầu tiên là đúng; một bản báo cáo dừng ở đó sẽ che mất phần còn lại. (dybatpho)
+> - ❌ TRÁNH: Không sửa chữa gì từ bước kiểm tra: không cài đặt, không `mkdir`, không ghi cấu hình
+
+Người dùng chạy một script trên máy mới sẽ gặp một công cụ còn thiếu, cài nó, chạy lại, rồi gặp công cụ tiếp theo. Một lệnh tự kiểm tra biến vòng lặp đó thành một danh sách duy nhất. Đó cũng là thứ mà một job CI hay một script cài đặt có thể gọi trước phần việc thật, nên nó phải trả lời bằng mã thoát chứ không chỉ bằng văn bản: 0 chỉ khi một lần chạy thật sẽ tìm thấy đủ những gì nó cần.
+
+Một bước kiểm tra tự sửa những gì nó tìm thấy thì không còn là bước kiểm tra nữa. Nó cần cùng quyền với lần chạy thật, nó có thể thất bại giữa chừng, và người dùng hỏi "máy này đã sẵn sàng chưa?" nhận về một cái máy đã bị thay đổi thay vì một câu trả lời. Hãy báo cáo vấn đề cùng lệnh để sửa nó, và để việc sửa cho người dùng hoặc cho lần chạy thật.
+
+`dybatpho::doctor` đi kèm module `doctor` và bao quát chính thư viện: các lệnh mà những module đã nạp gọi tới, phiên bản của chúng, và bản Bash đang chạy, so với mức tối thiểu của riêng dybatpho. Nó không biết gì về các công cụ mà dự án gọi, cũng không biết gì về mức Bash tối thiểu của dự án (xem [Ma trận phiên bản Bash](#ma-tr%E1%BA%ADn-phi%C3%AAn-b%E1%BA%A3n-bash)). (dybatpho)
+
+**Nên dùng**
+
+```sh
+#######################################
+# @description Report whether deploy.sh can run here, and change nothing
+# @noargs
+# @exitcode 0 Everything a run needs is in place
+# @exitcode 1 Something is missing; every problem was reported
+#######################################
+function _doctor {
+  local failed=0 tool version
+  dybatpho::doctor || failed=1
+  for tool in kubectl helm jq; do
+    if ! dybatpho::is command "${tool}"; then
+      dybatpho::error "${tool} is not installed"
+      failed=1
+    elif version="$(dybatpho::command_version "${tool}")"; then
+      dybatpho::info "${tool} ${version}"
+    fi
+  done
+  dybatpho::command_exists_all gpg age \
+    || dybatpho::warn "Encrypted backups are off: they need both gpg and age"
+  dybatpho::is readable "${CONFIG_FILE}" || {
+    dybatpho::error "Cannot read ${CONFIG_FILE}; copy config.example.yaml there"
+    failed=1
+  }
+  dybatpho::is writeable "${STATE_DIR}" || {
+    dybatpho::error "Cannot write to ${STATE_DIR}; create it with: mkdir -p ${STATE_DIR}"
+    failed=1
+  }
+  return "${failed}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+function _doctor {
+  # Dừng ở lệnh thiếu đầu tiên: mỗi lần chạy chỉ thấy một vấn đề
+  dybatpho::require kubectl
+  dybatpho::require helm
+  # Bước kiểm tra thay đổi chính cái máy mà nó được hỏi tới
+  mkdir -p -- "${STATE_DIR}"
+  dybatpho::success "Everything is in place"
+}
 ```
 
 ### STDOUT và STDERR
@@ -593,6 +911,114 @@ backup::run &>> "${LOG_FILE}"
 ```sh
 # Lỗi vẫn ra terminal: 2>&1 sao chép nó trước khi > chuyển stdout đi
 backup::run 2>&1 > "${LOG_FILE}"
+```
+
+### Hiển thị tiến độ
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Ghi tiến độ ra `STDERR`, không bao giờ ra `STDOUT`, nơi nó trở thành một phần của kết quả mà bên gọi bắt lại hoặc pipe đi tiếp
+> - ⚠️ CÂN NHẮC: Chỉ vẽ một dòng tiến độ bằng `\r` hay một escape xóa dòng khi STDERR là terminal, `[[ -t 2 ]]` <kbd>BSG157</kbd>
+> - ✔️ NÊN: Khi không có terminal, ghi một dòng thường cho mỗi bước, hoặc một dòng tóm tắt ở cuối, thay vì vẽ lại
+> - ✔️ NÊN: Bỏ màu và việc di chuyển con trỏ khi `NO_COLOR` được đặt hoặc `TERM` là `dumb`; `dybatpho::color_supported stderr` trả lời cả hai, còn `dybatpho::is_tty stderr` hỏi xem có terminal không. (dybatpho)
+> - ✔️ NÊN: Hiển thị tiến độ bằng `dybatpho::spinner` và `dybatpho::tui_progress_start`, `dybatpho::tui_progress_step` và `dybatpho::tui_progress_stop`, các hàm chỉ vẽ trên `STDERR` khi có terminal và ghi các dòng log khi không có. (dybatpho)
+> - ❌ TRÁNH: Không hiển thị tiến độ bằng `dybatpho::progress` hay `dybatpho::progress_bar`: cả hai ghi ra `STDOUT` và không bao giờ kiểm tra terminal. (dybatpho)
+
+Một dòng tiến độ tự vẽ lại chính nó: `\r` đưa con trỏ về đầu dòng và `\033[K` xóa phần còn lại. Terminal biến việc đó thành một dòng thay đổi tại chỗ; một log CI, một tệp hay một pipe giữ lại mọi ký tự, và một nghìn lần cập nhật đến nơi thành một dòng gồm một nghìn khung hình và mã điều khiển. Trên `STDOUT`, các khung hình đó còn rơi vào `value="$(fn)"` và vào bất cứ thứ gì output được pipe tới.
+
+`NO_COLOR`, với bất kỳ giá trị khác rỗng nào, yêu cầu không dùng màu, còn `TERM=dumb`, như trong một buffer shell của Emacs, là một terminal không di chuyển được con trỏ hay xóa được dòng. Cả hai vẫn đọc tốt các dòng thường.
+
+**Nên dùng**
+
+```sh
+local total=${#files[@]} done_count=0 file
+for file in "${files[@]}"; do
+  upload::one "${file}"
+  done_count=$((done_count + 1))
+  if [[ -t 2 && "${TERM:-}" != dumb ]]; then
+    printf '\r\033[KUploaded %d/%d' "${done_count}" "${total}" >&2
+  fi
+done
+[[ ! -t 2 ]] || printf '\n' >&2
+dybatpho::info "Uploaded ${total} files"
+```
+
+**Không nên dùng**
+
+```sh
+for file in "${files[@]}"; do
+  upload::one "${file}"
+  done_count=$((done_count + 1))
+  # Trong log CI là một dòng dài vô tận toàn khung hình; trong $(...) là một phần của kết quả
+  printf '\rUploaded %d/%d' "${done_count}" "${total}"
+done
+
+# Tương tự qua một helper: ra STDOUT, dù có terminal hay không
+dybatpho::progress_bar "$((done_count * 100 / total))"
+```
+
+`dybatpho::spinner` chạy một lệnh và hiển thị một spinner cạnh một thông báo trong lúc lệnh chạy, chỉ khi `STDERR` là terminal; nếu không, nó ghi log thông báo một lần. Các helper `dybatpho::tui_progress_*` vẽ một thanh tiến độ trên `STDERR` khi standard input và `STDERR` là terminal và `TERM` không phải `dumb`, và ghi một dòng log ở mỗi mốc báo cáo khi không phải. `dybatpho::progress` in một banner và `dybatpho::progress_bar` in một thanh với `\r`, cả hai ra `STDOUT` mà không kiểm tra gì: hãy để chúng ngoài mọi hàm có output bị bắt lại và mọi script có output được ghi log. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::spinner "Downloading dependencies" -- npm ci
+
+dybatpho::tui_progress_start "Uploading" "${#files[@]}"
+for file in "${files[@]}"; do
+  upload::one "${file}"
+  dybatpho::tui_progress_step
+done
+dybatpho::tui_progress_stop "Uploaded ${#files[@]} files"
+```
+
+### Ghi log hệ thống
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Dưới systemd, ghi thông báo ra `STDERR`: journald lưu mỗi dòng cùng unit, thời gian và tiến trình
+> - ✔️ NÊN: Gửi thông báo tới log hệ thống từ một script chạy ngoài trình giám sát bằng `logger -t <tag>`, và đặt độ ưu tiên cho nó bằng `-p`
+> - ✔️ NÊN: Chạy một lệnh có output thuộc về journal dưới `systemd-cat -t <tag>`
+> - ⚠️ CÂN NHẮC: Để `/var/log` cho hệ thống: ghi ra `STDERR` hoặc dùng `logger` thay vì ghi nối vào một tệp ở đó <kbd>BSG138</kbd>
+> - ✔️ NÊN: Khi bắt buộc phải có tệp log, thiết lập nó bằng `dybatpho::log_to_file`, hàm tạo thư mục, đặt mode `600` cho tệp mới và tự xoay vòng tệp; đừng thêm `logrotate` lên trên. (dybatpho)
+
+Một script do systemd hay cron chạy đã có sẵn chỗ để ghi log: systemd đưa những gì nó in ra standard error vào journal, còn cron gửi chúng qua mail cho chủ sở hữu. Khi đó `journalctl -u <unit>` hiện chúng cùng phần còn lại của hệ thống, lọc theo unit, thời gian và độ ưu tiên, mà không cần đi tìm tệp nào.
+
+Ghi nối vào một tệp dưới `/var/log` cần quyền root, và tệp cứ lớn dần cho tới khi có người thêm một luật `logrotate` cho nó. `logger` giao một dòng cho syslog hay journald, nơi xoay vòng log thay bạn, và `-t` gắn tag để có thể tìm lại nó.
+
+**Nên dùng**
+
+```sh
+# Dưới systemd hay cron, STDERR được thu thập
+dybatpho::info "Backing up ${source}"
+printf 'Backup of %s failed\n' "${source}" >&2
+
+# Ngoài trình giám sát, giao dòng log cho log hệ thống
+logger -t backup -p user.err "Backup of ${source} failed"
+systemd-cat -t backup -p info rsync -a -- "${source}" "${target}"
+```
+
+**Không nên dùng**
+
+```sh
+# Cần root, và không có gì xoay vòng tệp
+echo "Backing up ${source}" >> /var/log/backup.log
+rsync -av -- "${source}" "${target}" | tee -a /var/log/backup.log
+```
+
+`dybatpho::log_to_file` gửi mọi thông báo log của dybatpho vào tệp dưới dạng một dòng JSON, song song với văn bản trên standard error, sau khi đã che các bí mật đã đăng ký. `rotate:SIZE` đổi tên tệp khi nó đạt tới kích thước đó và `keep:N` giữ lại chừng ấy bản cũ; một luật `logrotate` trên cùng tệp sẽ xoay vòng nó lần thứ hai. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::log_to_file "$(dybatpho::xdg_state_dir backup)/backup.log" rotate:10M keep:3
+dybatpho::info "Backing up ${source}"
 ```
 
 ### Hàm sử dụng chung
@@ -970,6 +1396,299 @@ if dybatpho::is_ci; then
 fi
 ```
 
+### Menu và lựa chọn
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Cho mỗi lựa chọn mà một menu đưa ra một cờ hoặc một biến môi trường chọn đúng điều đó mà không cần hỏi
+> - ⚠️ CÂN NHẮC: Kiểm tra có terminal trước khi mở một menu (`select`, `fzf`, `gum choose`, `whiptail`, `dialog`), và khi không có thì lấy cùng câu trả lời đó từ một cờ hoặc một biến môi trường <kbd>BSG161</kbd>
+> - ✔️ NÊN: Khi không có terminal và không ai đưa câu trả lời, hãy thất bại với một thông báo nêu tên cờ cần truyền, thay vì đoán hay chờ
+> - ✔️ NÊN: Vẽ menu bằng `dybatpho::tui_menu` hoặc `dybatpho::tui_multi_menu`, hai hàm chuyển sang lời nhắc đánh số khi không có terminal và sang `DYBATPHO_TUI_DEFAULT` khi không có gì trả lời. (dybatpho)
+
+Một menu là một câu hỏi với một tập câu trả lời cố định, nên một cờ luôn có thể đưa ra cùng câu trả lời: `--env staging` làm đúng điều mà việc chọn "staging" lẽ ra sẽ làm. Khi đó script chạy giống hệt nhau trong CI, trong cron và khi được một script khác gọi, còn menu chỉ là một tiện ích cho người đang ngồi trước bàn phím.
+
+Khi không có terminal, một menu không thất bại một cách gọn gàng. `select` kết thúc ở lần hết đầu vào đầu tiên, hoặc đọc câu trả lời từ một pipe vốn dành cho thứ khác; `fzf`, `gum`, `whiptail` và `dialog` dừng với một lỗi về terminal mà không nói gì về lựa chọn còn thiếu, hoặc chờ một phím bấm không bao giờ tới. Kiểm tra `[[ -t 0 ]]` trước giúp script dừng lại với một thông báo nói rõ cần truyền gì.
+
+**Nên dùng**
+
+```sh
+# ENVIRONMENT đến từ --env, hoặc DEPLOY_ENV, qua spec
+if [[ -z "${ENVIRONMENT}" ]]; then
+  [[ -t 0 ]] || dybatpho::die "No terminal to ask on: pass --env or set DEPLOY_ENV"
+  ENVIRONMENT="$(printf '%s\n' dev staging prod | fzf --prompt "Environment> ")"
+fi
+```
+
+**Không nên dùng**
+
+```sh
+# Kết thúc, lỗi hoặc chờ trong CI, và không có cách nào trả lời nó bằng một cờ
+select ENVIRONMENT in dev staging prod; do
+  break
+done
+ENVIRONMENT="$(gum choose dev staging prod)"
+```
+
+`dybatpho::tui_menu` ghi lựa chọn vào một biến được đặt tên. Nó vẽ menu tại chỗ khi cả standard input lẫn standard error đều là terminal; nếu không, nó in một danh sách đánh số và đọc con số từ standard input, nên một redirect có thể trả lời nó, và khi hết đầu vào nó lấy `DYBATPHO_TUI_DEFAULT`, một vị trí đếm từ 1, hoặc thất bại với một lỗi nêu tên biến đó. `dybatpho::tui_multi_menu` làm điều tương tự cho nhiều mục, ghi vào một mảng. (dybatpho)
+
+**Nên dùng**
+
+```sh
+if [[ -z "${ENVIRONMENT}" ]]; then
+  dybatpho::tui_menu ENVIRONMENT "Deploy to which environment?" dev staging prod \
+    || dybatpho::die "No environment chosen: pass --env"
+fi
+```
+
+### Chạy không người trông
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đặt `PATH` ở đầu một script do cron, systemd hay CI chạy, hoặc gọi các chương trình của nó bằng đường dẫn tuyệt đối
+> - ✔️ NÊN: Lường trước việc không có terminal, và có thể không có `HOME` hay `USER`: chỉ hỏi sau khi `dybatpho::is_interactive` thấy có terminal, và thất bại với một thông báo rõ ràng khi thiếu một biến mà script cần. (dybatpho)
+> - ✔️ NÊN: Ghi thông báo ra `STDERR`, nơi cron gửi chúng qua mail, systemd lưu chúng vào journal và CI hiện chúng trong log của job
+> - ✔️ NÊN: Giữ các thiết lập mà job cần trong script, hoặc trong một tệp cấu hình mà nó đọc bằng đường dẫn đầy đủ
+> - ❌ TRÁNH: Không source `~/.bashrc`, `~/.profile` hay một login profile khác từ script <kbd>BSG134</kbd>
+
+Một script được khởi chạy bởi cron, một unit systemd hay một CI runner không nhận được môi trường của login shell. Cron khởi chạy nó với `PATH=/usr/bin:/bin`, nên một công cụ nằm dưới `/usr/local/bin` hay `/opt` sẽ "not found"; một service hệ thống có thể khởi động mà không có `HOME` hay `USER`; và không có terminal, nên mọi thứ đọc từ terminal sẽ chờ hoặc thất bại.
+
+Source một login profile để lấy lại các thiết lập còn thiếu chỉ làm mọi thứ tệ hơn. Tệp đó có thể không tồn tại với tài khoản mà job chạy dưới tên, hoặc thuộc về người dùng khác khi chạy dưới `sudo`; nó được viết cho terminal, với lời nhắc, alias và các lời gọi `stty`; và nó gắn job với bất cứ thứ gì một người vừa thêm vào đó. Hãy khai báo những gì script cần ngay trong script.
+
+**Nên dùng**
+
+```sh
+# PATH của cron và systemd ngắn, và không phải PATH mà login shell có
+export PATH=/usr/local/bin:/usr/bin:/bin
+: "${BACKUP_TARGET:?BACKUP_TARGET is not set}"
+
+if dybatpho::is_interactive; then
+  dybatpho::confirm "Back up ${BACKUP_SOURCE} now?" || exit 0
+fi
+dybatpho::info "Backing up ${BACKUP_SOURCE}"
+rsync -a -- "${BACKUP_SOURCE}" "${BACKUP_TARGET}"
+```
+
+**Không nên dùng**
+
+```sh
+# Không có dưới cron, là của người khác dưới sudo, và được viết cho terminal
+. ~/.bashrc
+# Thất bại với "No such device or address": cron không có terminal
+echo "Backing up ${BACKUP_SOURCE}" > /dev/tty
+```
+
+### Entrypoint của container
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Kết thúc entrypoint của container bằng `exec`, để chương trình nó khởi chạy thay thế Bash làm PID 1 và nhận được `SIGTERM` <kbd>BSG135</kbd>
+> - ✔️ NÊN: Chạy lệnh của container bằng `exec "$@"` sau khi thiết lập xong, để `docker run <image> <command>` vẫn hoạt động
+> - ✔️ NÊN: Khi lệnh có thể là tên một hàm của script, chạy thẳng hàm đó và `exec` mọi thứ khác: `if declare -F -- "$1" > /dev/null; then "$@"; else exec "$@"; fi`
+> - ✔️ NÊN: Chạy image với `--init`, hoặc dưới `tini`, khi chương trình ở vai trò PID 1 không xử lý `SIGTERM` hay không thu dọn các tiến trình nó khởi chạy
+> - ✔️ NÊN: Phân biệt container với máy host bằng `dybatpho::is_container`, hàm tìm các tệp đánh dấu của Docker và Podman, các biến `container` và `KUBERNETES_SERVICE_HOST`, và control group của PID 1. (dybatpho)
+
+`docker stop` và Kubernetes gửi `SIGTERM` tới PID 1 của container, chờ hết thời gian ân hạn (10 giây với Docker, 30 giây với Kubernetes) rồi gửi `SIGKILL`. Khi entrypoint chạy server như một lệnh thông thường, PID 1 là Bash: nó giữ tín hiệu lại cho tới khi server thoát, điều không bao giờ xảy ra, và server bị kết liễu mà không kịp đóng kết nối hay ghi hết tệp. `exec` thay Bash bằng server, và khi đó chính server nhận tín hiệu.
+
+Kernel không gán hành động mặc định nào cho PID 1 với một tín hiệu mà nó không xử lý, nên một chương trình không bao giờ cài handler cho `SIGTERM` vẫn bỏ qua tín hiệu đó dù đã `exec`. Hãy chạy chương trình như vậy dưới một init biết chuyển tiếp tín hiệu và thu dọn zombie: `docker run --init`, hoặc `tini` trong image.
+
+**Nên dùng**
+
+```sh
+mkdir -p /data
+if (($# == 0)); then
+  set -- gunicorn --bind 0.0.0.0:8000 app:application
+fi
+exec "$@"
+```
+
+**Không nên dùng**
+
+```sh
+mkdir -p /data
+# Bash vẫn là PID 1: docker stop chờ hết thời gian ân hạn, rồi kết liễu server
+"$@"
+```
+
+`exec` thay tiến trình bằng một chương trình, mà một hàm shell thì không phải chương trình: `exec migrate` thất bại với "not found". Một entrypoint có cả các lệnh con riêng thì chạy thẳng hàm, và chính hàm đó kết thúc bằng một `exec` của nó.
+
+**Nên dùng**
+
+```sh
+function migrate {
+  exec /app/bin/migrate --apply
+}
+
+if (($# == 0)); then
+  set -- /app/bin/server
+fi
+if declare -F -- "$1" > /dev/null; then
+  "$@"
+else
+  exec "$@"
+fi
+```
+
+`dybatpho::is_container` cho biết script có đang chạy trong Docker, Podman, Kubernetes hay LXC hay không, để một script dùng chung với máy host có thể bỏ qua những gì không có ý nghĩa trong container. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::is_container || systemctl daemon-reload
+```
+
+### Người dùng hiện tại
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Kiểm tra root bằng `(( EUID == 0 ))`, không phải bằng cách so sánh `$USER`, `$(whoami)` hay `$(id -u)` dưới dạng chuỗi <kbd>BSG136</kbd>
+> - ⚠️ CÂN NHẮC: Tìm thư mục home bằng `$HOME` hoặc `getent passwd`, không phải bằng cách tự ghép `/home/${user}` <kbd>BSG137</kbd>
+> - ✔️ NÊN: Trên macOS, nơi không có `getent`, đọc thư mục home của người dùng khác bằng `dscl . -read "/Users/${user}" NFSHomeDirectory`
+> - ✔️ NÊN: Kiểm tra root bằng `dybatpho::is_root`, hàm kiểm tra `EUID`, và in ra người dùng hiệu lực bằng `dybatpho::user`, hàm hỏi `id -un`. (dybatpho)
+
+`USER` và `LOGNAME` là các biến thông thường: ai cũng đặt được, một container thường không đặt biến nào trong hai, và `sudo` tự quyết định theo chính sách của nó xem chúng chứa gì. Cái tên `root` chỉ là một quy ước; kernel kiểm tra user ID, và Bash giữ ID hiệu lực trong `EUID`, một biến mà không script nào thay đổi được.
+
+Thư mục home nằm dưới `/Users` trên macOS, ở `/root` với root, dưới `/var/lib/<service>` với nhiều tài khoản service, và ở bất cứ đâu mà quản trị viên hay một directory service đặt chúng. `/home/${user}` chỉ đúng trên một loại máy; cơ sở dữ liệu mật khẩu, mà `getent passwd` đọc qua mọi nguồn hệ thống được cấu hình, thì đúng trên tất cả. Dùng `${HOME}` cho người dùng hiện tại. dybatpho không có helper nào tìm thư mục home của người dùng khác.
+
+**Nên dùng**
+
+```sh
+((EUID == 0)) || dybatpho::die "Run this as root"
+
+local home
+if command -v getent &> /dev/null; then
+  home="$(getent passwd "${user}" | cut -d: -f6)"
+else
+  home="$(dscl . -read "/Users/${user}" NFSHomeDirectory)"
+  home="${home#NFSHomeDirectory: }"
+fi
+[[ -n "${home}" ]] || dybatpho::die "No such user: ${user}"
+```
+
+**Không nên dùng**
+
+```sh
+# USER không được đặt dưới cron và trong nhiều container, và ai cũng đặt được nó
+[[ "${USER}" == "root" ]] || dybatpho::die "Run this as root"
+# Sai trên macOS, với root và với các tài khoản service
+home="/home/${user}"
+```
+
+`dybatpho::user` cho biết người dùng hiệu lực, nên một script chạy bằng `sudo` nhận được `root`, không phải tài khoản đã gọi nó. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::is_root || dybatpho::die "Run this with sudo, not as $(dybatpho::user)"
+```
+
+### Giới hạn tài nguyên
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Chạy một job batch nặng với độ ưu tiên thấp bằng `nice -n 10`, và trên Linux thêm `ionice -c 3` khi nó dùng nhiều đĩa
+> - ✔️ NÊN: Đặt `ulimit` trong một subshell bao quanh đúng lệnh mà nó nhắm tới
+> - ✔️ NÊN: Kiểm tra dung lượng trống bằng `df -Pk` trước một lần ghi lớn, và dừng với một thông báo nêu rõ các kích thước
+> - ❌ TRÁNH: Không gọi `ulimit` ở đầu script hay trong một thư viện: nó ràng buộc mọi lệnh mà script chạy sau đó
+> - ❌ TRÁNH: Không đọc dung lượng trống từ `df -h`: các kích thước của nó có kèm đơn vị mà phép tính số học không so sánh được
+
+Một job backup hay build do cron khởi chạy tranh tài nguyên với service trên cùng máy. `nice` giảm phần CPU của nó, còn `ionice -c 3` chỉ cho nó dùng đĩa khi không có gì khác cần. `ionice` chỉ có trên Linux, nên hãy kiểm tra nó trước.
+
+Một giới hạn đặt bằng `ulimit` có hiệu lực với shell và mọi tiến trình nó khởi chạy từ đó trở đi, và một tiến trình không có đặc quyền có thể hạ hard limit nhưng không bao giờ nâng nó lên lại được. Trong một subshell, giới hạn kết thúc cùng subshell.
+
+Một lần ghi làm đầy đĩa sẽ thất bại giữa chừng, và thường kéo theo cả service dùng chung đĩa đó. `df -P` in theo bố cục một dòng mà POSIX quy định, giống nhau trên GNU và BSD, còn `-k` tính bằng kibibyte bất kể `BLOCKSIZE` nói gì.
+
+**Nên dùng**
+
+```sh
+local -a low=(nice -n 10)
+if command -v ionice &> /dev/null; then
+  low+=(ionice -c 3)
+fi
+"${low[@]}" tar -czf "${archive}" -C "${source}" .
+
+# Chỉ riêng lần import chạy không có core dump và có giới hạn thời gian CPU
+(
+  ulimit -c 0
+  ulimit -t 3600
+  exec ./import.sh
+)
+
+local available
+available="$(df -Pk -- "${target_dir}" | awk 'NR == 2 { print $4 }')"
+((available >= needed_kb)) || dybatpho::die "${target_dir} has ${available} KiB free, ${needed_kb} KiB needed"
+```
+
+**Không nên dùng**
+
+```sh
+# Ràng buộc phần còn lại của script và mọi lệnh nó khởi chạy
+ulimit -n 256
+# "12G" hay "980M": không phải con số để so sánh
+available="$(df -h "${target_dir}" | tail -n 1 | awk '{ print $4 }')"
+```
+
+### Tiến trình chạy lâu dài
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Giao một service cho systemd, launchd hay một trình quản lý tiến trình thay vì tách nó ra bằng `nohup` hay `setsid` <kbd>BSG139</kbd>
+> - ✔️ NÊN: Viết một service thành chương trình chạy ở foreground và ghi log ra `STDERR`, và để trình giám sát khởi động lại, dừng và giữ output của nó
+> - ✔️ NÊN: Khởi chạy một service dùng một lần từ script bằng `systemd-run`, lệnh biến nó thành một unit mà `systemctl` và `journalctl` biết tới
+> - ❌ TRÁNH: Không khởi chạy một service bằng `&`, `disown` nó rồi thoát: đó vẫn là tiến trình không ai quản lý như `nohup` tạo ra, chỉ khó nhận ra hơn
+> - ✔️ NÊN: Khởi chạy các job mà chính script đợi bằng `dybatpho::background_run`, tìm pid của chúng bằng `dybatpho::background_pid`, và đợi chúng bằng `dybatpho::wait_all`. (dybatpho)
+
+Một tiến trình đã tách ra thì không có chủ. Không có gì khởi động lại nó khi nó sập hay dừng nó theo thứ tự lúc tắt máy, output của nó đi vào `nohup.out` hoặc biến mất, và pid mà script đã ghi lại thuộc về một tiến trình khác sau khi khởi động lại máy. Một trình giám sát đã làm sẵn tất cả những việc này: nó khởi chạy chương trình, khởi động lại theo chính sách, gửi `SIGTERM` khi cần dừng, và giữ output trong journal.
+
+**Nên dùng**
+
+```sh
+# Một unit tạm thời: systemd ghi log, dừng nó và hiện nó trong systemctl status
+systemd-run --user --unit=sync-watch "${HOME}/bin/sync-watch.sh"
+```
+
+```ini
+[Service]
+ExecStart=/usr/local/bin/sync-watch.sh
+Restart=on-failure
+```
+
+**Không nên dùng**
+
+```sh
+# Không có gì khởi động lại, dừng nó lúc tắt máy hay giữ output của nó
+nohup ./sync-watch.sh &> /dev/null &
+setsid ./sync-watch.sh &
+```
+
+Một job nền mà script đợi trước khi thoát không phải là service, và không cần trình giám sát. `dybatpho::background_run` khởi chạy nó trong process group riêng dưới một cái tên, còn `dybatpho::wait_all` đợi mọi job và thất bại khi có job thất bại; xem [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con). Khi một công cụ khác đòi có tệp pid, `dybatpho::pid_file_write` ghi nó một cách nguyên tử và `dybatpho::pid_file_remove` chỉ xóa nó khi nó vẫn ghi pid của tiến trình này. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::trap dybatpho::kill_children EXIT INT TERM
+dybatpho::background_run server ./serve.sh --port 8080
+dybatpho::info "Server started as pid $(dybatpho::background_pid server)"
+./run-tests.sh
+```
+
 ## Quy ước đặt tên
 
 ### Tên hàm
@@ -1143,6 +1862,7 @@ function net::retry {
 >
 > - ✔️ NÊN: Thêm một comment ở đầu file để giải thích ngắn gọn mục đích hoặc nội dung của file. Tuy nhiên, không thêm comment trước dòng shebang. <kbd>BSG024</kbd>
 > - ✔️ NÊN: Sử dụng định dạng [sh-docs](https://github.com/dynamotn/sh-docs) ([GitLab](https://gitlab.com/dynamo-tools/sh-docs)) bao gồm: `@file`, `@brief`, `@description` để giải thích file. (tùy chỉnh) <kbd>BSG020</kbd>
+> - ⚠️ CÂN NHẮC: Ghi giấy phép của một script được phân phối bằng `# SPDX-License-Identifier: <id>`, không dùng một đoạn văn về giấy phép <kbd>BSG149</kbd>
 
 Tất cả các file nên có một comment cấp cao nhất mô tả ngắn gọn nội dung của chúng.
 
@@ -1153,6 +1873,30 @@ Tất cả các file nên có một comment cấp cao nhất mô tả ngắn g�
 # @file backup.sh
 # @brief Thực hiện backup nóng cho các database Oracle
 # @description Thực hiện backup nóng cho các database Oracle
+```
+
+Một script đi một mình, tách khỏi repository và file LICENSE của nó, ghi giấy phép bằng một dòng SPDX trong phần đầu file, ngay sau shebang. Định danh này là thứ các công cụ quét giấy phép đọc, và một dòng thì không thể lệch khỏi file LICENSE như một đoạn văn được dán vào. Dòng copyright có thể giữ ngay cạnh nó.
+
+**Nên dùng**
+
+```sh
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# @file backup.sh
+# @brief Thực hiện backup nóng cho các database Oracle
+# @description Thực hiện backup nóng cho các database Oracle
+```
+
+**Không nên dùng**
+
+```sh
+#!/usr/bin/env bash
+# @file backup.sh
+# @brief Thực hiện backup nóng cho các database Oracle
+# @description Thực hiện backup nóng cho các database Oracle
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.
 ```
 
 ### Chú thích hàm
@@ -1225,6 +1969,41 @@ Sử dụng comment TODO cho các giải pháp tạm thời, ngắn hạn hoặc
 # TODO: Code này cần được sửa do xử lý lỗi không đầy đủ. Thêm kiểm tra lỗi và thoát với mã 1.
 ```
 
+### Code bị comment lại
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Xóa code thay vì comment nó lại; git vẫn giữ phiên bản cũ. (tùy chỉnh) <kbd>BSG144</kbd>
+> - ✔️ NÊN: Khi một dòng tạm thời phải tắt, đặt một TODO phía trên nói rõ vì sao và khi nào nó được bật lại
+> - ✔️ NÊN: Đưa code ví dụ vào một `@example` của shdoc, không để thành các dòng comment rời rạc
+
+Code bị comment lại sẽ mục dần. Không ai chạy nó, các tên nó dùng thay đổi bên dưới nó, và người đọc sau không phân biệt được đó là một bản sửa đang chờ, một hướng đã bỏ, hay một dòng debug bị bỏ quên. `git log -S '<text>'` tìm lại phiên bản cũ vào ngày có người cần đến.
+
+Linter coi một loạt dòng comment là code khi nó parse được như shell và có một phép gán, một khai triển, `&&`, `||`, một pipe, `[[`, một từ khóa như `if` hay `done`, hoặc một lời gọi `ns::`. Nó bỏ qua phần đầu file, các khối shdoc cùng `@example` của chúng, các directive, một khối có TODO, và các dòng tiếp nối một câu văn hoặc đứng sau một câu kết thúc bằng `:`.
+
+**Nên dùng**
+
+```sh
+mkdir -p -- "${dest}"
+# TODO: Quay lại dùng rsync khi mọi host đã có rsync 3.2 (cần --mkpath).
+# rsync -a --mkpath -- "${src}/" "${dest}/"
+cp -a -- "${src}/." "${dest}/"
+```
+
+**Không nên dùng**
+
+```sh
+mkdir -p -- "${dest}"
+# cp -r "${src}" "${dest}"
+# if [[ -d "${dest}.old" ]]; then
+#   rm -rf -- "${dest}.old"
+# fi
+cp -a -- "${src}/." "${dest}/"
+```
+
 ## Định dạng
 
 ### Dấu tab và dấu cách
@@ -1244,6 +2023,42 @@ Thụt lề nên dùng hai dấu cách. Tuyệt đối không được sử dụ
 Nhiều trình soạn thảo không thể chuyển đổi giữa thụt lề thực tế và hiển thị dấu cách/tab theo tùy chọn của người dùng. Cài đặt trình soạn thảo của người khác có thể không giống với của bạn. Sử dụng dấu cách đảm bảo rằng mã trông giống nhau trong mọi trình soạn thảo.
 
 Một dòng trống là đủ để tách hai khối; dòng trống thứ hai không nói thêm điều gì mà chỉ đẩy phần mã bên dưới ra khỏi màn hình. shfmt gộp một chuỗi dòng trống thành một.
+
+### Kết thúc dòng và mã hóa ký tự
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Lưu tệp shell với kết thúc dòng LF, ở dạng UTF-8 không có byte order mark <kbd>BSG140</kbd>
+> - ✔️ NÊN: Cố định kết thúc dòng trong `.gitattributes`: `*.sh text eol=lf` và `*.bats text eol=lf`
+> - ✔️ NÊN: Đặt `end_of_line = lf` và `charset = utf-8` trong `.editorconfig`, để trình soạn thảo lưu tệp đúng như vậy ngay từ đầu
+> - ❌ TRÁNH: Không phó mặc kết thúc dòng cho `core.autocrlf` của từng bản clone: với `true`, một bản checkout trên Windows ghi ra CRLF, và một script chép từ đó vào container hay WSL sẽ hỏng
+
+Bash kết thúc một dòng ở LF và giữ CR như một phần của từ cuối cùng trên dòng đó. Một tệp lưu với CRLF khi đó đòi `bash\r` trong shebang, đọc `then\r` thành một lệnh, và `cd` vào một thư mục có tên kết thúc bằng một ký tự vô hình; mọi thông báo lỗi trông như thể không có gì sai. Byte order mark đặt ba byte trước `#!`, nên kernel không còn thấy shebang nữa.
+
+`text eol=lf` trong `.gitattributes` khiến Git checkout các tệp với LF trên mọi máy, bất kể thiết lập riêng của máy đó, và lưu chúng với LF trong repository.
+
+**Nên dùng**
+
+```gitattributes
+*.sh text eol=lf
+*.bats text eol=lf
+```
+
+```ini
+[*.{sh,bats}]
+charset = utf-8
+end_of_line = lf
+```
+
+**Không nên dùng**
+
+```text
+$ ./deploy.sh
+/usr/bin/env: 'bash\r': No such file or directory
+```
 
 ### Độ dài dòng code và chuỗi dài
 
@@ -1437,6 +2252,88 @@ name="dotfiles";
 printf '%s\n' "${name}";
 ```
 
+### Độ sâu lồng nhau
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Thoát sớm bằng một guard clause thay vì bọc phần còn lại của hàm trong một `if`
+> - ✔️ NÊN: `continue` sớm trong vòng lặp để bỏ qua một phần tử, thay vì lồng công việc vào dưới một `if`
+> - ⚠️ CÂN NHẮC: Giữ `if`, vòng lặp và `case` lồng nhau tối đa 3 cấp trong một hàm; chuyển phần bên trong sang một hàm riêng. (tùy chỉnh) <kbd>BSG142</kbd>
+
+Mỗi cấp lồng nhau là thêm một điều kiện người đọc phải nhớ để biết khi nào một dòng chạy, và `fi` đóng nó thì cách cả một màn hình. Một guard clause nêu điều kiện tiên quyết một lần rồi gạt nó đi, để công việc chính của hàm nằm ở cấp đầu tiên. Một `if` không có `else` mà câu lệnh duy nhất là thoát ra — `return`, `continue`, `break`, `exit` hay `dybatpho::die` — chính là một guard như vậy và không tính là một cấp.
+
+**Nên dùng**
+
+```sh
+function deploy::sync_hosts {
+  local host
+  for host in "$@"; do
+    [[ -n "${host}" ]] || continue
+    if ! ping -c 1 "${host}" &> /dev/null; then
+      printf 'Skipping %s: unreachable\n' "${host}" >&2
+      continue
+    fi
+    deploy::sync_host "${host}"
+  done
+}
+```
+
+**Không nên dùng**
+
+```sh
+function deploy::sync_hosts {
+  local host
+  for host in "$@"; do
+    if [[ -n "${host}" ]]; then
+      if ping -c 1 "${host}" &> /dev/null; then
+        if [[ -d "/srv/${host}" ]]; then
+          if rsync -a -- "/srv/${host}/" "${host}:/srv/"; then
+            printf 'Synced %s\n' "${host}"
+          fi
+        fi
+      fi
+    fi
+  done
+}
+```
+
+### Kích thước hàm
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Cho mỗi hàm một việc, đúng việc mà tên của nó nói
+> - ✔️ NÊN: Tách việc quyết định làm gì khỏi việc làm: một hàm tính ra kế hoạch và in nó ra, một hàm khác thực hiện nó
+> - ⚠️ CÂN NHẮC: Tách một hàm dài hơn 50 dòng code. (tùy chỉnh) <kbd>BSG143</kbd>
+
+Một hàm làm một việc thì đặt tên được, test được và dùng lại được; một hàm vừa kiểm tra, vừa quyết định, vừa hành động thì chỉ có thể chạy nguyên khối. Tách phần quyết định khỏi tác dụng phụ được lợi hai lần: phần quyết định test được mà không đụng tới hệ thống, và chế độ dry-run chỉ cần bỏ qua phần hành động.
+
+Linter đếm các dòng trong thân hàm không trống và không phải comment, và cảnh báo khi vượt 50, khoảng một màn hình. Đó là một tín hiệu, không phải giới hạn: một `case` dài để điều phối các lệnh con, hay một bảng tùy chọn, vẫn có thể ổn khi để nguyên một khối, và nói rõ điều đó bằng `# dyshellint disable=BSG143 # <lý do>` ngay trên hàm.
+
+**Nên dùng**
+
+```sh
+function backup::plan {
+  local source
+  source="${1:?}"
+  find "${source}" -type f -newer "${STAMP_FILE}" -print0
+}
+
+function backup::run {
+  local source file
+  source="${1:?}"
+  while IFS= read -r -d '' file; do
+    cp -p -- "${file}" "${BACKUP_DIR}/${file#"${source}"/}"
+  done < <(backup::plan "${source}")
+  touch -- "${STAMP_FILE}"
+}
+```
+
 ### Câu lệnh case
 
 > [!TIP]
@@ -1544,7 +2441,7 @@ fi
 
 > [!TIP]
 >
-> - ✔️ NÊN: Luôn luôn đặt các biến, command substitution, các chuỗi chứa dấu cách hoặc các ký tự meta của shell trong dấu nháy kép, trừ khi cần một khai triển không được đặt trong nháy kép hoặc shell internal là một số nguyên
+> - ✔️ NÊN: Luôn luôn đặt các biến, command substitution, các chuỗi chứa dấu cách hoặc các ký tự meta của shell trong dấu nháy kép, trừ khi cần một khai triển không được đặt trong nháy kép hoặc shell internal là một số nguyên <kbd>BSG131</kbd>
 > - ✔️ NÊN: Dùng dấu nháy các biến đặc biệt nội bộ chỉ đọc của shell được định nghĩa là số nguyên là tùy chọn: `$?`, `$#`, `$$`, `$!` (xem `man bash`). Ưu tiên dùng dấu nháy cho biến nội bộ là số nguyên được định danh, ví dụ PPID
 > - ✔️ NÊN: Đóng nháy các từ ngữ dạng chuỗi mà không phải là tùy chọn câu lệnh hoặc tên đường dẫn
 > - ✔️ NÊN: Đóng nháy toàn bộ chuỗi có chứa biến, thay vì chỉ đóng nháy riêng lẻ từng biến (tùy chỉnh)
@@ -1592,7 +2489,7 @@ echo "Process $$: Done making \$\$\$."
 
 # "các tùy chọn lệnh hoặc tên đường dẫn"
 # ($1 được giả định là chứa một giá trị ở đây)
-grep -li Hugo /dev/null "$1"
+grep -li -- Hugo /dev/null "$1"
 
 # Các ví dụ ít đơn giản hơn
 # "dùng dấu nháy biến, trừ khi được chứng minh là sai": ccs có thể trống
@@ -1982,6 +2879,63 @@ if [[ "x${answer}" == "xyes" ]]; then
 fi
 ```
 
+### Chuyển đổi chữ hoa chữ thường
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Đổi chữ hoa/thường của một biến bằng `${var,,}` hoặc `${var^^}`, không dùng `tr`. Giữ `tr` cho một file hay một luồng dữ liệu <kbd>BSG145</kbd>
+> - ✔️ NÊN: So sánh không phân biệt hoa/thường bằng cách hạ cả hai vế về chữ thường, `[[ "${answer,,}" == yes ]]`, thay vì bật `nocasematch`
+> - ⚠️ CÂN NHẮC: Tắt `shopt -s nocasematch` lại bằng `shopt -u`, hoặc bật nó trong một subshell: `local -` không khôi phục các tùy chọn `shopt`. (tùy chỉnh) <kbd>BSG146</kbd>
+> - ✔️ NÊN: Truyền `dybatpho::lower` hoặc `dybatpho::upper` ở chỗ cần một lệnh thay vì một khai triển, chẳng hạn một hàm mapper. (dybatpho)
+
+`${var,,}` chuyển mọi chữ cái thành chữ thường, `${var^^}` chuyển mọi chữ cái thành chữ hoa, còn `${var^}` chỉ viết hoa chữ đầu. Chúng chạy ngay trong shell, trong khi `$(echo "${var}" | tr '[:upper:]' '[:lower:]')` tạo một pipe và hai tiến trình cho một giá trị, và `echo` làm hỏng giá trị như `-n`. Cả ba có từ Bash 4.0; trên Bash 3.2 của macOS không có khai triển nào làm việc này, thêm một lý do để kiểm tra phiên bản ngay từ đầu, xem [Phiên bản Bash](#phi%C3%AAn-b%E1%BA%A3n-bash).
+
+`shopt -s nocasematch` không thuộc về riêng một phép so sánh: mọi `[[ == ]]`, `=~` và `case` sau nó, trong hàm, trong mọi thứ hàm gọi tới và trong phần còn lại của script, đều bỏ qua hoa/thường cho tới khi nó bị tắt. `local -` không giúp được ở đây: nó chỉ khôi phục các tùy chọn của `set`, không khôi phục các tùy chọn của `shopt`. Hãy hạ giá trị về chữ thường, hoặc tắt tùy chọn ngay sau phép so sánh. Trong một thư viện, BSG092 đã yêu cầu điều tương tự.
+
+**Nên dùng**
+
+```sh
+local level="${LOG_LEVEL:-info}"
+case "${level,,}" in
+  debug | info) printf '%s\n' "${level^^}" ;;
+  *) printf 'Unknown level: %s\n' "${level}" >&2 ;;
+esac
+
+function config::is_true {
+  [[ "${1,,}" == @(1|true|yes|on) ]]
+}
+
+function config::is_false {
+  local status=0
+  shopt -s nocasematch
+  [[ "${1-}" == @(0|false|no|off) ]] || status=1
+  shopt -u nocasematch
+  return "${status}"
+}
+```
+
+**Không nên dùng**
+
+```sh
+level="$(echo "${LOG_LEVEL}" | tr '[:upper:]' '[:lower:]')"
+
+shopt -s nocasematch
+[[ "${answer}" == yes ]] && confirmed=true
+```
+
+`dybatpho::lower` và `dybatpho::upper` in ra `${1,,}` và `${1^^}`. Chúng không nhanh hơn khai triển, cũng không giúp gì trên Bash 3.2, nhưng chúng là lệnh: chúng dùng được ở chỗ cần tên một hàm, chẳng hạn mapper của `dybatpho::array_map`. (dybatpho)
+
+**Nên dùng**
+
+```sh
+local -a tags=(Linux macOS BSD)
+dybatpho::array_map tags dybatpho::lower
+printf '%s\n' "${tags[@]}"
+```
+
 ### Biểu thức chính quy
 
 > [!TIP]
@@ -2131,7 +3085,7 @@ done
 
 > [!TIP]
 >
-> - ✔️ NÊN: Đặt mọi giá trị ghép vào một chuỗi cho `eval`, hay cho `dybatpho::dry_run` một chuỗi, trong `printf %q`; tốt hơn nữa là truyền một danh sách tham số <kbd>BSG080</kbd>
+> - ✔️ NÊN: Đặt mọi giá trị ghép vào một chuỗi cho `eval`, hay cho `dybatpho::dry_run` một chuỗi, trong `printf %q`; tốt hơn nữa là truyền một danh sách tham số <kbd>BSG080</kbd> <kbd>BSG130</kbd>
 > - ❌ TRÁNH: Không dùng `eval` <kbd>BSG040</kbd>
 > - ❌ TRÁNH: Không dựng chuỗi lệnh cho `eval` hay `dybatpho::dry_run "<string>"` từ dữ liệu chưa được escape
 
@@ -2599,6 +3553,67 @@ local -a entries=()
 mapfile -t entries < <(tar -tzf "${archive}")
 ```
 
+### File descriptor
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Để Bash tự chọn descriptor bằng `exec {fd}> "${file}"`, thay vì một số cố định như `exec 3>` <kbd>BSG152</kbd>
+> - ✔️ NÊN: Đóng một descriptor ngay khi xong việc với nó, `exec {fd}>&-`: cho tới lúc đó mọi lệnh mà script khởi chạy đều kế thừa nó
+> - ✔️ NÊN: Ghi qua descriptor bằng một biến có quote: `printf '%s\n' "${line}" >&"${fd}"`
+> - ⚠️ CÂN NHẮC: Chuyển hướng cả vòng lặp một lần, `done >> "${out}"`, thay vì ghi nối vào cùng một tệp ở mỗi lần lặp <kbd>BSG153</kbd>
+> - ✔️ NÊN: Gom các lệnh cùng ghi một tệp vào `{ ...; } > "${file}"`, để tệp được mở, và bị cắt rỗng, chỉ một lần
+
+Một số cố định là một cái tên dùng chung với mọi thứ khác trong tiến trình. Một thư viện giữ log của nó trên descriptor 3 sẽ mất nó, không một lời báo, ngay khi script chạy `exec 3> "${file}"`, và từ đó các dòng của thư viện đi vào tệp của script. `exec {fd}> "${file}"` (Bash 4.1) lấy một số còn trống từ 10 trở lên và lưu nó vào `fd`. Một số cố định trên một lệnh, như phép hoán đổi `3>&1 1>&2 2>&3`, chỉ tồn tại trong lệnh đó và không sao.
+
+Một descriptor mở bằng `exec` vẫn mở cho tới khi được đóng, kể cả khi hàm đã trả về, và một job nền hay một daemon khởi chạy trong lúc đó giữ một bản sao của nó: một tệp log vẫn bị giữ mở sau khi đã bị xoay vòng đi, một pipe mà bên đọc không bao giờ thấy điểm kết thúc.
+
+**Nên dùng**
+
+```sh
+local log_fd
+exec {log_fd}>> "${LOG_FILE}"
+printf 'sync started for %s\n' "${name}" >&"${log_fd}"
+sync::all >&"${log_fd}" 2>&1
+exec {log_fd}>&-
+```
+
+**Không nên dùng**
+
+```sh
+# Đóng thứ mà một thư viện đã source đang giữ trên 3, và vẫn mở sau khi xong việc
+exec 3>> "${LOG_FILE}"
+printf 'sync started for %s\n' "${name}" >&3
+sync::all >&3 2>&1
+```
+
+Một `>>` bên trong vòng lặp mở tệp, ghi một dòng rồi đóng lại ở mỗi lần lặp: với một danh sách mười nghìn host là mười nghìn lần mở cùng một tệp. Chuyển hướng cả vòng lặp, hoặc một nhóm `{ }` bao quanh các dòng ghi, chỉ mở nó một lần; nó cũng có nghĩa là `>` chỉ cắt rỗng tệp một lần, lúc bắt đầu, chứ không phải trước mỗi dòng.
+
+**Nên dùng**
+
+```sh
+local host
+for host in "${hosts[@]}"; do
+  printf '%s\t%s\n' "${host}" "$(inventory::role "${host}")"
+done >> "${report}"
+
+{
+  printf '# Generated %s\n' "${stamp}"
+  printf '%s\n' "${hosts[@]}"
+} > "${inventory}"
+```
+
+**Không nên dùng**
+
+```sh
+local host
+for host in "${hosts[@]}"; do
+  printf '%s\t%s\n' "${host}" "$(inventory::role "${host}")" >> "${report}"
+done
+```
+
 ### Vòng lặp for
 
 > [!TIP]
@@ -2706,6 +3721,66 @@ function fs::count_lines {
 }
 ```
 
+### Trả về giá trị
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Chỉ dùng mã trạng thái của hàm để báo thành công hay thất bại, và ghi chú từng mã bằng `@exitcode`
+> - ✔️ NÊN: In dữ liệu mà hàm trả về ra STDOUT, để bên gọi bắt lấy bằng `$(...)`
+> - ✔️ NÊN: Ghi vào một biến do bên gọi đặt tên, bằng `local -n`, khi dữ liệu là một mảng hoặc lời gọi nằm trong một vòng lặp nóng, và kiểm tra tên đó bằng `dybatpho::expect_ref`. (dybatpho)
+> - ❌ TRÁNH: Không trộn thông điệp log vào STDOUT: chúng sẽ lẫn vào giá trị của bên gọi. Hãy gửi chúng ra STDERR
+> - ❌ TRÁNH: Không trả dữ liệu qua mã trạng thái: `return` nhận một số từ 0 đến 255, không bao giờ là một từ hay `$(...)`. (tùy chỉnh) <kbd>BSG148</kbd>
+
+Một hàm có hai cách để trả thứ gì đó về. Mã trạng thái là một số từ 0 đến 255 cho biết nó có chạy được hay không, và là thứ mà `if`, `||` và `set -e` đọc. STDOUT của nó là dữ liệu. Dữ liệu bị nhét vào mã trạng thái sẽ bị lấy modulo 256, nên một số đếm bằng 256 được đọc thành thành công mà không tìm thấy gì, còn `return true` dừng hàm với lỗi "numeric argument required". Một thông điệp in ra STDOUT thì sai theo chiều ngược lại: nó thành một phần của giá trị mà bên gọi bắt được, xem [STDOUT và STDERR](#stdout-v%C3%A0-stderr).
+
+**Nên dùng**
+
+```sh
+function fs::count_lines {
+  local file count
+  dybatpho::expect_args file -- "$@"
+  [[ -f "${file}" ]] || return 1
+  dybatpho::info "Counting ${file}"
+  count="$(wc -l < "${file}")"
+  printf '%s\n' "${count// /}"
+}
+
+local lines
+lines="$(fs::count_lines "${log_file}")" || dybatpho::die "No ${log_file}"
+```
+
+**Không nên dùng**
+
+```sh
+function fs::count_lines {
+  echo "Counting ${1}"
+  return $(wc -l < "$1")
+}
+
+fs::count_lines "${log_file}"
+lines=$?
+```
+
+Bắt STDOUT sẽ chạy hàm trong một subshell, tốn một tiến trình mỗi lần gọi, không điền được mảng, và không thay đổi được gì khác cho bên gọi. Khi điều đó quan trọng, hãy nhận tên biến của bên gọi và ghi vào nó qua một nameref. `dybatpho::expect_ref` dừng script khi tên không phải một định danh hoặc là một tên riêng của thư viện, còn tiền tố `__<namespace>_<function>_` giữ cho các biến cục bộ khác của hàm không bắt nhầm tên đó, xem [Tên biến cục bộ trong hàm nameref và hàm callback](#t%C3%AAn-bi%E1%BA%BFn-c%E1%BB%A5c-b%E1%BB%99-trong-h%C3%A0m-nameref-v%C3%A0-h%C3%A0m-callback). Các helper `*_into` của dybatpho, như `dybatpho::math_add_into total "${total}" "${price}"`, theo đúng khuôn này. (dybatpho)
+
+**Nên dùng**
+
+```sh
+function fs::read_lines_into {
+  local __fs_read_lines_into_var __fs_read_lines_into_file
+  dybatpho::expect_args __fs_read_lines_into_var __fs_read_lines_into_file -- "$@"
+  dybatpho::expect_ref "${__fs_read_lines_into_var}"
+  local -n __fs_read_lines_into_ref="${__fs_read_lines_into_var}"
+  mapfile -t __fs_read_lines_into_ref < "${__fs_read_lines_into_file}"
+}
+
+local -a hosts
+fs::read_lines_into hosts "${hosts_file}"
+```
+
 ### Số học
 
 > [!TIP]
@@ -2713,7 +3788,7 @@ function fs::count_lines {
 > - ✔️ NÊN: Dùng `(( ... ))` cho điều kiện số học và `$(( ... ))` cho giá trị số học
 > - ✔️ NÊN: Bỏ dấu `$` trước tên biến bên trong `(( ... ))`
 > - ✔️ NÊN: Khai báo biến đếm bằng `local -i` khi biến đó chỉ chứa số nguyên
-> - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))`
+> - ✔️ NÊN: Kiểm tra một số lấy từ đầu vào bằng biểu thức chính quy, và ép cơ số 10 trong phép tính: `$((10#${count}))` <kbd>BSG129</kbd>
 > - ✔️ NÊN: Kiểm tra một số thập phân bằng `dybatpho::math_is_number`, và một số nguyên bằng `dybatpho::is int`. (dybatpho)
 > - ✔️ NÊN: Tăng giá trị bằng `((count += 1))` hoặc `count=$((count + 1))`
 > - ✔️ NÊN: Tính toán với số thập phân trong `awk`, truyền giá trị qua `-v`: phép tính của Bash chỉ dùng số nguyên
@@ -2831,6 +3906,69 @@ fi
 ```sh
 dybatpho::is int "${count}" || dybatpho::die "Not an integer: ${count}"
 dybatpho::math_is_number "${ratio}" || dybatpho::die "Not a number: ${ratio}"
+```
+
+### Ngày giờ và khoảng thời gian
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đo thời gian một bước chạy bằng `SECONDS`, hoặc bằng `EPOCHREALTIME` (Bash 5.0) khi đơn vị giây quá thô
+> - ⚠️ CÂN NHẮC: Đọc đồng hồ bằng `SECONDS` hoặc `printf '%(%s)T' -1`, không fork `date +%s` <kbd>BSG150</kbd>
+> - ✔️ NÊN: Ghi một dấu thời gian đi ra khỏi script theo UTC và ISO 8601: `TZ=UTC printf -v stamp '%(%Y-%m-%dT%H:%M:%SZ)T' -1`
+> - ✔️ NÊN: Đo thời gian một bước bằng `dybatpho::timer_start` và `dybatpho::timer_end`, hai hàm ghi log thời gian nó đã chạy, và hiển thị một số giây dưới dạng `H:MM:SS` bằng `dybatpho::date_seconds_to_hms`. (dybatpho)
+> - ❌ TRÁNH: Không phân tích ngày chỉ bằng `date -j -f` của BSD: nó thất bại trên Linux y như `date -d` thất bại trên macOS, nên hãy đi qua `dybatpho::date_parse` hoặc giữ cả hai nhánh, như [Tính di động](#t%C3%ADnh-di-%C4%91%E1%BB%99ng) chỉ ra
+
+Bash tự giữ đồng hồ. `SECONDS` đếm số giây từ khi script bắt đầu, `printf '%(%s)T' -1` (Bash 4.2) đọc epoch, còn `EPOCHSECONDS` và `EPOCHREALTIME` (Bash 5.0) chứa epoch tính bằng giây và bằng micro giây. Mỗi lần `$(date +%s)` fork một tiến trình để đọc đúng con số đó, và trong một vòng lặp nó tốn hơn cả công việc nó đo. `dybatpho::date_now` không giúp được ở đây: hàm này cũng chạy `date`.
+
+`EPOCHREALTIME` được viết với dấu thập phân của locale, `1700000000,123456` dưới locale tiếng Đức, nên hãy bỏ dấu phân cách đi thay vì tách theo dấu chấm. Một dấu thời gian đi ra khỏi script, trong một dòng log, một tên tệp hay một báo cáo, sẽ được đọc trên những máy ở múi giờ khác: UTC với chữ `Z` cho biết đó là thời điểm nào, và ISO 8601 sắp xếp theo kiểu chuỗi cũng đúng thứ tự thời gian.
+
+**Nên dùng**
+
+```sh
+# Một khoảng thời gian: SECONDS tự đếm, không fork gì cả
+local started="${SECONDS}"
+backup::run
+dybatpho::info "Backup took $((SECONDS - started))s"
+
+# Epoch, và một dấu thời gian UTC cho dòng log hay tên tệp
+local now stamp
+printf -v now '%(%s)T' -1
+TZ=UTC printf -v stamp '%(%Y-%m-%dT%H:%M:%SZ)T' -1
+
+# Micro giây (Bash 5.0): bỏ dấu phân cách, dù locale dùng dấu nào
+local start_us="${EPOCHREALTIME//[!0-9]/}"
+cache::warm
+dybatpho::debug "Warm-up took $(((${EPOCHREALTIME//[!0-9]/} - start_us) / 1000))ms"
+```
+
+**Không nên dùng**
+
+```sh
+# Hai tiến trình để biết một con số Bash đã có sẵn
+local started
+started="$(date +%s)"
+backup::run
+dybatpho::info "Backup took $(($(date +%s) - started))s"
+
+# Giờ địa phương không kèm múi giờ: đó là mấy giờ?
+stamp="$(date '+%Y-%m-%d %H:%M')"
+```
+
+`dybatpho::timer_start <name>` và `dybatpho::timer_end <name> [level]` ghi log khoảng thời gian giữa hai lời gọi, tính bằng mili giây, với tên và thời lượng là các trường riêng trong log có cấu trúc, và để lại con số đó trong `DYBATPHO_TIMER_LAST_MS`. `dybatpho::date_seconds_to_hms` in một khoảng thời gian dưới dạng `H:MM:SS` mà không quay vòng sau một ngày. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::timer_start migration
+./migrate.sh
+dybatpho::timer_end migration
+
+local started="${SECONDS}"
+sync::all
+dybatpho::info "Sync took $(dybatpho::date_seconds_to_hms "$((SECONDS - started))")"
 ```
 
 ### Tính di động
@@ -3469,6 +4607,7 @@ kill "${pid}"
 
 **Nên dùng**
 
+<!-- lint: allow BSG155 -->
 ```sh
 local -a pids=()
 local host pid failed=0
@@ -3503,6 +4642,169 @@ dybatpho::trap dybatpho::kill_children EXIT INT TERM
 dybatpho::background_run api ./serve.sh --port 8080
 dybatpho::background_run worker ./worker.sh
 dybatpho::wait_all || dybatpho::die "A background job failed"
+```
+
+### Song song có giới hạn
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Giới hạn số job chạy cùng lúc: một vòng lặp khởi chạy job bằng `&` phải đợi một job xong trước khi khởi chạy job tiếp theo <kbd>BSG155</kbd>
+> - ✔️ NÊN: Đếm số job đang chạy, và `wait -n` (Bash 4.3) cho một job kết thúc khi con số chạm giới hạn, đếm cả thất bại của nó: `wait -n || failed=$((failed + 1))`
+> - ✔️ NÊN: Giao một danh sách tệp cho `xargs -0 -P "${jobs}"` khi mỗi job là một chương trình, không phải một hàm shell
+> - ✔️ NÊN: Chọn giới hạn theo thứ mà các job tiêu tốn: số CPU cho việc tốn CPU, một con số cố định nhỏ cho các request tới một server hay các lần ghi vào một ổ đĩa
+> - ✔️ NÊN: Chạy một hàm trên một danh sách bằng `dybatpho::parallel_map <jobs> <function> <items...>`, và các lệnh khác nhau bằng `dybatpho::parallel_run --argv <jobs> <arrays...>`; `0` job nghĩa là mỗi CPU một job, theo số mà `dybatpho::cpu_count` báo. (dybatpho)
+
+Mỗi mục một job, tất cả cùng lúc, chạy được với năm host của bản thử và thất bại với năm trăm host của production: năm trăm phiên ssh, số tệp được mở của người dùng bị dùng hết, một server giới hạn tốc độ script, một laptop phải swap. Một giới hạn giữ tải như nhau dù danh sách dài bao nhiêu, và công việc cũng không xong muộn hơn, vì đằng nào máy hay server cũng không làm được nhiều hơn cùng lúc.
+
+Mỗi job vẫn có một mã thoát cần thu lại. Một lệnh `wait` trơn không tham số trả về 0 bất kể các job trả về gì, còn `wait` từng pid dưới `set -e` dừng ở thất bại đầu tiên, như [Tiến trình con](#ti%E1%BA%BFn-tr%C3%ACnh-con) giải thích và <kbd>BSG112</kbd> báo: hãy đếm số thất bại, rồi thất bại một lần ở cuối.
+
+**Nên dùng**
+
+```sh
+local max_jobs running=0 failed=0 file
+max_jobs="$(dybatpho::cpu_count || printf '4')"
+for file in "${files[@]}"; do
+  if ((running >= max_jobs)); then
+    wait -n || failed=$((failed + 1))
+    running=$((running - 1))
+  fi
+  image::convert "${file}" &
+  running=$((running + 1))
+done
+while ((running > 0)); do
+  wait -n || failed=$((failed + 1))
+  running=$((running - 1))
+done
+((failed == 0)) || dybatpho::die "${failed} of ${#files[@]} conversions failed"
+
+# Mỗi tệp một chương trình, bốn tệp một lúc
+printf '%s\0' "${files[@]}" | xargs -0 -n 1 -P 4 gzip --
+```
+
+**Không nên dùng**
+
+```sh
+# Năm trăm host: năm trăm phiên ssh cùng lúc, và mọi thất bại đều bị mất
+for host in "${hosts[@]}"; do
+  check::host "${host}" &
+done
+wait
+```
+
+`dybatpho::parallel_map` chạy một lệnh hay một hàm shell một lần cho mỗi mục, mỗi lúc một số lượng đã cho, phát lại output của từng job theo thứ tự các mục, và thất bại khi có job thất bại; sau đó `dybatpho::parallel_status <index>` cho biết mã thoát của từng job. `dybatpho::parallel_run --argv` làm điều tương tự cho các job khác nhau, mỗi job là một mảng chứa một lệnh và các tham số của nó. Số job `0` dùng `DYBATPHO_PARALLEL_JOBS`, nếu không thì mỗi CPU một job. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::parallel_map 8 check::host "${hosts[@]}" || dybatpho::die "Some hosts failed the check"
+
+local -a build=(npm run build) vet=(go vet ./...)
+dybatpho::parallel_run --argv 0 build vet || dybatpho::die "The build failed"
+```
+
+### Hàm trong tiến trình con
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Chạy lại chính script với một lệnh con, như `xargs -n1 "$0" _worker`, thay vì giao một hàm cho tiến trình con bằng `export -f` <kbd>BSG141</kbd>
+> - ✔️ NÊN: Chạy một hàm trên nhiều phần tử cùng lúc bằng `dybatpho::parallel_map`, hoặc các lệnh khác nhau bằng `dybatpho::parallel_run --argv`: mỗi job là một subshell của script và thấy mọi hàm và biến của nó. (dybatpho)
+> - ✔️ NÊN: Khi một Bash con thật sự cần thư viện, gọi `dybatpho::export_functions`, hàm trỏ `BASH_ENV` tới thư viện để mọi Bash con không tương tác source nó trước tiên. (dybatpho)
+> - ❌ TRÁNH: Không trông đợi `dybatpho::export_functions` mang theo những gì script đã thay đổi lúc chạy, như các bí mật đã đăng ký hay các biến không được export, hoặc tới được Bash khởi chạy dưới tên `sh`, vốn bỏ qua `BASH_ENV`. (dybatpho)
+
+`export -f` và `declare -fx` đưa hàm vào môi trường dưới dạng một biến `BASH_FUNC_name%%`. Nó tới mọi tiến trình mà script khởi chạy từ đó trở đi, không chỉ tiến trình cần chạy nó, và tới một mình: không có các biến mà script không export, không có `set -euo pipefail`, và không có các hàm khác mà nó gọi. Một tiến trình con không phải Bash, như `sh -c`, hoàn toàn không thấy nó.
+
+Bản thân script đã có mọi thứ mà worker cần. Khi được khởi chạy lại với một lệnh con, nó source các thư viện của chính nó, đặt các tùy chọn của chính nó rồi chạy đúng một hàm.
+
+**Nên dùng**
+
+```sh
+function _worker {
+  local file="$1"
+  gzip -9 -- "${file}"
+}
+
+function main {
+  case "${1-}" in
+    _worker)
+      shift
+      _worker "$@"
+      ;;
+    *)
+      printf '%s\0' "${files[@]}" | xargs -0 -P4 -n1 -- "$0" _worker
+      ;;
+  esac
+}
+
+main "$@"
+```
+
+**Không nên dùng**
+
+```sh
+function _worker {
+  local file="$1"
+  gzip -9 -- "${file}"
+}
+
+# Tới mọi tiến trình con, mà không có các biến, tùy chọn và helper nó dựa vào
+export -f _worker
+printf '%s\0' "${files[@]}" | xargs -0 -P4 -n1 bash -c '_worker "$1"' _
+```
+
+`dybatpho::parallel_map` chạy một lệnh một lần cho mỗi phần tử, mỗi lúc một số lượng cho trước, trong các subshell của shell gọi nó, nên hàm không cần export; nó phát lại output của từng job theo thứ tự và thất bại khi có job thất bại. `dybatpho::export_functions` dành cho một Bash con mà script không tránh được, do `find -exec` hay một chương trình khác khởi chạy: tiến trình con source lại toàn bộ thư viện từ đầu, với cùng các module, và tốn vài chục mili giây cho việc đó. (dybatpho)
+
+**Nên dùng**
+
+```sh
+dybatpho::parallel_map 4 _worker "${files[@]}"
+
+dybatpho::export_functions
+find "${dir}" -name '*.tar.gz' -exec bash -c 'for file; do dybatpho::file_hash "${file}"; done' _ {} +
+```
+
+### Đổi thư mục
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đổi thư mục bên trong một subshell, `( cd -P -- "${dir}" && make )`, để phần còn lại của script vẫn ở chỗ cũ
+> - ✔️ NÊN: Truyền thư mục cho công cụ nào nhận nó, như `git -C`, `make -C` hay `tar -C`, thay vì chuyển thư mục
+> - ✔️ NÊN: Viết `cd -P -- "${dir}"`, và dừng lại khi nó thất bại: các lệnh sau một `cd` thất bại sẽ chạy sai chỗ
+> - ⚠️ CÂN NHẮC: Đổi thư mục trong một subshell, hoặc truyền thư mục cho công cụ, thay vì dùng `pushd`, `popd` hay `cd -`. (tùy chỉnh) <kbd>BSG147</kbd>
+
+Thư mục hiện tại là trạng thái mà cả script dùng chung. `pushd` và `popd` in ngăn xếp thư mục ra STDOUT, thứ sẽ lẫn vào bất cứ chỗ nào bắt output, và dưới `set -e` một lệnh thất bại giữa `pushd` và `popd` để lại script, cùng trình xử lý `EXIT` của nó, ở sai chỗ. `cd -` cũng in ra thư mục, và quay về nơi `OLDPWD` đang trỏ tới, mà bất kỳ `cd` nào khác ở giữa đều đã làm thay đổi. Một subshell không cần đường quay về: việc chuyển thư mục kết thúc cùng nó.
+
+`-P` phân giải liên kết tượng trưng, để `pwd` và `..` mang đúng nghĩa mà hệ thống tệp nói, còn `--` giữ cho một thư mục tên `-x` không bị đọc thành tùy chọn. Một hàm thư viện cần chuyển thư mục cũng dùng subshell, xem [Tác dụng phụ của thư viện](#t%C3%A1c-d%E1%BB%A5ng-ph%E1%BB%A5-c%E1%BB%A7a-th%C6%B0-vi%E1%BB%87n).
+
+**Nên dùng**
+
+```sh
+(cd -P -- "${build_dir}" && make install)
+
+git -C "${repo_dir}" pull --ff-only
+tar -C "${dest_dir}" -xzf "${archive}"
+
+cd -P -- "${work_dir}" || dybatpho::die "Cannot enter ${work_dir}"
+```
+
+**Không nên dùng**
+
+```sh
+pushd "${build_dir}"
+make install
+popd
+
+cd "${repo_dir}"
+git pull --ff-only
+cd -
 ```
 
 ### Kết thúc tùy chọn
@@ -3636,6 +4938,59 @@ if ((status == 124)); then
 fi
 ```
 
+### Chờ một điều kiện
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ⚠️ CÂN NHẮC: Đặt hạn chót cho mọi lần chờ: một vòng lặp ngủ cho tới khi một điều kiện đúng cũng phải dừng sau một khoảng thời gian hoặc một số lần thử <kbd>BSG154</kbd>
+> - ✔️ NÊN: Đo hạn chót theo `SECONDS`, `deadline=$((SECONDS + 60))`, thay vì cộng dồn các lần ngủ, cách này bỏ sót thời gian mà các lần kiểm tra tốn
+> - ✔️ NÊN: Kiểm tra thưa dần khi lần chờ kéo dài, tới một mức trần: `((delay >= 8)) || delay=$((delay * 2))`
+> - ✔️ NÊN: Ưu tiên một lệnh tự chờ, với giới hạn riêng của nó, hơn một vòng lặp hỏi vòng: `kubectl wait --timeout=60s`, `wait "${pid}"`
+> - ✔️ NÊN: Chờ một cổng bằng `dybatpho::wait_port <host> <port> [seconds] [interval]`, lặp lại một phép kiểm tra bằng `dybatpho::retry_until <retries> <delay> [description] -- <command>`, và giới hạn thời gian của một lệnh có thể bị treo bằng `dybatpho::run_with_timeout`. (dybatpho)
+> - ❌ TRÁNH: Không giữ một dịch vụ chạy mãi, hay lặp lại một việc sau mỗi vài phút, bằng một vòng `while true` trong script: để việc đó cho systemd, cron hoặc chính sách khởi động lại của nền tảng
+
+Một lần chờ không có hạn chót biến mọi thất bại thành một lần treo. Dịch vụ không bao giờ khởi động, tệp không bao giờ được ghi, lock không bao giờ được nhả: script ngủ qua tất cả, một job CI chạy cho tới khi runner kết liễu nó, và không có gì cho biết nó đang chờ cái gì. Một hạn chót biến chính thất bại đó thành một lỗi nêu tên điều kiện, vào thời điểm mà bên gọi đã chọn.
+
+Một phép kiểm tra chạy mỗi giây trong một phút là sáu mươi lần kiểm tra, phần lớn trong lúc chưa có gì thay đổi. Nhân đôi thời gian nghỉ tới một mức trần giúp trả lời nhanh khi điều kiện đến sớm, và thôi dồn dập một database hay một API vẫn đang khởi động khi điều kiện đến muộn.
+
+**Nên dùng**
+
+```sh
+# Socket của một dịch vụ vừa khởi chạy: tối đa 60 giây, kiểm tra thưa dần theo thời gian
+local deadline=$((SECONDS + 60)) delay=1
+until [[ -S "${socket}" ]]; do
+  ((SECONDS < deadline)) || dybatpho::die "${socket} did not appear within 60 seconds"
+  sleep "${delay}"
+  ((delay >= 8)) || delay=$((delay * 2))
+done
+```
+
+**Không nên dùng**
+
+```sh
+# Chờ mãi mãi khi dịch vụ không bao giờ khởi động
+until [[ -S "${socket}" ]]; do
+  sleep 1
+done
+```
+
+Một `while true; do sync::all; sleep 300; done` là một bộ lập lịch viết tay. Nó dừng theo terminal hay phiên SSH đã khởi chạy nó, không gì khởi động lại nó sau một lần crash hay một lần reboot, hai bản của nó chạy song song khi nó được khởi chạy hai lần, và output của nó không đi đâu cả. Một systemd timer, một mục cron hay chính sách khởi động lại của container đã làm tất cả những việc đó; script chỉ chạy một lần rồi thoát.
+
+`dybatpho::wait_port` mở một kết nối TCP cho tới khi thành công hoặc hết số giây, và cho mỗi lần thử không nhiều thời gian hơn phần còn lại của lần chờ. `dybatpho::retry_until` chạy một lệnh cho tới khi thành công, tối đa bằng số lần thử lại đã cho, với độ trễ cố định giữa các lần, và trả về mã thoát cuối cùng của lệnh. `dybatpho::run_with_timeout` kết thúc một lệnh vẫn còn chạy khi hết giờ và trả về 124. (dybatpho)
+
+**Nên dùng**
+
+```sh
+docker compose up -d
+dybatpho::wait_port localhost 5432 60 || dybatpho::die "The database never came up"
+dybatpho::retry_until 10 3 "wait for the socket" -- test -S "${socket}" \
+  || dybatpho::die "${socket} did not appear"
+dybatpho::run_with_timeout 300 ./migrate.sh || dybatpho::die "The migration failed or ran over 5 minutes"
+```
+
 ### Lệnh trên máy remote
 
 > [!TIP]
@@ -3677,6 +5032,57 @@ function report::disk_usage {
 timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" du -sh -- "${dir}"
 # Một bản sao của hàm, sẽ bị bỏ sót ở lần sửa hàm tiếp theo
 timeout 300 ssh -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" "du -sh -- ${dir}"
+```
+
+### Xác minh host key
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Ghim khóa của mọi host trong một tệp `known_hosts` đi kèm script, và truyền `-o UserKnownHostsFile=<file> -o StrictHostKeyChecking=yes`
+> - ✔️ NÊN: Ghim một host mới một lần: lấy khóa của nó bằng `ssh-keyscan`, rồi so fingerprint mà `ssh-keygen -lf` in ra với fingerprint nhận được qua một kênh tin cậy, như output của bước cấp phát máy hay giao diện quản trị cloud
+> - ⚠️ CÂN NHẮC: Chỉ dùng `StrictHostKeyChecking=accept-new` cho lần kết nối đầu tiên tới một host trên mạng bạn tin cậy; nó vẫn từ chối một khóa thay đổi về sau
+> - ❌ TRÁNH: Không tắt việc kiểm tra host key bằng `StrictHostKeyChecking=no` hay `UserKnownHostsFile=/dev/null`, dù trên `ssh`, `scp`, `rsync -e`, trong `GIT_SSH_COMMAND` hay trong một ssh config <kbd>BSG158</kbd>
+
+Host key là cách ssh biết nó đã tới đúng host chứ không phải một máy nằm ở giữa. Khi tắt việc kiểm tra, bất kỳ ai trả lời ở địa chỉ đó — một bản ghi DNS bị giả mạo, một access point lạ, một router bị chiếm — sẽ nhận phiên làm việc: nó đọc mọi mật khẩu và khóa được chuyển tiếp qua đó, thấy các lệnh, và trả lời chúng. `UserKnownHostsFile=/dev/null` làm đúng điều đó một cách lặng lẽ, vì một khóa chưa bao giờ được ghi lại thì không bao giờ bị phát hiện là đã thay đổi.
+
+Một tệp `known_hosts` đặt cạnh script, và được review như code, biến sự tin cậy thành thứ nhìn thấy được: khi đó `StrictHostKeyChecking=yes` từ chối một host không có trong tệp thay vì hỏi, một câu hỏi mà script đằng nào cũng không trả lời được. `accept-new` ghi lại khóa đầu tiên nó thấy và từ chối một khóa khác về sau, nên nó bảo vệ mọi kết nối trừ kết nối đầu tiên; hãy dành nó cho một host vừa được tạo trên mạng bạn kiểm soát.
+
+**Nên dùng**
+
+```sh
+# Các khóa đi kèm script, được review như code
+local -a ssh_opts=(
+  -o UserKnownHostsFile="${SCRIPT_DIR}/known_hosts"
+  -o StrictHostKeyChecking=yes
+  -o ConnectTimeout=10
+  -o BatchMode=yes
+)
+timeout 300 ssh "${ssh_opts[@]}" -- "${host}" 'systemctl is-active app'
+GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=${SCRIPT_DIR@Q}/known_hosts -o StrictHostKeyChecking=yes" \
+  git fetch --quiet origin
+```
+
+```sh
+# Một lần, để ghim một host mới: fingerprint đến từ chủ của host, không phải từ mạng
+local scanned fingerprint
+dybatpho::create_temp scanned ".keys"
+timeout 30 ssh-keyscan -t ed25519 -- "${host}" > "${scanned}"
+fingerprint="$(ssh-keygen -lf "${scanned}")"
+[[ "${fingerprint}" == *" ${expected_fingerprint} "* ]] \
+  || dybatpho::die "The key of ${host} does not match ${expected_fingerprint}"
+cat -- "${scanned}" >> "${SCRIPT_DIR}/known_hosts"
+```
+
+**Không nên dùng**
+
+```sh
+# Tin bất kỳ máy nào trả lời ở địa chỉ đó, bây giờ và mọi lần sau
+timeout 300 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+  -o ConnectTimeout=10 -o BatchMode=yes -- "${host}" 'systemctl is-active app'
+GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=no' git fetch --quiet origin
 ```
 
 ### Lệnh đã lỗi thời
@@ -4180,6 +5586,257 @@ unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR FORCE_COLOR
   git -C "${BATS_TEST_TMPDIR}/repo" tag v1.0.0
   run bash -c ". ${LIB}; release::latest ${BATS_TEST_TMPDIR}/repo"
 }
+```
+
+### Giả lập lệnh
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Giả lập một lệnh bên ngoài bằng một stub thực thi được trong thư mục riêng của test, đặt lên đầu `PATH`, để mọi tiến trình mà code khởi chạy đều tìm thấy bản giả
+> - ✔️ NÊN: Giả lập một lệnh bằng `dybatpho::mock_command` hoặc `dybatpho::mock_command_script`, biến môi trường bằng `dybatpho::mock_env`, đồng hồ bằng `dybatpho::mock_time` và một response HTTP bằng `dybatpho::mock_http`, rồi gỡ tất cả bằng `dybatpho::unmock_all` trong `teardown`. (dybatpho)
+> - ✔️ NÊN: Kiểm tra bản giả đã được gọi ra sao, bằng `dybatpho::assert_mock_called` hoặc `dybatpho::mock_calls`, chứ không chỉ kiểm tra code đã in ra gì. (dybatpho)
+> - ⚠️ CÂN NHẮC: Giả lập một lệnh bên ngoài bằng một stub trên `PATH`, không phải bằng một hàm shell cùng tên <kbd>BSG132</kbd>
+> - ✔️ NÊN: Chỉ viết bản giả dưới dạng hàm khi nó phải giữ trạng thái trong chính shell của test, như đếm số lần gọi `sleep` hay đẩy một đồng hồ giả, và ghi lý do ở dòng ngay trước nó: `# dyshellint disable=BSG132 # <lý do>`
+
+Một hàm tên `curl` chỉ tồn tại trong shell đã định nghĩa nó. Code đang được kiểm thử chạm tới chương trình thật ngay khi nó chạy một script con, gọi `command curl`, hay ghi `/usr/bin/curl`, và khi đó test nói chuyện với mạng trong khi trông như không hề làm vậy. Một stub trên `PATH` là một tệp thực thi thật: mọi tiến trình đều tìm thấy nó, và nó có thể ghi lại từng lần gọi để test kiểm tra được cả tham số lẫn output.
+
+dybatpho ghi các stub như vậy vào một thư mục riêng ở đầu `PATH`, ghi lại mọi lần gọi, và xóa bảng hash mà Bash giữ về nơi nó tìm thấy một lệnh lần trước, để một lệnh đã chạy trong shell không đi vòng qua bản giả. `dybatpho::mock_time` đặt vào đó một `date` trả lời theo một thời điểm bị đóng băng, còn `dybatpho::mock_http` thay `curl` bằng một bản trả về response soạn sẵn cho `dybatpho::curl_do` và mọi hàm dựng trên nó. (dybatpho)
+
+**Nên dùng**
+
+```sh
+function teardown {
+  dybatpho::unmock_all
+}
+
+@test "deploy::status lists the pods of the namespace" {
+  dybatpho::mock_command_script kubectl 'printf "pod/api Running\n"'
+  dybatpho::mock_env KUBE_NAMESPACE=prod
+  run deploy::status
+  assert_success
+  assert_output "pod/api Running"
+  dybatpho::assert_mock_called kubectl get pods --namespace prod
+}
+
+@test "fetch_status reads the answer of the API" {
+  local bin="${BATS_TEST_TMPDIR}/bin"
+  mkdir -p -- "${bin}"
+  cat > "${bin}/curl" << EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "${bin}/curl.calls"
+printf '{"ok":true}\n'
+EOF
+  chmod +x -- "${bin}/curl"
+  PATH="${bin}:${PATH}"
+  run fetch_status
+  assert_output "ok"
+  run cat -- "${bin}/curl.calls"
+  assert_output --partial "https://api.example.test/status"
+}
+```
+
+**Không nên dùng**
+
+```sh
+@test "fetch_status reads the answer of the API" {
+  # Chỉ shell này thấy nó: `command curl`, một script con và /usr/bin/curl vẫn chạy bản thật
+  function curl {
+    printf '{"ok":true}\n'
+  }
+  run fetch_status
+  assert_output "ok"
+}
+```
+
+Có những bản giả không thể là một tiến trình riêng. Một `sleep` giả ghi lại từng độ trễ, hay một bản đẩy đồng hồ giả lên, phải thay đổi một biến trong chính shell của test, thứ mà stub trên `PATH` không bao giờ thấy được. Hãy giữ chúng ở dạng hàm, gọi trực tiếp code đang được kiểm thử thay vì qua `run`, vốn khởi chạy một subshell, và ghi lý do trong chỉ thị, để người đọc sau biết hàm đó không phải là một sơ suất.
+
+**Nên dùng**
+
+```sh
+@test "retry::run waits longer before each attempt" {
+  local -a waits=()
+  # dyshellint disable=BSG132 # ghi lại từng độ trễ trong shell này, nơi stub trên PATH không chạm tới được
+  function sleep {
+    waits+=("$1")
+  }
+  dybatpho::mock_command curl 7
+  retry::run 3 curl --fail "${url}" || true
+  assert_equal "${waits[*]}" "1 2"
+}
+```
+
+### Ma trận phiên bản Bash
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Chạy toàn bộ bộ test trong CI trên bản Bash cũ nhất mà dự án hỗ trợ và trên bản mới nhất, mỗi bản trong image chính thức `bash:<version>`
+> - ✔️ NÊN: Kiểm tra, ngay trong job, rằng `bash` mà nó chạy đúng là phiên bản đặt tên cho job, trước khi chạy bộ test
+> - ✔️ NÊN: Giữ bước kiểm tra `BASH_VERSINFO` riêng của dự án khi dùng dybatpho: `dybatpho::doctor_bash_supported`, cũng như bước kiểm tra dybatpho làm khi được source, chỉ biết mức tối thiểu của chính dybatpho, là 4.3. (dybatpho)
+> - ⚠️ CÂN NHẮC: Chỉ chạy `/bin/bash` (3.2) của macOS để xem bước kiểm tra dừng lại với thông báo của nó, không phải để chạy bộ test
+> - ❌ TRÁNH: Không chỉ kiểm thử trên bản Bash đi kèm image của runner, vốn gần như là bản mới nhất
+
+Một bộ test chạy trên một bản Bash chỉ chứng minh mức tối thiểu ghi trong README cho đúng bản đó. Nameref, `mapfile -d`, `wait -n`, `${var@Q}` và cách `set -u` đối xử với mảng rỗng đều thay đổi giữa 4.3 và 5.1, mà image của runner đi kèm 5.2 hoặc mới hơn, nên một script hỏng ở mức tối thiểu vẫn qua mọi bước kiểm tra cho tới khi người dùng chạy nó. Các image `bash:<version>` build từng bản phát hành từ mã nguồn, với trình thông dịch nằm ở `/usr/local/bin`; một gói cài sau vẫn có thể kéo theo một `bash` khác, nên job hỏi chính `bash` mà nó chạy về phiên bản của nó.
+
+Bash 3.2 không chạy được script viết theo hướng dẫn này, và đó chính là lý do có bước kiểm tra trong [Phiên bản Bash](#phi%C3%AAn-b%E1%BA%A3n-bash). Một job trên macOS chạy entrypoint bằng `/bin/bash` và kiểm tra rằng nó dừng lại với thông báo đó, thay vì với `invalid option` từ sâu bên trong. dybatpho không làm được việc này thay dự án: nó kiểm tra phiên bản mà chính nó cần, và một dự án cần 4.4 không được bảo vệ bởi một bước kiểm tra vẫn qua trên 4.3. (dybatpho)
+
+**Nên dùng**
+
+```yaml
+jobs:
+  test:
+    name: "Bash ${{ matrix.bash }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bash: ["4.4", "5.3"]
+    container:
+      image: bash:${{ matrix.bash }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Check the Bash under test"
+        env:
+          WANT: ${{ matrix.bash }}
+        run: |
+          have="$(bash -c 'printf %s.%s "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}"')"
+          [ "${have}" = "${WANT}" ] || { echo "bash is ${have}, expected ${WANT}"; exit 1; }
+      - run: bash ./scripts/test.sh --all
+
+  old-bash:
+    name: "Bash 3.2 stops with a message"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if /bin/bash ./bin/deploy.sh --help 2> err.txt; then exit 1; fi
+          grep -q 'needs Bash 4.4 or newer' err.txt
+```
+
+```sh
+#!/usr/bin/env bash
+# dybatpho kiểm tra 4.3, mức tối thiểu của riêng nó; dự án này cần 4.4
+if ((BASH_VERSINFO[0] < 4 || (BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 4))); then
+  printf 'deploy.sh needs Bash 4.4 or newer, found %s\n' "${BASH_VERSION}" >&2
+  exit 1
+fi
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh" || exit 1
+```
+
+**Không nên dùng**
+
+```sh
+#!/usr/bin/env bash
+. "${SCRIPT_DIR}/lib/dybatpho/init.sh" --modules doctor || exit 1
+# Qua trên Bash 4.3, rồi `mapfile -d` thất bại ở phía dưới
+dybatpho::doctor_bash_supported || exit 1
+```
+
+### Coverage
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Đo coverage của một thư viện bằng [kcov](https://github.com/SimonKagstrom/kcov) bao quanh bộ test bats, giới hạn trong các tệp của chính thư viện bằng `--include-path`
+> - ✔️ NÊN: Đọc báo cáo để tìm những nhánh không test nào chạm tới, như một đường xử lý lỗi, một phương án dự phòng hay một nhánh `case`, rồi viết test chạm tới chúng
+> - ✔️ NÊN: Đánh dấu dòng mà trình theo vết không thấy được bằng một chú thích nêu lý do, `# kcov(skip) <lý do>`, và loại nó ra bằng `--exclude-line="# kcov(skip)"`
+> - ⚠️ CÂN NHẮC: Chạy kcov một lần cho mỗi nhóm tệp test rồi gộp các phần lại bằng `kcov --merge`, khi một lần chạy trên cả bộ test lớn phình quá sức chứa của máy
+> - ❌ TRÁNH: Không biến con số phần trăm thành mục tiêu hay ngưỡng chặn, và không viết test chỉ để chạm tới một dòng
+
+Coverage trả lời một câu hỏi hữu ích: những dòng nào không test nào chạy qua? Câu trả lời là một danh sách chỗ cần xem, và thứ tìm thấy ở đó thường là một đường xử lý lỗi chưa ai thử, hoặc một nhánh không thể xảy ra và nên bỏ đi. Con số ở đầu báo cáo tự nó không trả lời điều gì. Một ngưỡng chặn đặt trên con số đó khuyến khích loại test chạy qua một dòng mà không kiểm tra nó đã làm gì, và một test như vậy giữ con số ở mức cao trong khi hành vi mà nó giả vờ bao phủ đã hỏng.
+
+kcov theo dõi Bash qua output theo vết của nó, nên nó thấy những gì chạy trong một tiến trình con khởi chạy từ một tệp script nhưng không thấy trong `bash -c` (xem [Cô lập test](#c%C3%B4-l%E1%BA%ADp-test)), và nó bỏ sót vài dòng không gán được cho đâu, như dòng đóng của một nhóm lệnh có chuyển hướng. Hãy loại những dòng đó ra theo tên, kèm lý do ngay cạnh, thay vì hạ ngưỡng. kcov cũng giữ trạng thái theo vết cho tới khi thoát, nên một bộ test lớn chạy trong một lần có thể vắt cạn bộ nhớ của runner CI; mỗi nhóm tệp chạy một lần, gộp lại sau, giữ mức đỉnh ở nhóm lớn nhất.
+
+**Nên dùng**
+
+```sh
+kcov --clean \
+  --include-path="${PROJECT_DIR}/src" \
+  --exclude-line="# kcov(skip)" \
+  "${PROJECT_DIR}/coverage" \
+  bats "${PROJECT_DIR}/test"
+
+kcov --include-path="${PROJECT_DIR}/src" coverage/part0 bats test/cli.bats test/config.bats
+kcov --include-path="${PROJECT_DIR}/src" coverage/part1 bats test/network.bats
+kcov --merge --include-path="${PROJECT_DIR}/src" coverage/merged coverage/part0 coverage/part1
+```
+
+```sh
+mkdir -p -- "${dir}" \
+  || dybatpho::die "Cannot create ${dir}" # kcov(skip) mkdir chỉ thất bại khi đĩa chỉ đọc hoặc đã đầy
+```
+
+**Không nên dùng**
+
+```sh
+@test "config::load reads a missing file" {
+  # Chạy qua mọi dòng của đường xử lý lỗi, mà không kiểm tra dòng nào
+  run config::load "${BATS_TEST_TMPDIR}/missing.yaml"
+}
+```
+
+### Ghim phiên bản công cụ
+
+> [!NOTE]
+> Quy tắc tùy chỉnh
+
+> [!TIP]
+>
+> - ✔️ NÊN: Ghim phiên bản của mọi công cụ đánh giá code, `shellcheck`, `shfmt`, `bats` và `dyshellint`, trong một tệp mà cả máy cá nhân lẫn CI cùng đọc, như `mise.toml`
+> - ✔️ NÊN: Ghim `rev` của mọi kho hook trong `.pre-commit-config.yaml`, tệp mà prek đọc, vào một tag
+> - ✔️ NÊN: Nâng cấp một công cụ trong một commit riêng, cùng với các bản sửa mà những phát hiện mới của nó đòi hỏi
+> - ❌ TRÁNH: Không cài công cụ ở phiên bản mới nhất trong CI, `go install ...@latest` hay tải bản phát hành mới nhất: khi đó bước kiểm tra thay đổi mà không có commit nào
+> - ❌ TRÁNH: Không dựa vào phiên bản mà image của runner hay trình quản lý gói tình cờ cung cấp
+
+Một bản phát hành của trình kiểm lỗi thêm một quy tắc, và một bản phát hành của trình định dạng đổi cách ngắt một dòng. Khi CI lấy bất cứ bản nào mới nhất, một pull request chỉ sửa một dòng lại thất bại ở cả trăm dòng nó chưa từng đụng tới, và một máy cá nhân còn bản của tháng trước lại cho qua thứ mà CI từ chối. Khi được ghim trong một tệp nằm dưới quản lý phiên bản, bộ công cụ chỉ thay đổi trong một commit nói rõ điều đó, và commit ấy mang theo các bản sửa cho những gì phiên bản mới phát hiện.
+
+Một tệp được cả hai bên đọc giữ cho chúng giống nhau. `mise install` đọc `mise.toml` trên máy cá nhân, và cũng tệp đó thiết lập job CI; prek đọc `rev` của từng hook từ `.pre-commit-config.yaml`. Một thư viện được vendor dưới dạng git submodule, như bats trong `test/lib`, vốn đã được ghim bởi commit của submodule.
+
+**Nên dùng**
+
+```toml
+# mise.toml, được `mise install` đọc trên máy cá nhân và được job CI đọc
+[tools]
+shellcheck = "0.11.0"
+shfmt = "3.14.1"
+bats = "1.12.0"
+"go:gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint" = "1.2.1"
+```
+
+```yaml
+# .github/workflows/ci.yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: jdx/mise-action@v2
+  - run: bash ./scripts/test.sh --all
+
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+```
+
+**Không nên dùng**
+
+```yaml
+steps:
+  # Bất cứ thứ gì phát hành sáng nay sẽ quyết định build có qua hay không
+  - run: go install gitlab.com/dynamo-tools/dyshellint/cmd/dyshellint@latest
+  # Bất cứ thứ gì image cung cấp, khác với mọi máy cá nhân
+  - run: sudo apt-get install -y shellcheck shfmt bats
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: main
 ```
 
 ## Tài liệu tham khảo
