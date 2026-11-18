@@ -15,6 +15,12 @@ repos:
         language: system
         files: ^(README(\.vi)?\.md|scripts/sync_rule_codes\.sh)$
         pass_filenames: false
+      - id: build-skill-rules
+        name: skill references built from the guide
+        entry: bash ./scripts/build_skill_rules.sh --check
+        language: system
+        files: ^(README\.md|scripts/build_skill_rules\.sh|skills/.*)$
+        pass_filenames: false
       - id: dyshellint
         name: dyshellint
         entry: dyshellint

@@ -176,6 +176,8 @@ bash ./scripts/lint_examples.sh
 prek run --all-files
 ```
 
+For AI coding agents, [`skills/bash-coding-style`](skills/bash-coding-style/SKILL.md) is an [agent skill](https://skills.sh) that carries the tips of this guide, installed with `npx skills add dynamotn/bash-coding-style --skill bash-coding-style`. [`scripts/build_skill_rules.sh`](scripts/build_skill_rules.sh) builds its `references/` from this README; `--check`, which the hook and CI run, only reports.
+
 ## Background
 
 ### Which Shell to Use

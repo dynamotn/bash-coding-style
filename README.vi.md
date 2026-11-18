@@ -178,6 +178,8 @@ bash ./scripts/lint_examples.sh
 prek run --all-files
 ```
 
+Với các AI coding agent, [`skills/bash-coding-style`](skills/bash-coding-style/SKILL.md) là một [agent skill](https://skills.sh) mang theo các mẹo của hướng dẫn này, cài bằng `npx skills add dynamotn/bash-coding-style --skill bash-coding-style`. [`scripts/build_skill_rules.sh`](scripts/build_skill_rules.sh) dựng thư mục `references/` của nó từ README tiếng Anh; `--check`, mà hook và CI chạy, chỉ báo cáo.
+
 ## Bối cảnh
 
 ### Nên sử dụng shell nào
